@@ -6,7 +6,7 @@ import json
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.5.0_092116'
+version = '0.5.1_092116'
 
 class Matchbox(object):
     def __init__(self, url, creds):
@@ -96,16 +96,10 @@ class Matchbox(object):
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
                 variant_call_data[var_type].append(self.__gen_variant_dict(variant,var_type))
-        # XXX
-        # Let's correctly map the driver / partner fusion genes.
-        if 'unifiedGeneFusions' in variant_call_data:
-            print "before:"
-            pp(variant_call_data['unifiedGeneFusions'])
-            variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
 
-        # pp(dict(variant_call_data))
-        print "after:" 
-        pp(variant_call_data['unifiedGeneFusions'])
+        # Remap the driver / partner genes so that we know they're correct, and add a 'gene' field to use later on.
+        if 'unifiedGeneFusions' in variant_call_data:
+            variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
         return variant_call_data
 
     def __gen_variant_dict(self,vardata,vartype):
@@ -161,9 +155,12 @@ class Matchbox(object):
 
 class MatchboxData(object):
     # TODO: fix this!
-    def __init__(self,url,creds):
-        self.matchbox = Matchbox(url,creds)
-        self.data = self.matchbox.gen_patients_list()
+    def __init__(self,url,creds,dumped_data=None):
+        if dumped_data:
+            self.data = self.__load_dumped_json(dumped_data)
+        else:
+            self.matchbox = Matchbox(url,creds)
+            self.data = self.matchbox.gen_patients_list()
 
     # def __init__(self,json_data):
         # self.data = self.__load_dumped_json(json_data)
@@ -183,7 +180,6 @@ class MatchboxData(object):
 
     def _matchbox_dump(self):
         '''Dump the whole DB as a JSON Obj'''
-        print "got here!"
         with open('mb.json', 'w') as outfile:
             json.dump(self.data,outfile)
 
@@ -263,11 +259,11 @@ if __name__=='__main__':
     ###################################################################
     # XXX: if we need to dump it!
     # dump_the_box(url,creds)
-    # match_data = MatchboxData('mb.json')
+    # sys.exit()
     ##################################################################
 
+    # match_data = MatchboxData(url,creds,'mb.json')
     match_data = MatchboxData(url,creds)
-    sys.exit()
 
     # query_list = {'fusions' : ['MET'] }
     query_list = {'cnvs' : ['AR'] }
