@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# TODO:  Need credentials only sometimes.  When you are off NIH subdomain, don't need credentials.  When you are on subdomain, need them.  VPN is wierd.
 import sys
 import os
 import requests
@@ -6,32 +7,31 @@ import json
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.5.1_092116'
+version = '0.5.3_092116'
 
 class Matchbox(object):
-    def __init__(self, url, creds):
+    def __init__(self,url,creds):
         self.url = url
         self.creds = creds
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__, self.__dict__)
 
-    def _ascii_encode_dict(self,data):
+    def __ascii_encode_dict(self,data):
         '''From SO9590382, a method to encode the JSON obj into ascii instead of unicode.'''
         ascii_encode = lambda x: x.encode('ascii') if isinstance(x,unicode) else x
         return dict(map(ascii_encode,pair) for pair in data.items())
 
     def api_call(self):
+        # TODO:  Need to work on error handling a bit better.  Credentials issues - I think - are silently failing.
         request = requests.get(self.url,data = self.creds)
         try:
             request.raise_for_status()
         except requests.exceptions.HTTPError as error:
             sys.stderr.write('HTTP Error: {}'.format(error.message))
             sys.exit(1)
-        json_data = request.json(object_hook=self._ascii_encode_dict)
-        # json_data = request.json()
+        json_data = request.json(object_hook=self.__ascii_encode_dict)
         return json_data
-
 
     def gen_patients_list(self):
         patients = defaultdict(dict)
@@ -85,8 +85,8 @@ class Matchbox(object):
                         # Get and add MOI data to patient record
                         variant_report                = result['ionReporterResults']['variantReport']
                         patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
+        pp(patients)
         return patients
-
 
     def __proc_ngs_data(self,ngs_results):
         '''Create and return a dict of variant call data that can be stored in the patient's obj'''
@@ -119,7 +119,10 @@ class Matchbox(object):
                     'copyNumber'],
                 'fusions'     : ['annotation', 'identifier', 'driverReadCount', 'driverGene', 'partnerGene']
         }
-        return dict((key, vardata[key]) for key in include_fields[meta_key])
+        #return dict((key, vardata[key]) for key in include_fields[meta_key])
+        data = dict((key, vardata[key]) for key in include_fields[meta_key])
+        data['type'] = meta_key
+        return data
 
     def __remap_fusion_genes(self,fusion_data):
         '''
@@ -154,16 +157,12 @@ class Matchbox(object):
         return fusion_data
 
 class MatchboxData(object):
-    # TODO: fix this!
     def __init__(self,url,creds,dumped_data=None):
         if dumped_data:
             self.data = self.__load_dumped_json(dumped_data)
         else:
             self.matchbox = Matchbox(url,creds)
             self.data = self.matchbox.gen_patients_list()
-
-    # def __init__(self,json_data):
-        # self.data = self.__load_dumped_json(json_data)
 
     def __load_dumped_json(self,json_file):
         with open(json_file) as fh:
@@ -181,14 +180,23 @@ class MatchboxData(object):
     def _matchbox_dump(self):
         '''Dump the whole DB as a JSON Obj'''
         with open('mb.json', 'w') as outfile:
-            json.dump(self.data,outfile)
+            json.dump(self.data,outfile,sort_keys=True,indent=4)
 
-    def __get_var_data_by_gene(data,gene_list):
+    def __get_var_data_by_gene(self,data,gene_list):
         return [elem for elem in data if elem['gene'] in gene_list ]
+
+    def get_patient_summary(self):
+        total_patients = 0
+        diseases = defaultdict(int)
+        for psn in self.data:
+            # Skip the registered but not yet biopsied patients.
+            if self.data[psn]['medra_code'] == '-': continue
+            total_patients += 1
+            diseases[self.data[psn]['ctep_term']] += 1
+        return total_patients, diseases
 
     def get_patients_and_disease(self,query_psn=None):
         '''Print out a list of patients and their disease.'''
-        # print "Checking listing patient data..."
         output_data = []
         if query_psn:
             return (query_psn,self.data[query_psn]['ctep_term'])
@@ -199,44 +207,44 @@ class MatchboxData(object):
 
     def find_variant_frequency(self,query):
         results = {} 
-        print "query is:"
-        pp(query)
+        # print "query is:"
+        # pp(query)
         for patient in self.data:
             # print "testing patient: {}".format(patient)
-            if patient == '10896':
-                pp(self.data[patient])
-
+            # if patient == '11352':
+                # pp(self.data[patient])
             matches = []
-            # if 'mois' in self.data[patient]:
-                # input_data = dict(self.data[patient]['mois'])
+            if 'mois' in self.data[patient]:
+                input_data = dict(self.data[patient]['mois'])
+                # pp(dict(input_data))
 
-                # if 'snvs' in query and 'singleNucleotideVariants' in input_data:
-                    # matches = matches + self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
+                # TODO:  How can I add the type to the output?
+                if 'snvs' in query and 'singleNucleotideVariants' in input_data:
+                    matches = matches + self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
 
-                # if 'indels' in query and 'indels' in input_data:
-                    # matches = matches + self.__get_var_data_by_gene(input_data['indels'],query['indels'])
+                if 'indels' in query and 'indels' in input_data:
+                    matches = matches + self.__get_var_data_by_gene(input_data['indels'],query['indels'])
 
-                # if 'cnvs' in query and 'copyNumberVariants' in input_data:
-                    # matches = matches + self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
+                if 'cnvs' in query and 'copyNumberVariants' in input_data:
+                    matches = matches + self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
 
-                # if 'fusions' in query and 'unifiedGeneFusions' in input_data:
-                    # matches = matches + self.__get_var_data_by_gene(input_data['unifiedGeneFusions'],query['fusions'])
-
+                if 'fusions' in query and 'unifiedGeneFusions' in input_data:
+                    matches = matches + self.__get_var_data_by_gene(input_data['unifiedGeneFusions'],query['fusions'])
 
             if matches:
-                print '-'*50
-                print "PSN{}:".format(patient)
-                pp(matches)
-                print '-'*50
-                # results[patient] = {
-                    # 'psn'     : self.data[patient]['psn'],
-                    # 'disease' : self.data[patient]['ctep_term'],
-                    # 'msn'     : self.data[patient]['msn'],
-                    # 'mois'    : matches
-                # }
+                # print '-'*50
+                # print "PSN{}:".format(patient)
+                # pp(matches)
+                # print '-'*50
+                results[patient] = {
+                    'psn'     : self.data[patient]['psn'],
+                    'disease' : self.data[patient]['ctep_term'],
+                    'msn'     : self.data[patient]['msn'],
+                    'mois'    : matches
+                }
 
         # pp(results)
-        return
+        return results
 
 
 def dump_the_box(url,creds):
@@ -256,24 +264,9 @@ if __name__=='__main__':
         'password' : 'COSM478K601E',
     }
 
-    ###################################################################
     # XXX: if we need to dump it!
-    # dump_the_box(url,creds)
-    # sys.exit()
-    ##################################################################
+    dump_the_box(url,creds)
 
-    # match_data = MatchboxData(url,creds,'mb.json')
+    #match_data = MatchboxData(url,creds,'mb.json')
+    print "Creating Matchbox instance from within module..." 
     match_data = MatchboxData(url,creds)
-
-    # query_list = {'fusions' : ['MET'] }
-    query_list = {'cnvs' : ['AR'] }
-    # query_list = {
-        # 'snvs' : ['KRAS', 'SMARCB1', 'FOO'],
-        # 'indels' : ['CTNNB1', 'NOTCH1'],
-    # }
-    # query_list = {
-        # 'indels'   : ['BRCA1', 'BRCA2', 'ATM'],
-        # 'snvs'   : ['IDH1'],
-        # 'cnvs'   : ['CCNE1', 'EGFR']
-    # }
-    match_data.find_variant_frequency(query_list)
