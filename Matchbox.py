@@ -85,7 +85,6 @@ class Matchbox(object):
                         # Get and add MOI data to patient record
                         variant_report                = result['ionReporterResults']['variantReport']
                         patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
-        pp(patients)
         return patients
 
     def __proc_ngs_data(self,ngs_results):
@@ -265,7 +264,7 @@ if __name__=='__main__':
     }
 
     # XXX: if we need to dump it!
-    dump_the_box(url,creds)
+    #dump_the_box(url,creds)
 
     #match_data = MatchboxData(url,creds,'mb.json')
     print "Creating Matchbox instance from within module..." 
