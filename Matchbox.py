@@ -7,7 +7,7 @@ import json
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.5.4_092316'
+version = '0.6.0_092316'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -110,9 +110,6 @@ class Matchbox(object):
             meta_key = 'cnvs'
         elif vartype == 'unifiedGeneFusions':
             meta_key = 'fusions'
-
-        # pp(vardata)
-        # sys.exit()
         include_fields = { 
                 'snvs_indels' :  ['alleleFrequency', 'alternative', 'alternativeAlleleObservationCount', 'chromosome', 
                     'exon', 'flowAlternativeAlleleObservationCount', 'flowReferenceAlleleObservations', 'function', 
@@ -122,7 +119,6 @@ class Matchbox(object):
                     'copyNumber'],
                 'fusions'     : ['annotation', 'identifier', 'driverReadCount', 'driverGene', 'partnerGene']
         }
-        #return dict((key, vardata[key]) for key in include_fields[meta_key])
         data = dict((key, vardata[key]) for key in include_fields[meta_key])
         data['type'] = meta_key
         return data
@@ -209,19 +205,23 @@ class MatchboxData(object):
         return output_data
 
     def find_variant_frequency(self,query):
+        '''
+        Based on an input query, generate a dict of patient data that can be further filtered.  Input required is a dict
+        query data in the form:
+            {'snvs' : ['GENE1','GENE2',etc.],
+             'indels' : ['GENE1', 'GENE2', etc.],
+                     .
+                     .
+                     .
+            }
+            and so on
+        Will return a dict of matching data with disease and MOI information
+        '''
         results = {} 
-        # print "query is:"
-        # pp(query)
         for patient in self.data:
-            # print "testing patient: {}".format(patient)
-            # if patient == '11352':
-                # pp(self.data[patient])
             matches = []
             if 'mois' in self.data[patient]:
                 input_data = dict(self.data[patient]['mois'])
-                # pp(dict(input_data))
-
-                # TODO:  How can I add the type to the output?
                 if 'snvs' in query and 'singleNucleotideVariants' in input_data:
                     matches = matches + self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
 
@@ -235,20 +235,13 @@ class MatchboxData(object):
                     matches = matches + self.__get_var_data_by_gene(input_data['unifiedGeneFusions'],query['fusions'])
 
             if matches:
-                # print '-'*50
-                # print "PSN{}:".format(patient)
-                # pp(matches)
-                # print '-'*50
                 results[patient] = {
                     'psn'     : self.data[patient]['psn'],
                     'disease' : self.data[patient]['ctep_term'],
                     'msn'     : self.data[patient]['msn'],
                     'mois'    : matches
                 }
-
-        # pp(results)
         return results
-
 
 def dump_the_box(url,creds):
     '''
