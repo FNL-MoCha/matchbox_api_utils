@@ -7,7 +7,7 @@ import json
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.5.3_092116'
+version = '0.5.4_092316'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -39,6 +39,8 @@ class Matchbox(object):
 
         for record in api_data:
             psn                          = record['patientSequenceNumber']       
+            # XXX
+            # if psn != '10896': continue
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
             patients[psn]['gender']      = record['gender']
@@ -109,11 +111,13 @@ class Matchbox(object):
         elif vartype == 'unifiedGeneFusions':
             meta_key = 'fusions'
 
+        # pp(vardata)
+        # sys.exit()
         include_fields = { 
                 'snvs_indels' :  ['alleleFrequency', 'alternative', 'alternativeAlleleObservationCount', 'chromosome', 
                     'exon', 'flowAlternativeAlleleObservationCount', 'flowReferenceAlleleObservations', 'function', 
                     'gene', 'hgvs', 'identifier', 'oncominevariantclass', 'position', 'readDepth', 'reference', 
-                    'referenceAlleleObservations', 'transcript'], 
+                    'referenceAlleleObservations', 'transcript', 'protein'], 
                 'cnvs'        : ['chromosome', 'gene', 'confidenceInterval5percent', 'confidenceInterval95percent', 
                     'copyNumber'],
                 'fusions'     : ['annotation', 'identifier', 'driverReadCount', 'driverGene', 'partnerGene']
