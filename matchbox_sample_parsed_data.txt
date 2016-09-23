@@ -1,0 +1,315 @@
+[u'10640': {'concordance': u'Y', 'psn': u'10640', 'vcf_path': u'/local/content/ncimatch/matchfiles/patient-10640/biopsy-T-15-000639/ngs-MSN9100_v1_de8b8632-94fa-4f56-a95f-946f117801ab/MSN9100_v1_MSN9100_RNA_v1.vcf', 'mois': defaultdict(<type 'list'>, {'copyNumberVariants': [{'copyNumber': 9.3, 'gene': u'CD44', 'confidenceInterval5percent': 8.61666, 'chromosome': u'chr11', 'confidenceInterval95percent': 10.0375}]}), 'gender': u'FEMALE', 'ir_runid': u'MSN9100_v1_de8b8632-94fa-4f56-a95f-946f117801ab', 'rna_bam_path': u'/local/content/ncimatch/matchfiles/patient-10640/biopsy-T-15-000639/ngs-MSN9100_v1_de8b8632-94fa-4f56-a95f-946f117801ab/IonXpress_021_rawlib_fusions.bam', 'id_field': u'5637d5f70092e01a256a7108', 'msn': u'MSN9100', 'bsn': u'T-15-000639', 'race': u'WHITE', 'medra_code': u'10024193', 'ctep_term': u'Leiomyosarcoma (excluding uterine leiomyosarcoma)', 'dna_bam_path': u'/local/content/ncimatch/matchfiles/patient-10640/biopsy-T-15-000639/ngs-MSN9100_v1_de8b8632-94fa-4f56-a95f-946f117801ab/IonXpress_011_rawlib.bam', 'vcf_name': u'MSN9100_v1_MSN9100_RNA_v1.vcf', 'ethnicity': u'UNKNOWN'}]
+
+
+ u'10640':{  
+      'concordance':u'Y',
+      'psn':u'10640',
+      'vcf_path':u'/local/content/ncimatch/matchfiles/patient-10640/biopsy-T-15-000639/ngs-MSN9100_v1_de8b8632-94fa-4f56-a95f-946f117801ab/MSN9100_v1_MSN9100_RNA_v1.vcf',
+      'mois':defaultdict(<type 'list'>,
+      {  
+         'copyNumberVariants':[  
+            {  
+               'copyNumber':9.3,
+               'gene':u'CD44',
+               'confidenceInterval5percent':8.61666,
+               'chromosome':u'chr11',
+               'confidenceInterval95percent':10.0375
+            }
+         ]
+      }      ),
+      'gender':u'FEMALE',
+      'ir_runid':u'MSN9100_v1_de8b8632-94fa-4f56-a95f-946f117801ab',
+      'rna_bam_path':u'/local/content/ncimatch/matchfiles/patient-10640/biopsy-T-15-000639/ngs-MSN9100_v1_de8b8632-94fa-4f56-a95f-946f117801ab/IonXpress_021_rawlib_fusions.bam',
+      'id_field':u'5637d5f70092e01a256a7108',
+      'msn':u'MSN9100',
+      'bsn':u'T-15-000639',
+      'race':u'WHITE',
+      'medra_code':u'10024193',
+      'ctep_term':u'Leiomyosarcoma (excluding uterine leiomyosarcoma)',
+      'dna_bam_path':u'/local/content/ncimatch/matchfiles/patient-10640/biopsy-T-15-000639/ngs-MSN9100_v1_de8b8632-94fa-4f56-a95f-946f117801ab/IonXpress_011_rawlib.bam',
+      'vcf_name':u'MSN9100_v1_MSN9100_RNA_v1.vcf',
+      'ethnicity':u'UNKNOWN'
+   }
+
+
+   u'10317':{  
+   'concordance':u'Y',
+   'psn':u'10317',
+   'vcf_path':u'/local/content/ncimatch/matchfiles/patient-10317/biopsy-T-15-000288/ngs-MSN5249_v1_89beacbb-0a2d-4f03-b65a-fc580dda2243/MSN5249_v1_MSN5249_RNA_v1.vcf',
+   'mois':defaultdict(<type 'list'>,
+   {  
+      'singleNucleotideVariants':[  
+         {  
+            'flowAlternativeAlleleObservationCount':u'1120',
+            'function':u'missense',
+            'identifier':u'COSM763',
+            'reference':u'G',
+            'alleleFrequency':0.56028,
+            'alternativeAlleleObservationCount':1756,
+            'oncominevariantclass':u'Hotspot',
+            'referenceAlleleObservations':1383,
+            'exon':u'10',
+            'flowReferenceAlleleObservations':u'879',
+            'hgvs':u'c.1633G>A',
+            'position':u'178936091',
+            'alternative':u'A',
+            'gene':u'PIK3CA',
+            'transcript':u'NM_006218.2',
+            'readDepth':1999,
+            'chromosome':u'chr3'
+         },
+         {  
+            'flowAlternativeAlleleObservationCount':u'518',
+            'function':u'nonsense',
+            'identifier':u'.',
+            'reference':u'G',
+            'alleleFrequency':0.259,
+            'alternativeAlleleObservationCount':544,
+            'oncominevariantclass':u'Deleterious',
+            'referenceAlleleObservations':1550,
+            'exon':u'16',
+            'flowReferenceAlleleObservations':u'1482',
+            'hgvs':u'c.3625G>T',
+            'position':u'112174916',
+            'alternative':u'T',
+            'gene':u'APC',
+            'transcript':u'NM_000038.5',
+            'readDepth':2000,
+            'chromosome':u'chr5'
+         },
+         {  
+            'flowAlternativeAlleleObservationCount':u'552',
+            'function':u'nonsense',
+            'identifier':u'.',
+            'reference':u'C',
+            'alleleFrequency':0.469787,
+            'alternativeAlleleObservationCount':550,
+            'oncominevariantclass':u'Deleterious',
+            'referenceAlleleObservations':624,
+            'exon':u'16',
+            'flowReferenceAlleleObservations':u'623',
+            'hgvs':u'c.4230C>A',
+            'position':u'112175521',
+            'alternative':u'A',
+            'gene':u'APC',
+            'transcript':u'NM_000038.5',
+            'readDepth':1175,
+            'chromosome':u'chr5'
+         },
+         {  
+            'flowAlternativeAlleleObservationCount':u'286',
+            'function':u'missense',
+            'identifier':u'COSM532',
+            'reference':u'C',
+            'alleleFrequency':0.21716,
+            'alternativeAlleleObservationCount':0,
+            'oncominevariantclass':u'Hotspot',
+            'referenceAlleleObservations':1327,
+            'exon':u'2',
+            'flowReferenceAlleleObservations':u'1031',
+            'hgvs':u'c.38G>A',
+            'position':u'25398281',
+            'alternative':u'T',
+            'gene':u'KRAS',
+            'transcript':u'NM_033360.3',
+            'readDepth':1317,
+            'chromosome':u'chr12'
+         },
+         {  
+            'flowAlternativeAlleleObservationCount':u'348',
+            'function':u'missense',
+            'identifier':u'COSM10808',
+            'reference':u'T',
+            'alleleFrequency':0.64564,
+            'alternativeAlleleObservationCount':0,
+            'oncominevariantclass':u'Hotspot',
+            'referenceAlleleObservations':520,
+            'exon':u'5',
+            'flowReferenceAlleleObservations':u'191',
+            'hgvs':u'c.488A>G',
+            'position':u'7578442',
+            'alternative':u'C',
+            'gene':u'TP53',
+            'transcript':u'NM_000546.5',
+            'readDepth':539,
+            'chromosome':u'chr17'
+         }
+      ]
+   }   ),
+   'gender':u'FEMALE',
+   'ir_runid':u'MSN5249_v1_89beacbb-0a2d-4f03-b65a-fc580dda2243',
+   'rna_bam_path':u'/local/content/ncimatch/matchfiles/patient-10317/biopsy-T-15-000288/ngs-MSN5249_v1_89beacbb-0a2d-4f03-b65a-fc580dda2243/IonXpress_040_rawlib_fusions.bam',
+   'id_field':u'561299490092b7d91dc64e7e',
+   'msn':u'MSN5249',
+   'bsn':u'T-15-000288',
+   'race':u'BLACK_OR_AFRICAN_AMERICAN',
+   'medra_code':u'10009951',
+   'ctep_term':u'Adenocarcinoma of the colon',
+   'dna_bam_path':u'/local/content/ncimatch/matchfiles/patient-10317/biopsy-T-15-000288/ngs-MSN5249_v1_89beacbb-0a2d-4f03-b65a-fc580dda2243/IonXpress_039_rawlib.bam',
+   'vcf_name':u'MSN5249_v1_MSN5249_RNA_v1.vcf',
+   'ethnicity':u'UNKNOWN'
+}
+
+u'10314':{  
+   'concordance':u'Y',
+   'psn':u'10314',
+   'vcf_path':u'/local/content/ncimatch/matchfiles/patient-10314/biopsy-T-15-000315/ngs-MSN6973_v1_385ef850-c183-4be4-b6a0-860e6dc5a463/MSN6973_v1_MSN6973_RNA_v1.vcf',
+   'mois':defaultdict(<type 'list'>,
+   {  
+      'singleNucleotideVariants':[  
+         {  
+            'flowAlternativeAlleleObservationCount':u'429',
+            'function':u'missense',
+            'identifier':u'COSM989',
+            'reference':u'G',
+            'alleleFrequency':0.361415,
+            'alternativeAlleleObservationCount':429,
+            'oncominevariantclass':u'Hotspot',
+            'referenceAlleleObservations':757,
+            'exon':u'9',
+            'flowReferenceAlleleObservations':u'758',
+            'hgvs':u'c.1130G>A',
+            'position':u'24176339',
+            'alternative':u'A',
+            'gene':u'SMARCB1',
+            'transcript':u'NM_003073.3',
+            'readDepth':1187,
+            'chromosome':u'chr22'
+         },
+         {  
+            'flowAlternativeAlleleObservationCount':u'391',
+            'function':u'missense',
+            'identifier':u'COSM521',
+            'reference':u'C',
+            'alleleFrequency':0.280086,
+            'alternativeAlleleObservationCount':0,
+            'oncominevariantclass':u'Hotspot',
+            'referenceAlleleObservations':1483,
+            'exon':u'2',
+            'flowReferenceAlleleObservations':u'1005',
+            'hgvs':u'c.35G>A',
+            'position':u'25398284',
+            'alternative':u'T',
+            'gene':u'KRAS',
+            'transcript':u'NM_033360.3',
+            'readDepth':1396,
+            'chromosome':u'chr12'
+         }
+      ],
+      'indels':[  
+         {  
+            'flowAlternativeAlleleObservationCount':u'326',
+            'function':u'nonframeshiftDeletion',
+            'identifier':u'COSM6128',
+            'reference':u'CTT',
+            'alleleFrequency':0.283232,
+            'alternativeAlleleObservationCount':0,
+            'oncominevariantclass':u'Hotspot',
+            'referenceAlleleObservations':1170,
+            'exon':u'3',
+            'flowReferenceAlleleObservations':u'825',
+            'hgvs':u'c.131_133delCTT',
+            'position':u'41266134',
+            'alternative':u'-',
+            'gene':u'CTNNB1',
+            'transcript':u'NM_001904.3',
+            'readDepth':1151,
+            'chromosome':u'chr3'
+         },
+         {  
+            'flowAlternativeAlleleObservationCount':u'144',
+            'function':u'frameshiftDeletion',
+            'identifier':u'.',
+            'reference':u'GA',
+            'alleleFrequency':0.280702,
+            'alternativeAlleleObservationCount':141,
+            'oncominevariantclass':u'Deleterious',
+            'referenceAlleleObservations':324,
+            'exon':u'34',
+            'flowReferenceAlleleObservations':u'369',
+            'hgvs':u'c.6820_6821delTC',
+            'position':u'139391370',
+            'alternative':u'-',
+            'gene':u'NOTCH1',
+            'transcript':u'NM_017617.3',
+            'readDepth':513,
+            'chromosome':u'chr9'
+         }
+      ]
+   }   ),
+   'gender':u'FEMALE',
+   'ir_runid':u'MSN6973_v1_385ef850-c183-4be4-b6a0-860e6dc5a463',
+   'rna_bam_path':u'/local/content/ncimatch/matchfiles/patient-10314/biopsy-T-15-000315/ngs-MSN6973_v1_385ef850-c183-4be4-b6a0-860e6dc5a463/IonXpress_087_rawlib_fusions.bam',
+   'id_field':u'560f05730092b7d91dc64e7b',
+   'msn':u'MSN6973',
+   'bsn':u'T-15-000315',
+   'race':u'WHITE',
+   'medra_code':u'10009951',
+   'ctep_term':u'Adenocarcinoma of the colon',
+   'dna_bam_path':u'/local/content/ncimatch/matchfiles/patient-10314/biopsy-T-15-000315/ngs-MSN6973_v1_385ef850-c183-4be4-b6a0-860e6dc5a463/IonXpress_095_rawlib.bam',
+   'vcf_name':u'MSN6973_v1_MSN6973_RNA_v1.vcf',
+   'ethnicity':u'UNKNOWN'
+}
+
+{'bsn': 'T-16-000127',
+ 'concordance': 'Y',
+ 'ctep_term': 'Adenocarcinoma of the colon',
+ 'dna_bam_path': '/local/content/ncimatch/matchfiles/patient-10896/biopsy-T-16-000127/ngs-MSN11882_v1_1c62b32b-061d-44b7-a5c6-3d835ab3e412/IonXpress_057_rawlib.bam',
+ 'ethnicity': 'NOT_HISPANIC_OR_LATINO',
+ 'gender': 'MALE',
+ 'id_field': '57695d8a0092843479451160',
+ 'ir_runid': 'MSN11882_v1_1c62b32b-061d-44b7-a5c6-3d835ab3e412',
+ 'medra_code': '10009951',
+ 'mois': defaultdict(<type 'list'>, {'singleNucleotideVariants': [{'flowAlternativeAlleleObservationCount': '430', 'function': 'missense', 'identifier': 'COSM760', 'reference': 'G', 'alleleFrequency': 0.219612, 'alternativeAlleleObservationCount': 937, 'oncominevariantclass': 'Hotspot', 'referenceAlleleObservations': 3323, 'exon': '10', 'flowReferenceAlleleObservations': '1528', 'hgvs': 'c.1624G>A', 'position': '178936082', 'alternative': 'A', 'gene': 'PIK3CA', 'transcript': 'NM_006218.2', 'readDepth': 1958, 'chromosome': 'chr3'}, {'flowAlternativeAlleleObservationCount': '926', 'function': 'nonsense', 'identifier': '.', 'reference': 'C', 'alleleFrequency': 0.463928, 'alternativeAlleleObservationCount': 1110, 'oncominevariantclass': 'Deleterious', 'referenceAlleleObservations': 1270, 'exon': '10', 'flowReferenceAlleleObservations': '1070', 'hgvs': 'c.994C>T', 'position': '112154723', 'alternative': 'T', 'gene': 'APC', 'transcript': 'NM_000038.5', 'readDepth': 1996, 'chromosome': 'chr5'}, {'flowAlternativeAlleleObservationCount': '351', 'function': 'nonsense', 'identifier': '.', 'reference': 'C', 'alleleFrequency': 0.1755, 'alternativeAlleleObservationCount': 563, 'oncominevariantclass': 'Deleterious', 'referenceAlleleObservations': 2656, 'exon': '16', 'flowReferenceAlleleObservations': '1649', 'hgvs': 'c.2626C>T', 'position': '112173917', 'alternative': 'T', 'gene': 'APC', 'transcript': 'NM_000038.5', 'readDepth': 2000, 'chromosome': 'chr5'}, {'flowAlternativeAlleleObservationCount': '812', 'function': 'missense', 'identifier': 'COSM532', 'reference': 'C', 'alleleFrequency': 0.408245, 'alternativeAlleleObservationCount': 1074, 'oncominevariantclass': 'Hotspot', 'referenceAlleleObservations': 1550, 'exon': '2', 'flowReferenceAlleleObservations': '1177', 'hgvs': 'c.38G>A', 'position': '25398281', 'alternative': 'T', 'gene': 'KRAS', 'transcript': 'NM_033360.3', 'readDepth': 1989, 'chromosome': 'chr12'}], 'unifiedGeneFusions': [{'driverReadCount': 2280, 'identifier': 'MET-MET.M13M15', 'driverGene': 'MET', 'annotation': '-', 'partnerGene': 'MET'}]}),
+ 'msn': 'MSN11882',
+ 'psn': '10896',
+ 'race': u'WHITE',
+ 'rna_bam_path': '/local/content/ncimatch/matchfiles/patient-10896/biopsy-T-16-000127/ngs-MSN11882_v1_1c62b32b-061d-44b7-a5c6-3d835ab3e412/IonXpress_049_rawlib_fusions.bam',
+ 'vcf_name': 'MSN11882_v1_MSN11882_RNA_v1.vcf',
+ 'vcf_path': '/local/content/ncimatch/matchfiles/patient-10896/biopsy-T-16-000127/ngs-MSN11882_v1_1c62b32b-061d-44b7-a5c6-3d835ab3e412/MSN11882_v1_MSN11882_RNA_v1.vcf'}
+
+
+# Example output
+Subject    MOI_ID   MOI_PROTEIN   MOI_POSITION      HGVS
+   10079   COSM757   p.Cys420Arg      178927980 c.1258T>C
+   10165   COSM763   p.Glu545Lys      178936091 c.1633G>A
+   10165 COSM87306   p.Glu726Lys      178938934 c.2176G>A
+   10342   COSM760   p.Glu542Lys      178936082 c.1624G>A
+   10537   COSM760   p.Glu542Lys      178936082 c.1624G>A
+   10909 COSM13570   p.Lys111Glu      178916944  c.331A>G
+   10912   COSM763   p.Glu545Lys      178936091 c.1633G>A
+   10938   COSM763   p.Glu545Lys      178936091 c.1633G>A
+   10955   COSM763   p.Glu545Lys      178936091 c.1633G>A
+   11109   COSM763   p.Glu545Lys      178936091 c.1633G>A
+   11129   COSM775  p.His1047Arg      178952085 c.3140A>G
+   11329   COSM763   p.Glu545Lys      178936091 c.1633G>A
+   11357   COSM775  p.His1047Arg      178952085 c.3140A>G
+   11384   COSM757   p.Cys420Arg      178927980 c.1258T>C
+   11414   COSM763   p.Glu545Lys      178936091 c.1633G>A
+   10874   COSM760   p.Glu542Lys      178936082 c.1624G>A
+   10911   COSM763   p.Glu545Lys      178936091 c.1633G>A
+   10969   COSM760   p.Glu542Lys      178936082 c.1624G>A
+   10972   COSM751   p.Gly118Asp      178917478  c.353G>A
+   11147   COSM776  p.His1047Leu      178952085 c.3140A>T
+   11425   COSM760   p.Glu542Lys      178936082 c.1624G>A
+   11520   COSM763   p.Glu545Lys      178936091 c.1633G>A
+   11564   COSM760   p.Glu542Lys      178936082 c.1624G>A
+   11622   COSM757   p.Cys420Arg      178927980 c.1258T>C
+   11786   COSM763   p.Glu545Lys      178936091 c.1633G>A
+
+The disease sites are
+# Site
+3 Adenocarcinoma of the colon
+2 Carcinoma, NOS
+1 Carcinosarcoma of the uterus
+1 Cervical cancer, NOS
+2 Endometrioid endometrial adenocarcinoma
+1 Leiomyosarcoma (excluding uterine leiomyosarcoma)
+1 Liver and hepatobiliary cancer, NOS
+1 Neuroendocrine cancer, NOS
+2 Ovarian epithelial cancer
+1 Head and neck cancer, NOS
+1 Head and neck squamous cell carcinoma, NOS
+2 Pharyngeal squamous cell carcinoma
+3 Squamous cell carcinoma of the anus
+3 Squamous cervical cancer
