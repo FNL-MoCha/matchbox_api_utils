@@ -4,8 +4,6 @@
 # some bugs in the LWP modules.  Re-wrote this to accomodate that as well as deal with SSL 
 # issues that seem to be plaguing the perl version of the script across platforms.
 #
-# TODO: 
-#
 # 4/1/2015 - D Sims
 ###############################################################################################
 import sys
@@ -43,7 +41,11 @@ def convert_time(millis):
 
 def retrieve_json(url):
     '''Request data dump and return JSON result from MATCHBox API'''
-    request = requests.get(url)
+    creds = {
+        'username' : 'trametinib',
+        'password' : 'COSM478K601E',
+    }
+    request = requests.get(url, data = creds)
     try:
         request.raise_for_status()
     except requests.exceptions.HTTPError as error:
@@ -66,7 +68,7 @@ def gen_patients_list(api_table):
         # if psn != '10010': continue # This is example of a run with 1 biopsy, 1 MSN, and 2 sequencing runs.
         # if psn != '10607': continue # This is example of a run with 1 biopsy, 1 MSN, and 1 sequencing run.
         # if psn != '10528': continue # This is an example of a run with 1 biopsy, 1 MSN, 2 seq runs   => SNVs, Indels, adn Fusions.
-        if not psn.startswith('101'): continue  # get batch of these to play with.
+        # if not psn.startswith('101'): continue  # get batch of these to play with.
 
         patients[psn]['psn']         = record['patientSequenceNumber']
         patients[psn]['concordance'] = record['concordance']
@@ -97,7 +99,7 @@ def gen_patients_list(api_table):
             if str(biopsy['failure']) == 'True': continue # Skip over failed biopsies.
             else:
                 patients[psn]['bsn']              = biopsy['biopsySequenceNumber']
-                patients[psn]['pten']             = biopsy['ptenIhcResult']
+                # patients[psn]['pten']             = biopsy['ptenIhcResult']
                 
                 for result in biopsy['nextGenerationSequences']:
                     # For now just take only confirmed results.
@@ -151,24 +153,28 @@ def main():
 
     # Get whole dataset as big JSON that we can munge
     json_data = retrieve_json(api_url)
-    # _jprint(json_data)
+    _jprint(json_data)
+    sys.exit()
 
     # Get very short poignant dataset from API for downstream queries
     patients = gen_patients_list(json_data)
-    # pprint(dict(patients))
-    # sys.exit()
 
+    # TODO: Seems that the data structure and query all work well.  Need to make some query functions for the data now.  Would love to figure out how to make a class object for this with some real methods!
     # Simple summary table output
     desired_fields = ('psn', 'race', 'gender', 'ctep_term', 'medra_code', 'pten', 'bsn', 'msn', 'vcf_name')
     template = '{:9}{:35}{:9}{:55}{:12}{:10}{:15}{:11}{}'
-    print template.format(*desired_fields)
+
+    # desired_fields = ('psn', 'race', 'gender', 'ctep_term', 'medra_code', 'pten', 'bsn', 'msn', 'vcf_path')
+    # template = '{:9}{:35}{:9}{:55}{:12}{:10}{:15}{:11}{}'
+    # print template.format(*desired_fields)
+
     for patient in sorted(patients):
         results = []
         try:
             msn = patients[patient]['msn']
             for elem in desired_fields:
                 results.append(patients[patient][elem])
-        except: 
+        except KeyError: 
             continue
         print template.format(*results)
 
