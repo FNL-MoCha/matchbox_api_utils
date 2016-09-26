@@ -1,10 +1,7 @@
 #!/usr/bin/python
-# TODO:  Need credentials only sometimes.  When you are off NIH subdomain, don't need credentials.  When you are on subdomain, need them.  VPN is wierd.
-import sys
 import os
 import requests
 import json
-import re
 from collections import defaultdict
 from pprint import pprint as pp
 
@@ -34,14 +31,16 @@ class Matchbox(object):
         json_data = request.json(object_hook=self.__ascii_encode_dict)
         return json_data
 
-    def gen_patients_list(self):
+    def gen_patients_list(self,test_patient=None):
         patients = defaultdict(dict)
         api_data = self.api_call()
-
+        # print "test patient: %s" % test_patient
         for record in api_data:
             psn                          = record['patientSequenceNumber']       
             # XXX
-            if psn != '10896': continue
+            # if psn != '10896': continue
+            if test_patient and psn != test_patient:
+                continue
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
             patients[psn]['gender']      = record['gender']
@@ -70,15 +69,10 @@ class Matchbox(object):
             for biopsy in biopsies:
                 if str(biopsy['failure']) == 'True': continue # Skip over failed biopsies.
                 else:
-                    patients[psn]['bsn']              = biopsy['biopsySequenceNumber']
-                    # TODO: Add other IHC assay data in here.
-                    ihc_data = self.__get_ihc_results(biopsy['assayMessagesWithResult'])
-                    pp(ihc_data)
-                    sys.exit()
-                    # patients[psn]['pten']             = biopsy['ptenIhcResult']
+                    patients[psn]['bsn'] = biopsy['biopsySequenceNumber']
+                    patients[psn]['ihc'] = self.__get_ihc_results(biopsy['assayMessagesWithResult'])
                     
                     for result in biopsy['nextGenerationSequences']:
-                        # For now just take only confirmed results.
                         if result['status'] != 'CONFIRMED': 
                             continue 
                         patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
@@ -94,18 +88,11 @@ class Matchbox(object):
         return patients
 
     def __get_ihc_results(self,ihc_data):
-        # ihc_results = {result['biomarker'].rstrip('s').lstrip('ICC') : result['result'] for result in ihc_data}
-        return {result['biomarker'].rstrip('s').lstrip('ICC') : result['result'] for result in ihc_data}
-        # pp(dict(ihc_results))
-        # ihc_results = {}
-        # for result in ihc_data:
-            # print result.keys()
-
-            # print ihc_data[result]['biomarker']
-            # print result['biomarker'].rstrip('s').lstrip('ICC')
-            # gene = re.match('ICC([-\w]+)s',ihc_data[result]['biomarker']).group(1)
-            # print gene
-
+        ihc_results = {result['biomarker'].rstrip('s').lstrip('ICC') : result['result'] for result in ihc_data}
+        # Won't always get RB IHC; depends on if we have other qualifying genomic event.  Fill in data anyway.
+        if 'RB' not in ihc_results:
+            ihc_results['RB'] = 'ND'
+        return ihc_results
 
     def __proc_ngs_data(self,ngs_results):
         '''Create and return a dict of variant call data that can be stored in the patient's obj'''
@@ -174,12 +161,12 @@ class Matchbox(object):
         return fusion_data
 
 class MatchboxData(object):
-    def __init__(self,url,creds,dumped_data=None):
+    def __init__(self,url,creds,dumped_data=None,test_patient=None):
         if dumped_data:
             self.data = self.__load_dumped_json(dumped_data)
         else:
             self.matchbox = Matchbox(url,creds)
-            self.data = self.matchbox.gen_patients_list()
+            self.data = self.matchbox.gen_patients_list(test_patient)
 
     @staticmethod
     def __load_dumped_json(json_file):
