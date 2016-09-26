@@ -4,10 +4,11 @@ import sys
 import os
 import requests
 import json
+import re
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.6.0_092316'
+version = '0.8.0_092616'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -17,13 +18,13 @@ class Matchbox(object):
     def __repr__(self):
         return "%s(%r)" % (self.__class__, self.__dict__)
 
-    def __ascii_encode_dict(self,data):
+    @staticmethod
+    def __ascii_encode_dict(data):
         '''From SO9590382, a method to encode the JSON obj into ascii instead of unicode.'''
         ascii_encode = lambda x: x.encode('ascii') if isinstance(x,unicode) else x
         return dict(map(ascii_encode,pair) for pair in data.items())
 
     def api_call(self):
-        # TODO:  Need to work on error handling a bit better.  Credentials issues - I think - are silently failing.
         request = requests.get(self.url,data = self.creds)
         try:
             request.raise_for_status()
@@ -40,7 +41,7 @@ class Matchbox(object):
         for record in api_data:
             psn                          = record['patientSequenceNumber']       
             # XXX
-            # if psn != '10896': continue
+            if psn != '10896': continue
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
             patients[psn]['gender']      = record['gender']
@@ -71,6 +72,9 @@ class Matchbox(object):
                 else:
                     patients[psn]['bsn']              = biopsy['biopsySequenceNumber']
                     # TODO: Add other IHC assay data in here.
+                    ihc_data = self.__get_ihc_results(biopsy['assayMessagesWithResult'])
+                    pp(ihc_data)
+                    sys.exit()
                     # patients[psn]['pten']             = biopsy['ptenIhcResult']
                     
                     for result in biopsy['nextGenerationSequences']:
@@ -88,6 +92,20 @@ class Matchbox(object):
                         variant_report                = result['ionReporterResults']['variantReport']
                         patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
         return patients
+
+    def __get_ihc_results(self,ihc_data):
+        # ihc_results = {result['biomarker'].rstrip('s').lstrip('ICC') : result['result'] for result in ihc_data}
+        return {result['biomarker'].rstrip('s').lstrip('ICC') : result['result'] for result in ihc_data}
+        # pp(dict(ihc_results))
+        # ihc_results = {}
+        # for result in ihc_data:
+            # print result.keys()
+
+            # print ihc_data[result]['biomarker']
+            # print result['biomarker'].rstrip('s').lstrip('ICC')
+            # gene = re.match('ICC([-\w]+)s',ihc_data[result]['biomarker']).group(1)
+            # print gene
+
 
     def __proc_ngs_data(self,ngs_results):
         '''Create and return a dict of variant call data that can be stored in the patient's obj'''
@@ -163,9 +181,14 @@ class MatchboxData(object):
             self.matchbox = Matchbox(url,creds)
             self.data = self.matchbox.gen_patients_list()
 
-    def __load_dumped_json(self,json_file):
+    @staticmethod
+    def __load_dumped_json(json_file):
         with open(json_file) as fh:
             return json.load(fh)
+
+    @staticmethod
+    def __get_var_data_by_gene(data,gene_list):
+        return [elem for elem in data if elem['gene'] in gene_list ]
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__, self.__dict__)
@@ -180,9 +203,6 @@ class MatchboxData(object):
         '''Dump the whole DB as a JSON Obj'''
         with open('mb.json', 'w') as outfile:
             json.dump(self.data,outfile,sort_keys=True,indent=4)
-
-    def __get_var_data_by_gene(self,data,gene_list):
-        return [elem for elem in data if elem['gene'] in gene_list ]
 
     def get_patient_summary(self):
         total_patients = 0
@@ -243,26 +263,11 @@ class MatchboxData(object):
                 }
         return results
 
-def dump_the_box(url,creds):
-    '''
-    Dump out the whole DB as a JSON file that I can import.
-    '''
-    print "Dumping matchbox into mb.json for easier code testing...",
-    match_data = MatchboxData(url,creds)
-    match_data._matchbox_dump()
-    print "Done!"
-    sys.exit()
-
 if __name__=='__main__':
     url = 'https://matchbox.nci.nih.gov/match/common/rs/getPatients'
     creds = {
         'username' : 'trametinib',
         'password' : 'COSM478K601E',
     }
-
-    # XXX: if we need to dump it!
-    #dump_the_box(url,creds)
-
-    #match_data = MatchboxData(url,creds,'mb.json')
     print "Creating Matchbox instance from within module..." 
     match_data = MatchboxData(url,creds)
