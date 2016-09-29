@@ -5,15 +5,12 @@ import json
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.8.0_092616'
+version = '0.8.3_092916'
 
 class Matchbox(object):
     def __init__(self,url,creds):
         self.url = url
         self.creds = creds
-
-    def __repr__(self):
-        return "%s(%r)" % (self.__class__, self.__dict__)
 
     @staticmethod
     def __ascii_encode_dict(data):
@@ -31,15 +28,13 @@ class Matchbox(object):
         json_data = request.json(object_hook=self.__ascii_encode_dict)
         return json_data
 
-    def gen_patients_list(self,test_patient=None):
+    def gen_patients_list(self,test_patients=None):
         patients = defaultdict(dict)
         api_data = self.api_call()
         # print "test patient: %s" % test_patient
         for record in api_data:
             psn                          = record['patientSequenceNumber']       
-            # XXX
-            # if psn != '10896': continue
-            if test_patient and psn != test_patient:
+            if test_patients and psn not in test_patients:
                 continue
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
@@ -87,7 +82,8 @@ class Matchbox(object):
                         patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
         return patients
 
-    def __get_ihc_results(self,ihc_data):
+    @staticmethod
+    def __get_ihc_results(ihc_data):
         ihc_results = {result['biomarker'].rstrip('s').lstrip('ICC') : result['result'] for result in ihc_data}
         # Won't always get RB IHC; depends on if we have other qualifying genomic event.  Fill in data anyway.
         if 'RB' not in ihc_results:
@@ -108,7 +104,8 @@ class Matchbox(object):
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
         return variant_call_data
 
-    def __gen_variant_dict(self,vardata,vartype):
+    @staticmethod
+    def __gen_variant_dict(vardata,vartype):
         if vartype == 'singleNucleotideVariants' or vartype == 'indels':
             meta_key = 'snvs_indels'
         elif vartype == 'copyNumberVariants':
@@ -128,7 +125,8 @@ class Matchbox(object):
         data['type'] = meta_key
         return data
 
-    def __remap_fusion_genes(self,fusion_data):
+    @staticmethod
+    def __remap_fusion_genes(fusion_data):
         '''
         Fix the fusion driver / partner annotation since it is not always correct the way it's being parsed.  Also
         add in a 'gene' field so that it's easier to aggregate data later on (the rest of the elements use 'gene').
@@ -136,8 +134,6 @@ class Matchbox(object):
         drivers = ['ABL1','AKT3','ALK','AXL','BRAF','EGFR','ERBB2','ERG','ETV1','ETV1a','ETV1b','ETV4','ETV4a',
                    'ETV5','ETV5a','ETV5d','FGFR1','FGFR2','FGFR3','MET','NTRK1','NTRK2','NTRK3','PDGFRA','PPARG',
                    'RAF1','RET','ROS1']
-        driver = ''
-        partner = ''
         for fusion in fusion_data:
             gene1 = fusion['driverGene']
             gene2 = fusion['partnerGene']
@@ -148,11 +144,9 @@ class Matchbox(object):
 
             # figure out others.
             if gene1 in drivers:
-                driver = gene1
-                partner = gene2
+                (driver,partner) = (gene1,gene2)
             elif gene2 in drivers:
-                driver = gene2
-                partner = gene1
+                (driver,partner) = (gene2,gene1)
             else:
                 partner = [gene1,gene2]
                 driver = 'UNKNOWN'
@@ -177,8 +171,9 @@ class MatchboxData(object):
     def __get_var_data_by_gene(data,gene_list):
         return [elem for elem in data if elem['gene'] in gene_list ]
 
-    def __repr__(self):
-        return "%s(%r)" % (self.__class__, self.__dict__)
+    def __str__(self):
+        # print "__str__ in MatchboxData"
+        return json.dumps(self.data)
 
     def __getitem__(self,key):
         return self.data[key]
@@ -191,7 +186,7 @@ class MatchboxData(object):
         with open('mb.json', 'w') as outfile:
             json.dump(self.data,outfile,sort_keys=True,indent=4)
 
-    def get_patient_summary(self):
+    def get_disease_summary(self):
         total_patients = 0
         diseases = defaultdict(int)
         for psn in self.data:
@@ -201,14 +196,30 @@ class MatchboxData(object):
             diseases[self.data[psn]['ctep_term']] += 1
         return total_patients, diseases
 
+    def __get_patient_disease(self,psn):
+        return (psn,self.data[psn]['ctep_term'])
+
     def get_patients_and_disease(self,query_psn=None):
-        '''Print out a list of patients and their disease.'''
+        '''
+        Print out a list of patients and their disease. Can either input a single psn to query, or can input
+        a list of PSNs.
+        '''
         output_data = []
+        psn_list = []
         if query_psn:
-            return (query_psn,self.data[query_psn]['ctep_term'])
+            psn_list = query_psn
         else:
-            for psn in self.data:
-                output_data.append((psn,self.data[psn]['ctep_term']))
+            psn_list = self.data.keys()
+
+        for psn in psn_list:
+            output_data.append(self.__get_patient_disease(psn))
+
+        # if query_psn:
+            # for psn in query_psn:
+                # output_data.append(self.__get_patient_disease(psn))
+        # else:
+            # for psn in self.data:
+                # output_data.append(self.__get_patient_disease(psn))
         return output_data
 
     def find_variant_frequency(self,query):
@@ -225,7 +236,10 @@ class MatchboxData(object):
         Will return a dict of matching data with disease and MOI information
         '''
         results = {} 
+        count = 0
         for patient in self.data:
+            if 'msn' in self.data[patient]: 
+                count += 1
             matches = []
             if 'mois' in self.data[patient]:
                 input_data = dict(self.data[patient]['mois'])
@@ -248,7 +262,7 @@ class MatchboxData(object):
                     'msn'     : self.data[patient]['msn'],
                     'mois'    : matches
                 }
-        return results
+        return results,count
 
 if __name__=='__main__':
     url = 'https://matchbox.nci.nih.gov/match/common/rs/getPatients'
@@ -257,4 +271,7 @@ if __name__=='__main__':
         'password' : 'COSM478K601E',
     }
     print "Creating Matchbox instance from within module..." 
-    match_data = MatchboxData(url,creds)
+    patient = '10896'
+    match_data = MatchboxData(url,creds,None,patient)
+    print match_data
+
