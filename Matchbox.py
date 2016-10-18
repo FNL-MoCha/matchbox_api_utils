@@ -1,11 +1,12 @@
-#!/usr/bin/python
+#!/usr/local/bin/python3
 import os
 import requests
 import json
+import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.8.3_092916'
+version = '0.8.4_101816'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -31,7 +32,7 @@ class Matchbox(object):
     def gen_patients_list(self,test_patients=None):
         patients = defaultdict(dict)
         api_data = self.api_call()
-        # print "test patient: %s" % test_patient
+        # print("test patient: %s" % test_patients)
         for record in api_data:
             psn                          = record['patientSequenceNumber']       
             if test_patients and psn not in test_patients:
@@ -172,7 +173,6 @@ class MatchboxData(object):
         return [elem for elem in data if elem['gene'] in gene_list ]
 
     def __str__(self):
-        # print "__str__ in MatchboxData"
         return json.dumps(self.data)
 
     def __getitem__(self,key):
@@ -181,9 +181,14 @@ class MatchboxData(object):
     def __iter__(self):
         return self.data.itervalues()
 
-    def _matchbox_dump(self):
+    def _matchbox_dump(self,filename=None):
         '''Dump the whole DB as a JSON Obj'''
-        with open('mb.json', 'w') as outfile:
+        # with open('mb.json', 'w') as outfile:
+        today = datetime.date.today()
+        formatted_date = today.strftime('%m%d%y')
+        if not filename:
+            filename = 'mb_' + formatted_date + '.json'
+        with open(filename, 'w') as outfile:
             json.dump(self.data,outfile,sort_keys=True,indent=4)
 
     def get_disease_summary(self):
@@ -213,13 +218,6 @@ class MatchboxData(object):
 
         for psn in psn_list:
             output_data.append(self.__get_patient_disease(psn))
-
-        # if query_psn:
-            # for psn in query_psn:
-                # output_data.append(self.__get_patient_disease(psn))
-        # else:
-            # for psn in self.data:
-                # output_data.append(self.__get_patient_disease(psn))
         return output_data
 
     def find_variant_frequency(self,query):
@@ -270,8 +268,7 @@ if __name__=='__main__':
         'username' : 'trametinib',
         'password' : 'COSM478K601E',
     }
-    print "Creating Matchbox instance from within module..." 
+    print("Creating Matchbox instance from within module...")
     patient = '10896'
     match_data = MatchboxData(url,creds,None,patient)
-    print match_data
-
+    print(match_data)
