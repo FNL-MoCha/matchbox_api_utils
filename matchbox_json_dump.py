@@ -3,10 +3,11 @@ import sys
 import os
 import json
 import csv
+import datetime
 from pprint import pprint as pp
 from Matchbox import *
 
-version = '1.0.0_092916'
+version = '1.1.0_092916'
 
 class Config(object):
     def __init__(self,config_file):
@@ -34,6 +35,10 @@ if __name__=='__main__':
     config_file = 'config.json'
     config_data = Config.read_config(config_file)
     data = MatchboxData(config_data['url'],config_data['creds'])
-    print "Dumping matchbox into mb.json for easier code testing...",
-    data._matchbox_dump()
+    print "Dumping matchbox as a JSON file for easier and faster code testing...",
+    try:
+        outfile = sys.argv[1]
+        data._matchbox_dump(outfile)
+    except IndexError:
+        data._matchbox_dump()
     print "Done!"
