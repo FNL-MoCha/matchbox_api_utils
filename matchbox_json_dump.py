@@ -1,13 +1,11 @@
-#!/usr/bin/python
+#!/usr/local/bin/python3
 import sys
 import os
 import json
-import csv
-import datetime
+import argparse
 from pprint import pprint as pp
-from Matchbox import *
 
-version = '1.1.0_092916'
+from Matchbox import *
 
 class Config(object):
     def __init__(self,config_file):
@@ -31,14 +29,33 @@ class Config(object):
             data = json.load(fh)
         return data
 
+def get_args():
+    version = '1.2.0_110116'
+    parser = argparse.ArgumentParser(
+        formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
+        description=
+        '''
+        Get parsed dataset from MATCHBox and dump as a JSON object that we can use later on to speed up development and
+        periodic searching for data.  
+        '''
+    )
+    parser.add_argument('-v', '--version', action='version', version = '%(prog)s  -  ' + version)
+    parser.add_argument('-o', '--outfile', metavar='<out.json>', help='Name of output JSON file. DEFAULT: "mb_<datestring>.json"')
+    args = parser.parse_args()
+    return args
+
+
 if __name__=='__main__':
     config_file = 'config.json'
     config_data = Config.read_config(config_file)
+
+    args = get_args()
+
+    print("Dumping matchbox as a JSON file for easier and faster code testing...", end='')
     data = MatchboxData(config_data['url'],config_data['creds'])
-    print "Dumping matchbox as a JSON file for easier and faster code testing...",
     try:
-        outfile = sys.argv[1]
+        outfile = args.outfile
         data._matchbox_dump(outfile)
     except IndexError:
         data._matchbox_dump()
-    print "Done!"
+    print("Done!")
