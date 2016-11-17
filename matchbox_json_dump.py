@@ -51,11 +51,14 @@ if __name__=='__main__':
 
     args = get_args()
 
-    print("Dumping matchbox as a JSON file for easier and faster code testing...", end='')
+    # print("Dumping matchbox as a JSON file for easier and faster code testing...", end='')
+    sys.stdout.write("Dumping matchbox as a JSON file for easier and faster code testing...")
+    sys.stdout.flush()
     data = MatchboxData(config_data['url'],config_data['creds'])
     try:
         outfile = args.outfile
         data._matchbox_dump(outfile)
     except IndexError:
         data._matchbox_dump()
-    print("Done!")
+    # print("Done!")
+    sys.stdout.write("Done!")
