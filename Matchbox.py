@@ -6,7 +6,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.8.4_101816'
+version = '0.8.5_111716'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -16,7 +16,8 @@ class Matchbox(object):
     @staticmethod
     def __ascii_encode_dict(data):
         '''From SO9590382, a method to encode the JSON obj into ascii instead of unicode.'''
-        ascii_encode = lambda x: x.encode('ascii') if isinstance(x,unicode) else x
+        # ascii_encode = lambda x: x.encode('ascii') if isinstance(x,unicode) else x
+        ascii_encode = lambda x: x.encode('ascii') if isinstance(x,bytes) else x
         return dict(map(ascii_encode,pair) for pair in data.items())
 
     def api_call(self):
