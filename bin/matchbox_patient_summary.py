@@ -6,8 +6,14 @@ import argparse
 import datetime
 from pprint import pprint as pp
 
+# Dirty hack for right now to see if we can figure out how call this as an external script
+# TODO: Fix this once we make a real package.
+bin_path = os.path.dirname(os.path.realpath(__file__)).rstrip('/bin')
+sys.path.append(bin_path)
+from Matchbox import MatchboxData
+
 def get_args():
-    version = '0.0.1_111816'
+    version = '0.6.0_112216'
     parser = argparse.ArgumentParser(
         formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
         description=
@@ -15,6 +21,7 @@ def get_args():
         <description>
         '''
     )
+    parser.add_argument('data', help='MATCHBox JSON file containing patient data, usually from matchbox_json_dump.py')
     parser.add_argument('-p', '--psn', metavar='PSN', 
             help='Filter patient summary to only these patients. Can be a comma separated list')
     parser.add_argument('-v', '--version', action='version', version = '%(prog)s  -  ' + version)
@@ -36,15 +43,25 @@ def disease_summary(data):
     for elem in sorted(diseases,key=diseases.get,reverse=True):
         print('\t'.join([elem,str(diseases[elem])]))
 
-def patient_summary(data):
+def patient_summary(data,patients):
+    '''Print out a summary for each patient and their disease, excluding any that do not have disease data indicated'''
     filtered = data.get_patients_and_disease()
-    for patient in filtered:
-        print(','.join(patient))
+    if patients:
+        results = [','.join(patient) for patient in filtered if patient[1] != '-' and patient[0] in patients]
+    else:
+        results = [','.join(patient) for patient in filtered if patient[1] != '-']
+
+    gen_header('Patient',len(results))
+    print('PSN,Disease')
+    for i in results:
+        print(i)
+    return
 
 if __name__=='__main__':
+    '''If running standalone.  Can only start with MB JSON file'''
     args = get_args()
-    patients = args.psn.split(',')
-    pp(patients)
-    sys.exit()
-    
-    patient_summary(data)
+    patients = []
+    if args.psn:
+        patients = args.psn.split(',')
+    data = MatchboxData(None,None,args.data)
+    patient_summary(data,patients)
