@@ -43,7 +43,7 @@ def disease_summary(data):
     for elem in sorted(diseases,key=diseases.get,reverse=True):
         print('\t'.join([elem,str(diseases[elem])]))
 
-def patient_summary(data,patients):
+def patient_summary(data,patients=None):
     '''Print out a summary for each patient and their disease, excluding any that do not have disease data indicated'''
     filtered = data.get_patients_and_disease()
     if patients:
