@@ -1,12 +1,13 @@
 #!/usr/local/bin/python3
 import os
+import sys
 import requests
 import json
 import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.8.5_111716'
+version = '0.8.6_112216'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -221,7 +222,7 @@ class MatchboxData(object):
             output_data.append(self.__get_patient_disease(psn))
         return output_data
 
-    def find_variant_frequency(self,query):
+    def find_variant_frequency(self,query,query_patients=None):
         '''
         Based on an input query, generate a dict of patient data that can be further filtered.  Input required is a dict
         query data in the form:
@@ -237,11 +238,14 @@ class MatchboxData(object):
         results = {} 
         count = 0
         for patient in self.data:
+            if patient not in query_patients:
+                continue
             if 'msn' in self.data[patient]: 
                 count += 1
             matches = []
             if 'mois' in self.data[patient]:
                 input_data = dict(self.data[patient]['mois'])
+                # print(input_data['unifiedGeneFusions']['identifier'])
                 if 'snvs' in query and 'singleNucleotideVariants' in input_data:
                     matches = matches + self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
 
@@ -252,7 +256,12 @@ class MatchboxData(object):
                     matches = matches + self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
 
                 if 'fusions' in query and 'unifiedGeneFusions' in input_data:
-                    matches = matches + self.__get_var_data_by_gene(input_data['unifiedGeneFusions'],query['fusions'])
+                    # pp(input_data)
+                    # sys.exit()
+                    if 'Novel' or 'Non-Targeted' not in input_data['unifiedGeneFusions']['identifier']:
+                        # print(input_data['unifiedGeneFusions']['identifier'])
+                        print('got here!')
+                        matches = matches + self.__get_var_data_by_gene(input_data['unifiedGeneFusions'],query['fusions'])
 
             if matches:
                 results[patient] = {
