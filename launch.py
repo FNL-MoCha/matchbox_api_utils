@@ -5,48 +5,24 @@ import argparse
 import subprocess
 import json
 import importlib
+import shlex
 from pprint import pprint as pp
 
+bin_path = os.path.dirname(os.path.realpath(__file__)) + '/bin/'
+sys.path.append(bin_path)
+
 import make_mb_obj
-# import matchbox_patient_summary as summary
+import matchbox_patient_summary as summary
 
-version = '0.2.0_111816'
-
-class Config(object):
-    '''Read in a config file and generate a configuration object for the whole package.'''
-    def __init__(self,config_file):
-        self.config_file = config_file
-        self.config_data = {}
-        self.config_data = Config.read_config(self.config_file)
-
-    def __repr__(self):
-        return '%s:%s' % (self.__class__,self.__dict__)
-
-    def __getitem__(self,key):
-        return self.config_data[key]
-
-    def __iter__(self):
-        return self.config_data.itervalues()
-
-    @classmethod
-    def read_config(cls,config_file):
-        '''Read in a config file of params to use in this program'''
-        with open(config_file) as fh:
-            data = json.load(fh)
-        return data
+version = '0.4.0_111816'
 
 class Launcher(object):
     def __init__(self,prog,opts,input_data):
-        opt_string = ' '.join(opts)
-        self.program = {
-            'prog' : prog,
-            'opts' : opt_string,
-            'data' : input_data,
-        }
+        self.program = {k : v for k,v in opts.items()}
+        self.program['prog'] = prog
+        self.program['data'] = input_data
+        pp(self.program)
         
-    def __str__(self):
-        return '{} {} {}'.format(self.program['prog'],self.program['opts'],self.program['data'])
-
     def __repr__(self):
         return '%s:%s' % (self.__class__,self.__dict__)
 
@@ -54,22 +30,32 @@ class Launcher(object):
         return self.program[key]
 
     def launch(self):
-        '''TODO:  I think we want to use a subprocess call here.  There are too many different types of opts and calls k
-        that would need to be configured in this obj to be universal.  If I use subprocess, then I can leverage the normal
-        arg parsing functionality of the module.
-
-        In this case need to recovert the module back into a script name.
+        '''
+        Launch the target script with the inserted CLI args.  Would like to do this as a module, but too complicated
+        to do since there are too many different permutations of args and whatnot that are needed for this.
         '''
         sys.stdout.write('Running program {}...\n'.format(self.program['prog']))
         sys.stdout.flush()
-        print(self.program['opts'])
-        sys.exit()
-        # p = subprocess.Popen([self.program['prog'], self.program['opts'], self.program['data'])
 
-        #self.program['prog'].patient_summary(self.program['opts'],self.program['data'])
-        self.program['prog'].patient_summary(self.program['data'])
+        # for example: summary.patient_summary(match_data,args['psn'])
+        # How to get entry point for each?
+        # print('{} => {}'.format(func, type(func)))
+        # sys.exit()
+        # func = getattr(self.program['prog'],func)
+        # TODO:  This totally works!  The idea is to use the getattr below to define 'func' as mod.func() so that we 
+        # can use this here.  Question:  Do we want to pass that to this launch method, or do we want to define that
+        # in the launcher class.
+        self.program['prog'](self.program['data'],self.program['psn'])
+        # self.program['prog'].func(self.program['data'],self.program['psn'])
+
+        # print('options passed to prog: {}'.format(self.program['opts']))
+        # cmd = [self.program['prog']] + shlex.split(self.program['opts'])
+        # print('full cmd: %s' % cmd)
+        # for i in self.program:
+            # print("{}  => {}".format(i, type(self.program[i])))
+        # sys.exit()
+        # subprocess.call([cmd,self.program['data']])
         sys.stdout.write('Done!\n')
-        #print(type(self.program['prog']))
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -89,23 +75,19 @@ def get_args():
     parser.add_argument('-v', '--version', action='version', version='%(prog)s - ' + version)
     parser.add_argument('-o', '--outfile', metavar='<output_file>', help='Where to store the data!')
     parser.add_argument('-p', '--psn', help='Filter data to this PSN')
-
-    # subparsers = parser.add_subparsers(dest='program')
-    # summary_parser = subparsers.add_parser('summary')
-
     args = parser.parse_args()
     return args
 
 def prog_list(prog):
     '''Test to make sure the input program is correct and / or print out a list of acceptable progs.  Import module if
     it's in the list and return the module obj.'''
-    bin_path = os.path.dirname(os.path.realpath(__file__)) + '/bin/'
+    # bin_path = os.path.dirname(os.path.realpath(__file__)) + '/bin/'
     # bin_path = package_path + '/bin/'
     utils_list = {
-        'var_freq' : 'match_variant_frequency',
-        'dump'     : 'matchbox_json_dump',
-        'get_vcf'  : 'get_match_vcfs',
-        'summary'  : 'matchbox_patient_summary'
+        # 'var_freq' : 'match_variant_frequency',
+        # 'dump'     : 'matchbox_json_dump',
+        # 'get_vcf'  : 'get_match_vcfs',
+        'patient_summary'  : ('matchbox_patient_summary','patient_summary')
     }
     # for i in utils_list:
         # print("{} -> {}".format(i, utils_list[i]))
@@ -117,21 +99,29 @@ def prog_list(prog):
     elif prog not in utils_list:
         sys.stderr.write('ERROR: You must choose a program to run from the list\n')
         prog_list('?')
-        return False
+        # return False
+        sys.exit(1)
     else:
         try:
             # Use importlib if we go the import route. Mod name if we use subprocess.
-            # mod = importlib.import_module(utils_list[prog])
-            mod = '{}{}.py'.format(bin_path,utils_list[prog])
-            return mod
+            # TODO:  Fix me!
+            # Kludgy hack to try to get the ability to print help docs.  Might want to write a function in each
+            # script to handle this.  But for now....
+            mod    = importlib.import_module(utils_list[prog][0])
+            func   = getattr(mod,utils_list[prog][1])
+            # func   = utils_list[prog][1]
+            script = '{}{}.py'.format(bin_path,utils_list[prog][0])
+            # return mod,func,script
+            return func,script
         except:
             sys.stderr.write("ERROR: no such module {}!\n".format(utils_list[prog]))
             sys.exit(1)
 
 def parse_sub_args(args):
+    # TODO: I think we can dump this in favor of module method.
     '''Format a normal arg string from all passed args so that we can make a reasonable executable string. Kludgy way to
     try to get around the way argparse has to handle this.'''
-    excluded_args = ('json', 'list_progs', 'program')
+    excluded_args = ('json', 'list_progs', 'program','modhelp')
     return ['--{} {}'.format(k,v) for k,v in args.items() if k not in excluded_args]
 
 if __name__=='__main__':
@@ -141,18 +131,27 @@ if __name__=='__main__':
     if args['list_progs']:
         prog_list('?')
         sys.exit()
-    prog = prog_list(args['program'])
-    print('using prog: {}'.format(prog))
-    
+    # prog,func,script = prog_list(args['program'])
+    func,script = prog_list(args['program'])
+
+    # If we just want help docs for individual program
+    if args['modhelp']:
+        subprocess.run([script, '--help'])
+        sys.exit()
+
+    # Get only the args we want to pass to the child program.
+    # TODO: probably remove this.
+    args_list = parse_sub_args(args)
+    # pp(args_list)
+    # sys.exit()
 
     # Generate a MB data obj to pass to helper script.
     match_data = make_mb_obj.main(args['json'],None)
-
-    # Get only the args we want to pass to the child program.
-    args_list = parse_sub_args(args)
-    pp(args_list)
-    sys.exit()
+    # summary.patient_summary(match_data,args['psn'])
+    # sys.exit()
 
     # Launch program with appropriate args
-    prog_config = Launcher(prog,args_list,match_data)
+    # prog_config = Launcher(prog,args_list,match_data)
+    # for example: summary.patient_summary(match_data,args['psn'])
+    prog_config = Launcher(func,args,match_data)
     prog_config.launch()
