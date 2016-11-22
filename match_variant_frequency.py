@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python3
 # Input a set of variants and output a hitrate  for NCI-MATCH
 import sys
 import os
@@ -9,7 +9,7 @@ from pprint import pprint as pp
 
 from Matchbox import *
 
-version = '0.7.0_100716'
+version = '0.9.0_112216'
 
 class Config(object):
     def __init__(self,config_file):
@@ -72,12 +72,10 @@ def parse_query_results(data,vartype):
     elif vartype == 'cnv':
         wanted_data = ['gene','type','copyNumber']
     elif vartype == 'fusion':
-        wanted_data = ['gene','type','driverReadCount']
+        wanted_data = ['identifier','gene','type','driverReadCount']
     return map(data.get,wanted_data)
 
 def print_results(query_data,outfile,fmt):
-    # TODO: Need to add differential format code
-    # pp(query_data)
     if fmt == 'pp':
         print('ERROR: pretty print output is not yet configured. Choose TSV or CSV for now')
         sys.exit(1)
@@ -86,7 +84,6 @@ def print_results(query_data,outfile,fmt):
         'csv' : ',',
         'tsv' : '\t',
     }
-    # print('format is: %s' % fmt)
     delimiter = format_list[fmt]
 
     csv_writer = ''
@@ -109,7 +106,6 @@ def print_results(query_data,outfile,fmt):
                 var_data.insert(2,'.')
             elif moi['type'] == 'fusions':
                 var_data += parse_query_results(moi,'fusion')
-                var_data.insert(2,'.')
             csv_writer.writerow(var_data)
 
 def split_genes(x):
@@ -133,24 +129,21 @@ if __name__=='__main__':
     print("variants to query: ")
     pp(query_list)
     patient_list = []
+
     if args.psn:
         patient_list = [str(x) for x in args.psn.split(',')]
     else:
         patient_list = None
+    print("patients to query: {}".format(args.psn))
 
-    print("patients to query: ")
-    pp(patient_list)
     # Make a call to MATCHbox to get a JSON obj of data.
     if not args.json:
         sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
-    # TODO: Fix the patient filter.  this is not quite working right
-    #    - The filter is actually not pulling the correct data from the MB obj.
-    #    - The filter only works on the intial call to the MB OBJ. So a mb.json file, for example, will not yield
-    #      the correct result for example since it already has all patients filtered in!
-    data = MatchboxData(config_data['url'],config_data['creds'],args.json,patient_list)
-    sys.stdout.write('Done!\n')
+        sys.stdout.flush()
+    data = MatchboxData(config_data['url'],config_data['creds'],args.json)
+    sys.stdout.write('\n')
 
     # Gen a query result
-    query_data,total = data.find_variant_frequency(query_list)
+    query_data,total = data.find_variant_frequency(query_list,patient_list)
     print('total patients queried: {}\n'.format(total))
     print_results(query_data,args.output,args.style)
