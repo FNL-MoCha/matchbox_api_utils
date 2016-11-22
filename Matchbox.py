@@ -272,14 +272,3 @@ class MatchboxData(object):
                     'mois'    : matches
                 }
         return results,count
-
-if __name__=='__main__':
-    url = 'https://matchbox.nci.nih.gov/match/common/rs/getPatients'
-    creds = {
-        'username' : 'trametinib',
-        'password' : 'COSM478K601E',
-    }
-    print("Creating Matchbox instance from within module...")
-    patient = '10896'
-    match_data = MatchboxData(url,creds,None,patient)
-    print(match_data)
