@@ -7,8 +7,8 @@ import json
 import importlib
 from pprint import pprint as pp
 
-import get_mb_data
-#import matchbox_patient_summary as summary
+import make_mb_obj
+# import matchbox_patient_summary as summary
 
 version = '0.2.0_111816'
 
@@ -54,8 +54,9 @@ class Launcher(object):
         return self.program[key]
 
     def launch(self):
-        '''TODO:  I think we want to use a subprocess call here.  There are too many different types of opts and calls that would need to be 
-        configured in this obj to be universal.  If I use subprocess, then I can leverage the normal arg parsing functionality of the module.
+        '''TODO:  I think we want to use a subprocess call here.  There are too many different types of opts and calls k
+        that would need to be configured in this obj to be universal.  If I use subprocess, then I can leverage the normal
+        arg parsing functionality of the module.
 
         In this case need to recovert the module back into a script name.
         '''
@@ -63,7 +64,7 @@ class Launcher(object):
         sys.stdout.flush()
         print(self.program['opts'])
         sys.exit()
-        p = subprocess.Popen([self.program['prog'], self.program['opts'], self.program['data'])
+        # p = subprocess.Popen([self.program['prog'], self.program['opts'], self.program['data'])
 
         #self.program['prog'].patient_summary(self.program['opts'],self.program['data'])
         self.program['prog'].patient_summary(self.program['data'])
@@ -84,6 +85,7 @@ def get_args():
     parser.add_argument('-j', '--json', metavar='<mb.json>', 
             help='MATCHBox JSON file to load rather than getting a new dataset in real time.')
     parser.add_argument('-l', '--list', action='store_true', dest='list_progs', help='List available programs and exit')
+    parser.add_argument('--modhelp', action='store_true', help='Show help message for individual mod')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s - ' + version)
     parser.add_argument('-o', '--outfile', metavar='<output_file>', help='Where to store the data!')
     parser.add_argument('-p', '--psn', help='Filter data to this PSN')
@@ -97,12 +99,16 @@ def get_args():
 def prog_list(prog):
     '''Test to make sure the input program is correct and / or print out a list of acceptable progs.  Import module if
     it's in the list and return the module obj.'''
+    bin_path = os.path.dirname(os.path.realpath(__file__)) + '/bin/'
+    # bin_path = package_path + '/bin/'
     utils_list = {
         'var_freq' : 'match_variant_frequency',
         'dump'     : 'matchbox_json_dump',
         'get_vcf'  : 'get_match_vcfs',
         'summary'  : 'matchbox_patient_summary'
     }
+    # for i in utils_list:
+        # print("{} -> {}".format(i, utils_list[i]))
 
     if prog == '?':
         print('Available programs:')
@@ -114,7 +120,9 @@ def prog_list(prog):
         return False
     else:
         try:
-            mod = importlib.import_module(utils_list[prog])
+            # Use importlib if we go the import route. Mod name if we use subprocess.
+            # mod = importlib.import_module(utils_list[prog])
+            mod = '{}{}.py'.format(bin_path,utils_list[prog])
             return mod
         except:
             sys.stderr.write("ERROR: no such module {}!\n".format(utils_list[prog]))
@@ -133,14 +141,17 @@ if __name__=='__main__':
     if args['list_progs']:
         prog_list('?')
         sys.exit()
-
     prog = prog_list(args['program'])
+    print('using prog: {}'.format(prog))
+    
 
     # Generate a MB data obj to pass to helper script.
-    match_data = get_mb_data.main(args['json'],None)
+    match_data = make_mb_obj.main(args['json'],None)
 
     # Get only the args we want to pass to the child program.
     args_list = parse_sub_args(args)
+    pp(args_list)
+    sys.exit()
 
     # Launch program with appropriate args
     prog_config = Launcher(prog,args_list,match_data)

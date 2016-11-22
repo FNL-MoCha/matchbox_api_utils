@@ -6,6 +6,28 @@ import csv
 from pprint import pprint as pp
 from Matchbox import *
 
+class Config(object):
+    def __init__(self,config_file):
+        self.config_file = config_file
+        self.config_data = {}
+        self.config_data = Config.read_config(self.config_file)
+
+    def __repr__(self):
+        return '%s:%s' % (self.__class__,self.__dict__)
+
+    def __getitem__(self,key):
+        return self.config_data[key]
+
+    def __iter__(self):
+        return self.config_data.itervalues()
+
+    @classmethod
+    def read_config(cls,config_file):
+        '''Read in a config file of params to use in this program'''
+        with open(config_file) as fh:
+            data = json.load(fh)
+        return data
+
 def jprint(data):
     print json.dumps(data, indent=4, sort_keys=True)
 
@@ -13,7 +35,7 @@ def summary(mb_data):
     '''
     Generate a quickie summary report of MATCH patients that have been biopsied and the counts for each disease type.
     '''
-    total, diseases = mb_data.get_patient_summary()
+    total, diseases = mb_data.get_disease_summary()
     print ":::  MATCH Patient Summary as of 9/21/2016  (Total Screened: {})  :::\n".format(total)
     print "DISEASE STATS"
     for elem in diseases:
@@ -30,42 +52,25 @@ def parse_query_results(data,vartype):
         wanted_data = ['gene','type','driverReadCount']
     return map(data.get,wanted_data)
 
+
 if __name__=='__main__':
-    print "Testing from {}...".format(os.path.basename(__file__))
-    url = 'https://matchbox.nci.nih.gov/match/common/rs/getPatients'
-    creds = {
-        'username' : 'trametinib',
-        'password' : 'COSM478K601E',
-    }
-    # data = MatchboxData(url,creds)
-    # Uncomment if we need to just dump MATCHBox in to a JSON
-    # data._matchbox_dump()
-    # sys.exit()
-    data = MatchboxData(url,creds,'mb.json')
-    
-    query_list = {
-        'indels' : ['BRCA1','BRCA2','ATM'],
-        'snvs'   : ['IDH1'],
-        'cnvs'   : ['CCNE1','EGFR']
-    }
-    query_data = data.find_variant_frequency(query_list)
-    # jprint(query_data)
-    # sys.exit()
+    config_file = 'config.json'
+    config_data = Config.read_config(config_file)
 
-    outfile = open('test.csv', 'w')
-    csv_writer = csv.writer(outfile,delimiter=',',quotechar='"')
-    header = ['Patient','Disease','Gene','Type','Measurement','Transcript','CDS','AA','Function']
-    csv_writer.writerow(header)
+    '''
+    patient = '10896' # PIK3CA_snv, APC_snv, KRAS_snv, METe14_fusion
+    patient = '11070' # ETV6-NTRK3_fusion
+    plist = [10045,10051,10244,10929,11035,11105,11582]
+    patients = map(str,plist) 
+    '''
 
-    for patient in query_data:
-        for moi in query_data[patient]['mois']:
-            if moi['type'] == 'snvs_indels':
-                var_data = parse_query_results(moi,'snv')
-                csv_writer.writerow([query_data[patient]['psn'],query_data[patient]['disease']]+var_data)
-            elif moi['type'] == 'cnvs':
-                var_data = parse_query_results(moi,'cnv')
-                csv_writer.writerow([query_data[patient]['psn'],query_data[patient]['disease']]+var_data)
-            elif moi['type'] == 'fusions':
-                var_data = parse_query_results(moi,'fusion')
-                csv_writer.writerow([query_data[patient]['psn'],query_data[patient]['disease']]+var_data)
+    # data = MatchboxData(config_data['url'],config_data['creds'],None,patient)
+    data = MatchboxData(config_data['url'],config_data['creds'],'mb_101816.json')
+    summary(data)
+    sys.exit()
 
+    # filtered = data.get_patients_and_disease(patients)
+    filtered = data.get_patients_and_disease()
+    for pt in filtered:
+        print ','.join(pt)
+    sys.exit()
