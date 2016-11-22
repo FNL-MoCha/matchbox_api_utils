@@ -7,7 +7,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.8.6_112216'
+version = '0.9.0_112216'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -238,14 +238,13 @@ class MatchboxData(object):
         results = {} 
         count = 0
         for patient in self.data:
-            if patient not in query_patients:
+            if query_patients and patient not in query_patients:
                 continue
             if 'msn' in self.data[patient]: 
                 count += 1
             matches = []
             if 'mois' in self.data[patient]:
                 input_data = dict(self.data[patient]['mois'])
-                # print(input_data['unifiedGeneFusions']['identifier'])
                 if 'snvs' in query and 'singleNucleotideVariants' in input_data:
                     matches = matches + self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
 
@@ -256,12 +255,14 @@ class MatchboxData(object):
                     matches = matches + self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
 
                 if 'fusions' in query and 'unifiedGeneFusions' in input_data:
-                    # pp(input_data)
-                    # sys.exit()
-                    if 'Novel' or 'Non-Targeted' not in input_data['unifiedGeneFusions']['identifier']:
-                        # print(input_data['unifiedGeneFusions']['identifier'])
-                        print('got here!')
-                        matches = matches + self.__get_var_data_by_gene(input_data['unifiedGeneFusions'],query['fusions'])
+                    # input_data['unifiedGeneFusions'] is a list
+                    filtered_fusions = []
+                    for fusion in input_data['unifiedGeneFusions']:
+                        if fusion['identifier'].endswith('Novel') or fusion['identifier'].endswith('Non-Targeted'): 
+                            continue
+                        else:
+                            filtered_fusions.append(fusion)
+                    matches = matches + self.__get_var_data_by_gene(filtered_fusions,query['fusions'])
 
             if matches:
                 results[patient] = {
