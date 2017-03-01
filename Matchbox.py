@@ -7,7 +7,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.0_112216'
+version = '0.9.2_030117'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -213,7 +213,7 @@ class MatchboxData(object):
         output_data = []
         psn_list = []
         if query_psn:
-            psn_list = query_psn
+            psn_list.append(query_psn)
         else:
             psn_list = self.data.keys()
 
