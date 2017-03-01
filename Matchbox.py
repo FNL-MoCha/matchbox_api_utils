@@ -7,7 +7,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.2_030117'
+version = '0.9.3_030117'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -191,6 +191,27 @@ class MatchboxData(object):
             filename = 'mb_' + formatted_date + '.json'
         with open(filename, 'w') as outfile:
             json.dump(self.data,outfile,sort_keys=True,indent=4)
+
+    def map_msn_psn(self,pt_id,id_type):
+        '''Given a patient ID (either MSN or PSN) and a type val, output corresponding MSN / PSN mapping. 
+                 map_msn_psn(<id_string>,'msn' | 'psn')
+        '''
+        result = ''
+        if id_type == 'psn':
+            result = self.data[pt_id]['msn']
+        elif id_type == 'msn':
+            result = self.__return_key_by_val(pt_id)
+
+        if not result:
+            print('No result found for id %s' % pt_id)
+            return None
+        return result
+
+    def __return_key_by_val(self,msn_id):
+        for p in self.data:
+            if 'msn' in self.data[p]:
+                if self.data[p]['msn'] == 'MSN'+msn_id:
+                    return p
 
     def get_disease_summary(self):
         total_patients = 0
