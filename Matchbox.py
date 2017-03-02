@@ -34,8 +34,9 @@ class Matchbox(object):
     def api_call2(self):
         '''Use os and system curl to get a much (much!!!!) quicker connection with MB'''
         request = os.popen("curl -s " + self.url).read()
-        json_data = json.loads(request)
-        return json_data
+        # json_data = json.loads(request)
+        # return json_data
+        return json.loads(request)
         
     @staticmethod
     def __raw_dump(data,filename=None):
@@ -56,6 +57,10 @@ class Matchbox(object):
         if dump: self.__raw_dump(api_data,'raw_mb_dump_'+today+'.json')
 
         for record in api_data:
+            # Can have registered patient who have not yet be biopsied.  Let's pass over those for now, but maybe pick back up later if 
+            # we want to be able to get a track record of registered vs tested.
+            if len(record['biopsies']) < 1 or record['latestBiopsy'] == 'None':
+                continue
             psn                          = record['patientSequenceNumber']       
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
@@ -82,7 +87,16 @@ class Matchbox(object):
             patients[psn]['medra_code'] = medra_code
 
             biopsy_data = record['latestBiopsy']
-            if biopsy_data['failure']: continue # Skip over failed biopsies, though this one shoudl be OK. 
+            # try:
+                # biopsy_data['failure'] == 'false'
+            # except TypeError:
+                # print('issue!')
+                # pp(biopsy_data)
+                # print('\n\n')
+                # pp(record)
+                # sys.exit()
+
+            if biopsy_data['failure'] == 'false': continue # Skip over failed biopsies, though this one shoudl be OK. 
             patients[psn]['bsn'] = biopsy_data['biopsySequenceNumber']
             patients[psn]['ihc'] = self.__get_ihc_results(biopsy_data['assayMessagesWithResult'])
 
