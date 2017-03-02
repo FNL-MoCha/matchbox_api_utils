@@ -7,7 +7,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.3_030117'
+version = '0.9.5_030117'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -23,7 +23,6 @@ class Matchbox(object):
     def api_call(self):
         print('requesting data from: %s' % self.url)
         request = requests.get(self.url,data=self.creds)
-        request = requests.get(self.url)
         try:
             request.raise_for_status()
         except requests.exceptions.HTTPError as error:
@@ -32,24 +31,40 @@ class Matchbox(object):
         json_data = request.json(object_hook=self.__ascii_encode_dict)
         return json_data
 
+    def api_call2(self):
+        '''Use os and system curl to get a much (much!!!!) quicker connection with MB'''
+        request = os.popen("curl -s " + self.url).read()
+        json_data = json.loads(request)
+        return json_data
+        
     @staticmethod
-    def __raw_dump(data):
+    def __raw_dump(data,filename=None):
         '''Dump a raw, unprocessed matchbox for dev purposes'''
-        with open('raw_mb_dump.json','w') as fh:
+        if not filename:
+            filename = 'raw_mb_dump.json'
+        with open(filename,'w') as fh:
             json.dump(data,fh)
 
     def gen_patients_list(self,dump=None):
         patients = defaultdict(dict)
-        api_data = self.api_call()
+        # api_data = self.api_call()
+        api_data = self.api_call2() # use this system curl call rather than mess with requests library and huge (!!) overhead!
 
+        # For debugging purposes, we may want to dump the whole raw dataset out to see what keys / vals are availble.  Only really for 
+        # dev and debugging, though.
+        today = datetime.date.today().strftime('%m%d%y')
+        if dump: self.__raw_dump(api_data,'raw_mb_dump_'+today+'.json')
+
+        msns = []
         for record in api_data:
             psn = record['patientSequenceNumber']
             biopsy_data = record['latestBiopsy']
             pp(biopsy_data)
-
-        # if dump: self.__raw_dump(api_data)
-        today = datetime.date.today().strftime('%m%d%y')
-        if dump: self._matchbox_dump('raw_mb_dump'+today+'.json')
+            # for val in biopsy_data['mdAndersonMessages']:
+                # if val['message'] == 'NUCLEIC_ACID_SENDOUT':
+                    # msns.append(val['molecularSequenceNumber'])
+        # pp(msns)
+        # print('')
         sys.exit()
 
         # XXX
@@ -79,8 +94,15 @@ class Matchbox(object):
                 medra_code = '-'
             patients[psn]['medra_code'] = medra_code
 
-            biopsies = record['biopsies']
-            for biopsy in biopsies:
+            # XXX
+            biopsy_data = record['latestBiopsy']
+            for val in biopsies['mdAndersonMessages']:
+                if val['message'] == 'NUCLEIC_ACID_SENDOUT':
+                    msns.append(val['molecularSequenceNumber'])
+
+            # biopsies = record['biopsies']
+            # for biopsy in biopsies:
+            for biopsy in biopsy_data:
                 if str(biopsy['failure']) == 'True': continue # Skip over failed biopsies.
                 else:
                     patients[psn]['bsn'] = biopsy['biopsySequenceNumber']
