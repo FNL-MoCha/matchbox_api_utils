@@ -64,8 +64,12 @@ if __name__=='__main__':
     patients = map(str,plist) 
     '''
 
-    # data = MatchboxData(config_data['url'],config_data['creds'],None,patient)
-    data = MatchboxData(config_data['url'],config_data['creds'],'mb_101816.json')
+    patient='14032'
+    # patient=None
+    # NEW: Can dump out a raw unfiltered JSON by passing a raw_dump value to the MatchboxData constructor
+    # data = MatchboxData(config_data['url'],config_data['creds'],None,patient,'raw_dump')
+    data = MatchboxData(config_data['url'],config_data['creds'],None,patient)
+    # data = MatchboxData(config_data['url'],config_data['creds'],'mb_101816.json')
     summary(data)
     sys.exit()
 
