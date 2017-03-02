@@ -7,7 +7,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.6_030117'
+version = '0.9.7_030117'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -236,35 +236,28 @@ class MatchboxData(object):
         '''Given a patient ID (either MSN or PSN) and a type val, output corresponding MSN / PSN mapping. 
                  map_msn_psn(<id_string>,'msn' | 'psn')
         '''
-        print('args passed to func: {}, {}'.format(pt_id,id_type))
+        # print('args passed to func: {}, {}'.format(pt_id,id_type))
         result = ''
 
-        # if id_type == 'psn':
-            # pp(self.data[pt_id])
-            # sys.exit()
-
-        # else:
-            # sys.exit()
-
         if id_type == 'psn':
-            # continue
-            print(self.data[pt_id])
+            print('getting msn for psn %s' % pt_id)
+            # print(self.data[pt_id])
             result = self.data[pt_id]['msn']
         elif id_type == 'msn':
+            print('getting psn for msn %s' % pt_id)
             result = self.__return_key_by_val(pt_id)
 
         if not result:
             print('No result found for id %s' % pt_id)
             return None
-
-        print('{} : {}'.format(pt_id,result))
+        # print('{} : {}'.format(pt_id,result))
         return result
 
     def __return_key_by_val(self,msn_id):
+        msn_id = 'MSN'+msn_id
         for p in self.data:
-            if 'msn' in self.data[p]:
-                if self.data[p]['msn'] == 'MSN'+msn_id:
-                    return p
+            if msn_id in self.data[p]['msn']:
+                return p
 
     def get_disease_summary(self):
         total_patients = 0
