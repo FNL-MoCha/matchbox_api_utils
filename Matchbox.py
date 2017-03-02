@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 import os
 import sys
 import requests
@@ -21,7 +21,9 @@ class Matchbox(object):
         return dict(map(ascii_encode,pair) for pair in data.items())
 
     def api_call(self):
-        request = requests.get(self.url,data = self.creds)
+        print('requesting data from: %s' % self.url)
+        request = requests.get(self.url,data=self.creds)
+        request = requests.get(self.url)
         try:
             request.raise_for_status()
         except requests.exceptions.HTTPError as error:
@@ -30,14 +32,29 @@ class Matchbox(object):
         json_data = request.json(object_hook=self.__ascii_encode_dict)
         return json_data
 
-    def gen_patients_list(self,test_patients=None):
+    @staticmethod
+    def __raw_dump(data):
+        '''Dump a raw, unprocessed matchbox for dev purposes'''
+        with open('raw_mb_dump.json','w') as fh:
+            json.dump(data,fh)
+
+    def gen_patients_list(self,dump=None):
         patients = defaultdict(dict)
         api_data = self.api_call()
-        # print("test patient: %s" % test_patients)
+
+        for record in api_data:
+            psn = record['patientSequenceNumber']
+            biopsy_data = record['latestBiopsy']
+            pp(biopsy_data)
+
+        # if dump: self.__raw_dump(api_data)
+        today = datetime.date.today().strftime('%m%d%y')
+        if dump: self._matchbox_dump('raw_mb_dump'+today+'.json')
+        sys.exit()
+
+        # XXX
         for record in api_data:
             psn                          = record['patientSequenceNumber']       
-            if test_patients and psn not in test_patients:
-                continue
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
             patients[psn]['gender']      = record['gender']
@@ -74,6 +91,7 @@ class Matchbox(object):
                             continue 
                         patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
                         patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
+                        # TODO: Need better place to get msn!
                         patients[psn]['msn']          = result['ionReporterResults']['molecularSequenceNumber']
                         patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
                         patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
@@ -156,13 +174,17 @@ class Matchbox(object):
             fusion['partnerGene'] = partner
         return fusion_data
 
+
 class MatchboxData(object):
-    def __init__(self,url,creds,dumped_data=None,test_patient=None):
+    def __init__(self,url,creds,dumped_data=None,test_patient=None,raw_dump=None):
+        if test_patient:
+            url = url + '?patientId=%s' % test_patient
+
         if dumped_data:
             self.data = self.__load_dumped_json(dumped_data)
         else:
             self.matchbox = Matchbox(url,creds)
-            self.data = self.matchbox.gen_patients_list(test_patient)
+            self.data = self.matchbox.gen_patients_list(raw_dump)
 
     @staticmethod
     def __load_dumped_json(json_file):
@@ -196,15 +218,29 @@ class MatchboxData(object):
         '''Given a patient ID (either MSN or PSN) and a type val, output corresponding MSN / PSN mapping. 
                  map_msn_psn(<id_string>,'msn' | 'psn')
         '''
+        print('args passed to func: {}, {}'.format(pt_id,id_type))
         result = ''
+
         if id_type == 'psn':
-            result = self.data[pt_id]['msn']
+            pp(self.data[pt_id])
+            sys.exit()
+
+        else:
+            sys.exit()
+
+        if id_type == 'psn':
+            print('hi')
+            # continue
+            # print(self.data[pt_id])
+            # result = self.data[pt_id]['msn']
         elif id_type == 'msn':
             result = self.__return_key_by_val(pt_id)
 
         if not result:
             print('No result found for id %s' % pt_id)
             return None
+
+        print('{} : {}'.format(pt_id,result))
         return result
 
     def __return_key_by_val(self,msn_id):
