@@ -240,7 +240,7 @@ class MatchboxData(object):
         result = ''
 
         if id_type == 'psn':
-            print('getting msn for psn %s' % pt_id)
+            # print('getting msn for psn %s' % pt_id)
             # print(self.data[pt_id])
             result = self.data[pt_id]['msn']
         elif id_type == 'msn':
