@@ -239,18 +239,17 @@ class MatchboxData(object):
         print('args passed to func: {}, {}'.format(pt_id,id_type))
         result = ''
 
-        if id_type == 'psn':
-            pp(self.data[pt_id])
-            sys.exit()
+        # if id_type == 'psn':
+            # pp(self.data[pt_id])
+            # sys.exit()
 
-        else:
-            sys.exit()
+        # else:
+            # sys.exit()
 
         if id_type == 'psn':
-            print('hi')
             # continue
-            # print(self.data[pt_id])
-            # result = self.data[pt_id]['msn']
+            print(self.data[pt_id])
+            result = self.data[pt_id]['msn']
         elif id_type == 'msn':
             result = self.__return_key_by_val(pt_id)
 
