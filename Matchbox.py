@@ -7,7 +7,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.5_030117'
+version = '0.9.6_030117'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -55,19 +55,6 @@ class Matchbox(object):
         today = datetime.date.today().strftime('%m%d%y')
         if dump: self.__raw_dump(api_data,'raw_mb_dump_'+today+'.json')
 
-        msns = []
-        for record in api_data:
-            psn = record['patientSequenceNumber']
-            biopsy_data = record['latestBiopsy']
-            pp(biopsy_data)
-            # for val in biopsy_data['mdAndersonMessages']:
-                # if val['message'] == 'NUCLEIC_ACID_SENDOUT':
-                    # msns.append(val['molecularSequenceNumber'])
-        # pp(msns)
-        # print('')
-        sys.exit()
-
-        # XXX
         for record in api_data:
             psn                          = record['patientSequenceNumber']       
             patients[psn]['psn']         = record['patientSequenceNumber']
@@ -94,34 +81,29 @@ class Matchbox(object):
                 medra_code = '-'
             patients[psn]['medra_code'] = medra_code
 
-            # XXX
             biopsy_data = record['latestBiopsy']
-            for val in biopsies['mdAndersonMessages']:
-                if val['message'] == 'NUCLEIC_ACID_SENDOUT':
-                    msns.append(val['molecularSequenceNumber'])
+            if biopsy_data['failure']: continue # Skip over failed biopsies, though this one shoudl be OK. 
+            patients[psn]['bsn'] = biopsy_data['biopsySequenceNumber']
+            patients[psn]['ihc'] = self.__get_ihc_results(biopsy_data['assayMessagesWithResult'])
 
-            # biopsies = record['biopsies']
-            # for biopsy in biopsies:
-            for biopsy in biopsy_data:
-                if str(biopsy['failure']) == 'True': continue # Skip over failed biopsies.
-                else:
-                    patients[psn]['bsn'] = biopsy['biopsySequenceNumber']
-                    patients[psn]['ihc'] = self.__get_ihc_results(biopsy['assayMessagesWithResult'])
-                    
-                    for result in biopsy['nextGenerationSequences']:
-                        if result['status'] != 'CONFIRMED': 
-                            continue 
-                        patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
-                        patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
-                        # TODO: Need better place to get msn!
-                        patients[psn]['msn']          = result['ionReporterResults']['molecularSequenceNumber']
-                        patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
-                        patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
-                        patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+            msns = []
+            for message in biopsy_data['mdAndersonMessages']:
+                if message['message'] == 'NUCLEIC_ACID_SENDOUT':
+                    msns.append(message['molecularSequenceNumber'])
+            patients[psn]['msn'] = msns # Can have more than one in the case of re-extractions.
 
-                        # Get and add MOI data to patient record
-                        variant_report                = result['ionReporterResults']['variantReport']
-                        patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
+            for result in biopsy_data['nextGenerationSequences']:
+                if result['status'] != 'CONFIRMED':  continue 
+                patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
+                patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
+                # patients[psn]['msn']          = result['ionReporterResults']['molecularSequenceNumber']
+                patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
+                patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
+                patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+
+                # Get and add MOI data to patient record
+                variant_report                = result['ionReporterResults']['variantReport']
+                patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
         return patients
 
     @staticmethod
