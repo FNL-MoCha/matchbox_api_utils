@@ -80,17 +80,14 @@ def get_args():
 
 def prog_list(prog):
     '''Test to make sure the input program is correct and / or print out a list of acceptable progs.  Import module if
-    it's in the list and return the module obj.'''
-    # bin_path = os.path.dirname(os.path.realpath(__file__)) + '/bin/'
-    # bin_path = package_path + '/bin/'
+    it's in the list and return the module obj and entry func.'''
     utils_list = {
-        # 'var_freq' : 'match_variant_frequency',
-        # 'dump'     : 'matchbox_json_dump',
-        # 'get_vcf'  : 'get_match_vcfs',
-        'patient_summary'  : ('matchbox_patient_summary','patient_summary')
+        'var_freq' : ('match_variant_frequency', ''),
+        'dump'     : ('matchbox_json_dump', 'main'),
+        'get_vcf'  : ('get_match_vcfs',''),
+        'patient_summary'  : ('matchbox_patient_summary','patient_summary'),
+        'disease_summary'  : ('matchbox_patient_summary','disease_summary'),
     }
-    # for i in utils_list:
-        # print("{} -> {}".format(i, utils_list[i]))
 
     if prog == '?':
         print('Available programs:')
@@ -99,29 +96,22 @@ def prog_list(prog):
     elif prog not in utils_list:
         sys.stderr.write('ERROR: You must choose a program to run from the list\n')
         prog_list('?')
-        # return False
         sys.exit(1)
     else:
         try:
             # Use importlib if we go the import route. Mod name if we use subprocess.
-            # TODO:  Fix me!
-            # Kludgy hack to try to get the ability to print help docs.  Might want to write a function in each
-            # script to handle this.  But for now....
             mod    = importlib.import_module(utils_list[prog][0])
             func   = getattr(mod,utils_list[prog][1])
-            # func   = utils_list[prog][1]
             script = '{}{}.py'.format(bin_path,utils_list[prog][0])
-            # return mod,func,script
             return func,script
         except:
             sys.stderr.write("ERROR: no such module {}!\n".format(utils_list[prog]))
             sys.exit(1)
 
 def parse_sub_args(args):
-    # TODO: I think we can dump this in favor of module method.
     '''Format a normal arg string from all passed args so that we can make a reasonable executable string. Kludgy way to
     try to get around the way argparse has to handle this.'''
-    excluded_args = ('json', 'list_progs', 'program','modhelp')
+    excluded_args = ('json', 'list_progs', 'program', 'modhelp')
     return ['--{} {}'.format(k,v) for k,v in args.items() if k not in excluded_args]
 
 if __name__=='__main__':
@@ -131,6 +121,7 @@ if __name__=='__main__':
     if args['list_progs']:
         prog_list('?')
         sys.exit()
+
     # prog,func,script = prog_list(args['program'])
     func,script = prog_list(args['program'])
 
@@ -142,16 +133,14 @@ if __name__=='__main__':
     # Get only the args we want to pass to the child program.
     # TODO: probably remove this.
     args_list = parse_sub_args(args)
-    # pp(args_list)
+    pp(args_list)
+    filtered_args = [x for x in args_list if not x.endswith('None')]
+    pp(filtered_args)
     # sys.exit()
 
     # Generate a MB data obj to pass to helper script.
     match_data = make_mb_obj.main(args['json'],None)
-    # summary.patient_summary(match_data,args['psn'])
-    # sys.exit()
 
     # Launch program with appropriate args
-    # prog_config = Launcher(prog,args_list,match_data)
-    # for example: summary.patient_summary(match_data,args['psn'])
     prog_config = Launcher(func,args,match_data)
     prog_config.launch()

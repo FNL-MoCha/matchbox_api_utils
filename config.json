@@ -6,5 +6,6 @@
         "username" : "trametinib",
         "password" : "COSM478K601E"
     },
-    "url" : "https://matchbox.nci.nih.gov/match/common/rs/getPatients"
+    "url" : "https://matchbox.nci.nih.gov/match/common/rs/getPatients",
+    "manifest_url" : "https://matchbox.nci.nih.gov/reportapi/patientSpecimenTrackingSummary"
 }
