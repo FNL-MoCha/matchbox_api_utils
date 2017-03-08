@@ -10,7 +10,7 @@ from pprint import pprint as pp
 
 from Matchbox import *
 
-version = '1.0.0_030217'
+version = '1.0.1_030817'
 
 class Config(object):
     def __init__(self,config_file):
@@ -99,7 +99,7 @@ def print_results(data,id_type):
             print('{},{}'.format('PSN'+data[k],'MSN'+k))
 
 if __name__=='__main__':
-    config_file = 'config.json'
+    config_file = os.path.dirname(__file__) + '/config.json'
     config_data = Config.read_config(config_file)
     args = get_args()
 
