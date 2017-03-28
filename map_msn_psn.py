@@ -10,7 +10,7 @@ from pprint import pprint as pp
 
 from Matchbox import *
 
-version = '1.0.1_030817'
+version = '1.0.2_032817'
 
 class Config(object):
     def __init__(self,config_file):
@@ -73,7 +73,10 @@ def map_id(mb_data,id_list,psn,msn):
         id_type = 'msn'
 
     for pt in id_list:
-        results[pt] = mb_data.map_msn_psn(pt,id_type)
+        # results[pt] = mb_data.map_msn_psn(pt,id_type)
+        return_val = mb_data.map_msn_psn(pt,id_type)
+        if return_val:
+            results[pt] = return_val
     print_results(results,id_type)
 
 def validate_list(id_list):
