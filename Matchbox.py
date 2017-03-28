@@ -7,7 +7,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.7_030117'
+version = '0.9.8_032817'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -33,9 +33,8 @@ class Matchbox(object):
 
     def api_call2(self):
         '''Use os and system curl to get a much (much!!!!) quicker connection with MB'''
+        sys.stdout.write('INFO: Using cURL instead of requests library.\n')
         request = os.popen("curl -s " + self.url).read()
-        # json_data = json.loads(request)
-        # return json_data
         return json.loads(request)
         
     @staticmethod
