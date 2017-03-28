@@ -33,7 +33,7 @@ class Matchbox(object):
 
     def api_call2(self):
         '''Use os and system curl to get a much (much!!!!) quicker connection with MB'''
-        sys.stdout.write('INFO: Using cURL instead of requests library.\n')
+        sys.stdout.write('\nINFO: Using cURL instead of requests library.\n')
         request = os.popen("curl -s " + self.url).read()
         return json.loads(request)
         
