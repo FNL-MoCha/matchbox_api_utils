@@ -33,7 +33,7 @@ class Matchbox(object):
 
     def api_call2(self):
         '''Use os and system curl to get a much (much!!!!) quicker connection with MB'''
-        sys.stdout.write('\nINFO: Using cURL instead of requests library.\n')
+        # sys.stdout.write('\nINFO: Using cURL instead of requests library.\n')
         request = os.popen("curl -s " + self.url).read()
         return json.loads(request)
         
@@ -86,14 +86,6 @@ class Matchbox(object):
             patients[psn]['medra_code'] = medra_code
 
             biopsy_data = record['latestBiopsy']
-            # try:
-                # biopsy_data['failure'] == 'false'
-            # except TypeError:
-                # print('issue!')
-                # pp(biopsy_data)
-                # print('\n\n')
-                # pp(record)
-                # sys.exit()
 
             if biopsy_data['failure'] == 'false': continue # Skip over failed biopsies, though this one shoudl be OK. 
             patients[psn]['bsn'] = biopsy_data['biopsySequenceNumber']
@@ -134,11 +126,20 @@ class Matchbox(object):
 
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
+                if variant['confirmed'] == 'false':
+                    continue
                 variant_call_data[var_type].append(self.__gen_variant_dict(variant,var_type))
 
         # Remap the driver / partner genes so that we know they're correct, and add a 'gene' field to use later on.
         if 'unifiedGeneFusions' in variant_call_data:
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
+
+        # XXX
+        # getting the proper obj out now.  We just need to figure out how to make sure we're filtering correctly.
+        # print('got here')
+        pp(variant_call_data)
+        sys.exit()
+
         return variant_call_data
 
     @staticmethod
@@ -153,10 +154,10 @@ class Matchbox(object):
                 'snvs_indels' :  ['alleleFrequency', 'alternative', 'alternativeAlleleObservationCount', 'chromosome', 
                     'exon', 'flowAlternativeAlleleObservationCount', 'flowReferenceAlleleObservations', 'function', 
                     'gene', 'hgvs', 'identifier', 'oncominevariantclass', 'position', 'readDepth', 'reference', 
-                    'referenceAlleleObservations', 'transcript', 'protein'], 
+                    'referenceAlleleObservations', 'transcript', 'protein', 'confirmed'], 
                 'cnvs'        : ['chromosome', 'gene', 'confidenceInterval5percent', 'confidenceInterval95percent', 
-                    'copyNumber'],
-                'fusions'     : ['annotation', 'identifier', 'driverReadCount', 'driverGene', 'partnerGene']
+                    'copyNumber','confirmed'],
+                'fusions'     : ['annotation', 'identifier', 'driverReadCount', 'driverGene', 'partnerGene','confirmed']
         }
         data = dict((key, vardata[key]) for key in include_fields[meta_key])
         data['type'] = meta_key
@@ -194,14 +195,25 @@ class Matchbox(object):
 
 class MatchboxData(object):
     def __init__(self,url,creds,dumped_data=None,test_patient=None,raw_dump=None):
-        if test_patient:
-            url = url + '?patientId=%s' % test_patient
+    # def __init__(self,url,creds,**kwargs):
+        '''kwargs_list = dumped_data, test_patient, raw_dump'''
+        print('url: {}\ncreds: {}\ndumped_data: {}\ntest_patient: {}\nraw_dump: {}\n'.format(
+            url,creds,dumped_data,test_patient,raw_dump))
 
         if dumped_data:
             self.data = self.__load_dumped_json(dumped_data)
+            if test_patient:
+                self.data = self.__filter_by_patient(self.data,test_patient)
         else:
+            if test_patient:
+                url = url + '?patientId=%s' % test_patient
+            # XXX
             self.matchbox = Matchbox(url,creds)
             self.data = self.matchbox.gen_patients_list(raw_dump)
+
+    @staticmethod
+    def __filter_by_patient(json,patient):
+        return json[patient]
 
     @staticmethod
     def __load_dumped_json(json_file):
@@ -235,12 +247,8 @@ class MatchboxData(object):
         '''Given a patient ID (either MSN or PSN) and a type val, output corresponding MSN / PSN mapping. 
                  map_msn_psn(<id_string>,'msn' | 'psn')
         '''
-        # print('args passed to func: {}, {}'.format(pt_id,id_type))
         result = ''
-
         if id_type == 'psn':
-            # print('getting msn for psn %s' % pt_id)
-            # print(self.data[pt_id])
             result = self.data[pt_id]['msn']
         elif id_type == 'msn':
             print('getting psn for msn %s' % pt_id)
@@ -249,7 +257,6 @@ class MatchboxData(object):
         if not result:
             print('No result found for id %s' % pt_id)
             return None
-        # print('{} : {}'.format(pt_id,result))
         return result
 
     def __return_key_by_val(self,msn_id):
@@ -337,3 +344,7 @@ class MatchboxData(object):
                     'mois'    : matches
                 }
         return results,count
+
+    def get_vcf(self,msn=None):
+        '''Get path of VCF file from MB Obj and return the VCF file from either the MB mirror or the source.'''
+        return
