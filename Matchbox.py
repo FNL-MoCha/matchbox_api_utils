@@ -137,8 +137,8 @@ class Matchbox(object):
         # XXX
         # getting the proper obj out now.  We just need to figure out how to make sure we're filtering correctly.
         # print('got here')
-        pp(variant_call_data)
-        sys.exit()
+        # pp(variant_call_data)
+        # sys.exit()
 
         return variant_call_data
 
