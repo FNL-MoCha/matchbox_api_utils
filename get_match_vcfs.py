@@ -98,7 +98,8 @@ def main():
 
     if os.path.exists(dest_dir):
         print("Destination path exists.")
-        for dirpath, dirnames, files in os.walk('.'):
+        # for dirpath, dirnames, files in os.walk('.'):
+        for dirpath, dirnames, files in os.walk(dest_dir):
             if files:
                 sys.stderr.write(
                     "WARN: destination dir '{}' not empty! Continuing will overwrite existing data!".format(dest_dir)
