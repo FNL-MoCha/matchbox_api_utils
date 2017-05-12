@@ -56,7 +56,8 @@ def main(data,outfile=None):
     sys.stdout.write("Done!")
 
 if __name__=='__main__':
-    config_file = 'config.json'
+    # config_file = 'config.json'
+    config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'config.json')
     config_data = Config.read_config(config_file)
     args = get_args()
     outfile = args.outfile
