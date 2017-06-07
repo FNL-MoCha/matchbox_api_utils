@@ -8,9 +8,7 @@ import argparse
 import re
 from pprint import pprint as pp
 
-import matchbox_api_utils.Matchbox
-print(dir(matchbox_api_utils))
-# sys.exit()
+from matchbox_api_utils.Matchbox import *
 
 version = '1.1.0_060717'
 
