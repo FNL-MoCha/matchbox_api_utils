@@ -26,6 +26,7 @@ class Config(object):
 
 # mb = MatchboxData('https://matchbox.nci.nih.gov', '', dumped_data = 'dev_files/raw_mb_dump.json', test_patient='10012')
 config = Config('config.json')
-mb = MatchboxData(config['url'], config['creds'], test_patient='10012')
+# mb = MatchboxData(config['url'], config['creds'], test_patient='10012')
+mb = MatchboxData(config['url'], config['creds'], test_patient='15371')
 pp(vars(mb))
 

@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python
 # Input a set of variants and output a hitrate  for NCI-MATCH
 import sys
 import os
@@ -8,9 +8,11 @@ import argparse
 import re
 from pprint import pprint as pp
 
-from Matchbox import *
+import matchbox_api_utils.Matchbox
+print(dir(matchbox_api_utils))
+# sys.exit()
 
-version = '1.0.2_032817'
+version = '1.1.0_060717'
 
 class Config(object):
     def __init__(self,config_file):
@@ -41,8 +43,7 @@ def get_args():
         '''
         Input a list of genes by variant type and get back a table of NCI-MATCH hits that can be further 
         analyzed in Excel.  
-        ''',
-        version = '%(prog)s  -  ' + version,
+        '''
     )
     parser.add_argument('ids', metavar='<IDs>', nargs='?',
             help='MATCH IDs to query.  Can be single or comma separated list.  Must be used with PSN or MSN option.')
@@ -51,6 +52,7 @@ def get_args():
     parser.add_argument('-p', '--psn', action='store_true', help='Input is a PSN to be translated to a MSN')
     parser.add_argument('-m', '--msn', action='store_true', help='Input is a MSN to be translated to a PSN')
     parser.add_argument('-b', '--batch', metavar="<input_file>", help='Load a batch file of all MSNs or PSNs to proc')
+    parser.add_argument('-v','--version',action='version', version = '%(prog)s  -  ' + version)
     args = parser.parse_args()
 
     if not args.psn and not args.msn:
@@ -73,7 +75,6 @@ def map_id(mb_data,id_list,psn,msn):
         id_type = 'msn'
 
     for pt in id_list:
-        # results[pt] = mb_data.map_msn_psn(pt,id_type)
         return_val = mb_data.map_msn_psn(pt,id_type)
         if return_val:
             results[pt] = return_val
@@ -102,8 +103,17 @@ def print_results(data,id_type):
             print('{},{}'.format('PSN'+data[k],'MSN'+k))
 
 if __name__=='__main__':
-    config_file = os.path.dirname(__file__) + '/config.json'
-    config_data = Config.read_config(config_file)
+    if os.path.isfile(os.path.join(os.getcwd(),'/config.json')):
+        config_file = os.path.join(os.getcwd(), '/config.json')
+    else:
+        config_file = os.path.join(os.environ['HOME'],'.mb_utils/config.json')
+
+    try:
+        config_data = Config.read_config(config_file)
+    except IOError:
+        print("ERROR: no configuration file found. Need to create a config file in the current directory or use system "
+              "provided file in ~/.mb_utils")
+        sys.exit(1)
     args = get_args()
 
     # Make a call to MATCHbox to get a JSON obj of data.

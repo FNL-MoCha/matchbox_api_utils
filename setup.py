@@ -1,3 +1,4 @@
+import os
 try:
     from setuptools import setup
 except ImportError:
@@ -21,12 +22,13 @@ config = {
     'tests_require'          : ['nose'],
     'packages'               : ['matchbox_api_utils'],
     'scripts'                : ['bin/map_msn_psn.py'],
+    'data_files'             : [(os.environ['HOME']+'/.mb_utils/', ['config.json'])],
     'include_package_data'   : True,
     'zip_safe'               : False,
     'license'                : 'MIT',
     'classifiers'            : [
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 2',
         'Development Status :: 2 - Alpha',
     ],
 }

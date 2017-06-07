@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python
 # Starting with a data dump from MATCHBox, which should contain the path to the VCF file as the last column,  using 
 # the api script copy all VCFs to a new directory.  
 #

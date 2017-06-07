@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python
 # From MATHCBox API generate a current list of all MSNs and some parent information (PSN, BSN, collection Date,
 # site to which nucleic acid sent, etc.).  
 #

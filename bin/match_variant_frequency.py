@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python
 # Input a set of variants and output a hitrate  for NCI-MATCH
 import sys
 import os

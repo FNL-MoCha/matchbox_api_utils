@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 import sys
 import requests
@@ -197,8 +196,8 @@ class MatchboxData(object):
     def __init__(self,url,creds,dumped_data=None,test_patient=None,raw_dump=None):
     # def __init__(self,url,creds,**kwargs):
         '''kwargs_list = dumped_data, test_patient, raw_dump'''
-        print('url: {}\ncreds: {}\ndumped_data: {}\ntest_patient: {}\nraw_dump: {}\n'.format(
-            url,creds,dumped_data,test_patient,raw_dump))
+        # print('url: {}\ncreds: {}\ndumped_data: {}\ntest_patient: {}\nraw_dump: {}\n'.format(
+            # url,creds,dumped_data,test_patient,raw_dump))
 
         if dumped_data:
             self.data = self.__load_dumped_json(dumped_data)
