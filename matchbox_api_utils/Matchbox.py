@@ -6,7 +6,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.8_032817'
+version = '0.9.11_060717'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -32,7 +32,6 @@ class Matchbox(object):
 
     def api_call2(self):
         '''Use os and system curl to get a much (much!!!!) quicker connection with MB'''
-        # sys.stdout.write('\nINFO: Using cURL instead of requests library.\n')
         request = os.popen("curl -s " + self.url).read()
         return json.loads(request)
         
@@ -47,16 +46,21 @@ class Matchbox(object):
     def gen_patients_list(self,dump=None):
         patients = defaultdict(dict)
         # api_data = self.api_call()
-        api_data = self.api_call2() # use this system curl call rather than mess with requests library and huge (!!) overhead!
+        # use this system curl call rather than mess with requests library and huge (!!) overhead!
+        api_data = self.api_call2()
 
-        # For debugging purposes, we may want to dump the whole raw dataset out to see what keys / vals are availble.  Only really for 
-        # dev and debugging, though.
+        # For debugging purposes, we may want to dump the whole raw dataset out to see what keys / vals are availble.  
+        # Only really for dev and debugging, though.
         today = datetime.date.today().strftime('%m%d%y')
-        if dump: self.__raw_dump(api_data,'raw_mb_dump_'+today+'.json')
+        if dump: 
+            sys.stdout.write('****  Making a raw dump of MATCHbox for dev / testing purposes.  ****\n')
+            sys.stdout.flush()
+            self.__raw_dump(api_data,'raw_mb_dump_'+today+'.json')
+            sys.exit()
 
         for record in api_data:
-            # Can have registered patient who have not yet be biopsied.  Let's pass over those for now, but maybe pick back up later if 
-            # we want to be able to get a track record of registered vs tested.
+            # Can have registered patient who have not yet be biopsied.  Let's pass over those for now, but maybe 
+            # pick back up later if we want to be able to get a track record of registered vs tested.
             if len(record['biopsies']) < 1 or record['latestBiopsy'] == 'None':
                 continue
             psn                          = record['patientSequenceNumber']       
@@ -101,13 +105,20 @@ class Matchbox(object):
                 patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
                 patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
                 # patients[psn]['msn']          = result['ionReporterResults']['molecularSequenceNumber']
-                patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
-                patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
-                patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+                # Paths may now be on Amazon, which is going to cause a probelm here.  
+                try:
+                    patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
+                    patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
+                    patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+                except:
+                    pp(record)
+                    raise
+                    sys.exit()
 
                 # Get and add MOI data to patient record
                 variant_report                = result['ionReporterResults']['variantReport']
                 patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
+        sys.exit()
         return patients
 
     @staticmethod
@@ -193,20 +204,15 @@ class Matchbox(object):
 
 
 class MatchboxData(object):
-    def __init__(self,url,creds,dumped_data=None,test_patient=None,raw_dump=None):
-    # def __init__(self,url,creds,**kwargs):
-        '''kwargs_list = dumped_data, test_patient, raw_dump'''
-        # print('url: {}\ncreds: {}\ndumped_data: {}\ntest_patient: {}\nraw_dump: {}\n'.format(
-            # url,creds,dumped_data,test_patient,raw_dump))
-
+    # def __init__(self,url,creds,dumped_data=None,test_patient=None,raw_dump=None):
+    def __init__(self,url,creds,dumped_data=None,patient=None,raw_dump=None):
         if dumped_data:
             self.data = self.__load_dumped_json(dumped_data)
             if test_patient:
-                self.data = self.__filter_by_patient(self.data,test_patient)
+                self.data = self.__filter_by_patient(self.data,patient)
         else:
-            if test_patient:
-                url = url + '?patientId=%s' % test_patient
-            # XXX
+            if patient:
+                url = url + '?patientId=%s' % patient
             self.matchbox = Matchbox(url,creds)
             self.data = self.matchbox.gen_patients_list(raw_dump)
 
