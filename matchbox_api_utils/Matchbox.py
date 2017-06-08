@@ -6,7 +6,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.13_060817'
+version = '0.9.14_060817'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -237,7 +237,7 @@ class MatchboxData(object):
     def __init__(self,url,creds,dumped_data=None,patient=None,raw_dump=None):
         if dumped_data:
             self.data = self.__load_dumped_json(dumped_data)
-            if test_patient:
+            if patient:
                 self.data = self.__filter_by_patient(self.data,patient)
         else:
             if patient:
