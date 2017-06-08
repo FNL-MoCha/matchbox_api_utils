@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# Input a set of variants and output a hitrate  for NCI-MATCH
 import sys
 import os
 import json
@@ -10,7 +9,8 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import *
 
-version = '1.1.0_060717'
+version = '1.1.0_060817'
+
 
 class Config(object):
     def __init__(self,config_file):
@@ -39,8 +39,8 @@ def get_args():
         formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
         description=
         '''
-        Input a list of genes by variant type and get back a table of NCI-MATCH hits that can be further 
-        analyzed in Excel.  
+        Map an MSN to a PSN and vice versa.  Useful when trying to retrieve the correct dataset and you only
+        know one piece of information.
         '''
     )
     parser.add_argument('ids', metavar='<IDs>', nargs='?',
@@ -61,7 +61,7 @@ def get_args():
 
 def read_batchfile(input_file):
     with open(input_file) as fh:
-        return [line.rstrip('\n') for line in fh ]
+        return [ line.rstrip('\n') for line in fh ]
 
 def map_id(mb_data,id_list,psn,msn):
     results = {}
@@ -79,7 +79,7 @@ def map_id(mb_data,id_list,psn,msn):
     print_results(results,id_type)
 
 def validate_list(id_list):
-    '''String off leading PSN or MSN if it was added and validate that the rest of the strings input
+    '''Strip off leading PSN or MSN if it was added and validate that the rest of the strings input
     are real MSNs or PSNs and not some other random string.  Print warning if there is an issue with
     any inputs.'''
     valid_list = []
@@ -114,20 +114,19 @@ if __name__=='__main__':
         sys.exit(1)
     args = get_args()
 
-    # Make a call to MATCHbox to get a JSON obj of data.
-    if not args.json:
-        sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
-        sys.stdout.flush()
-    data = MatchboxData(config_data['url'],config_data['creds'],args.json)
-    sys.stdout.write('\n')
-
     query_list = []
     if args.batch:
         query_list = read_batchfile(args.batch)
     else:
         query_list = args.ids.split(',')
-
     valid_ids = validate_list(query_list)
+
+    # Make a call to MATCHbox to get a JSON obj of data.
+    if not args.json:
+        sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
+        sys.stdout.flush()
+    data = MatchboxData(config_data['url'],config_data['creds'],dumped_data=args.json)
+    sys.stdout.write('\n')
+
     print('Getting MSN / PSN mapping data...')
     map_id(data,valid_ids,args.psn,args.msn)
-
