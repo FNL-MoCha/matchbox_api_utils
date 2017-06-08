@@ -5,13 +5,10 @@ import json
 import argparse
 from pprint import pprint as pp
 
-# Dirty hack for right now to see if we can figure out how call this as an external script
-# TODO: Fix this once we make a real package.
-# bin_path = os.path.dirname(os.path.realpath(__file__)).rstrip('/bin')
-# sys.path.append(bin_path)
 from matchbox_api_utils.Matchbox import *
 
-version = '1.3.0_060717'
+version = '1.4.0_060817'
+
 
 class Config(object):
     def __init__(self,config_file):
@@ -51,6 +48,8 @@ def get_args():
     parser.add_argument('-r', '--raw', action='store_true',
         help='Generate a raw dump of MATCHbox so that we can see the raw data structure available for debugging '
               'and dev purposes.')
+    parser.add_argument('-p', '--patient', metavar='<psn>', 
+            help='Patient sequence number used to limit output for testing and dev purposes')
     parser.add_argument('-o', '--outfile', metavar='<out.json>', 
             help='Name of output JSON file. DEFAULT: "mb_<datestring>.json"')
     parser.add_argument('-v', '--version', action='version', version = '%(prog)s  -  ' + version)
@@ -58,11 +57,8 @@ def get_args():
     return args
 
 def main(data,outfile=None):
-    # print('args as passed\ndata: {}\noutfile: {}\n'.format(data,outfile))
-    sys.stdout.write("Dumping matchbox as a JSON file for easier and faster code testing...")
-    sys.stdout.flush()
     data._matchbox_dump(outfile)
-    sys.stdout.write("Done!")
+    sys.stdout.write("Done!\n")
 
 if __name__=='__main__':
     if os.path.isfile(os.path.join(os.getcwd(), '/config.json')):
@@ -70,30 +66,30 @@ if __name__=='__main__':
     else:
         config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
     
-    # config_file = 'config.json'
-    # config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'config.json')
     try:
         config_data = Config.read_config(config_file)
     except IOError:
-        print('ERROR: No configuration file found. Need to create a config file int he current direcotry or use '
-              'the system provided one in ~/.mb_utils/config.json')
+        sys.stderr.write('ERROR: No configuration file found. Need to create a config file int he current direcotry or '
+                          'use the system provided one in ~/.mb_utils/config.json\n')
         sys.exit(1)
 
     args = get_args()
     if args.raw:
+        sys.stdout.write('\n*** Making a raw dump of MATCHBox for dev / testing purposes ***\n')
+        sys.stdout.flush()
         MatchboxData(config_data['url'],config_data['creds'],raw_dump=True)
+        sys.stdout.write('Done!\n')
         sys.exit()
 
-    outfile = args.outfile
-    sys.stdout.write('Retrieving MATCHBox dataset for DB obj creation...\n')
+    sys.stdout.write("Dumping matchbox as a JSON file for easier and faster code testing...")
     sys.stdout.flush()
 
-    if args.data:
-        data = MatchboxData(config_data['url'],config_data['creds'],dumped_data=args.data)
-    else:
-        # data = MatchboxData(config_data['url'],config_data['creds'])
-        data = MatchboxData(config_data['url'],config_data['creds'],patient=16271)
+    data = MatchboxData(
+        config_data['url'],
+        config_data['creds'],
+        dumped_data=args.data,
+        patient=args.patient
+    )
 
-    sys.stdout.write('Done!')
+    outfile = args.outfile
     main(data,outfile)
-
