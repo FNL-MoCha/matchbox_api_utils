@@ -3,7 +3,8 @@ import sys
 import os
 import json
 
-from Matchbox import *
+from matchbox_api_utils.Matchbox import *
+
 version = '0.1.0_111816'
 
 class Config(object):

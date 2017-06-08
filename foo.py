@@ -1,11 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import sys
 import os
 import json
 
 from pprint import pprint as pp
 
-from Matchbox import *
+# from Matchbox import *
+from matchbox_api_utils.Matchbox import *
 
 class Config(object):
     def __init__(self,jfile):
@@ -24,9 +25,10 @@ class Config(object):
 
 
 
-# mb = MatchboxData('https://matchbox.nci.nih.gov', '', dumped_data = 'dev_files/raw_mb_dump.json', test_patient='10012')
 config = Config('config.json')
+# mb = MatchboxData('https://matchbox.nci.nih.gov', '', dumped_data = 'dev_files/raw_mb_dump.json', test_patient='10012')
+mb = MatchboxData('https://matchbox.nci.nih.gov', '', raw_dump = 'dev_files/raw_mb_dump.json', test_patient='10012')
 # mb = MatchboxData(config['url'], config['creds'], test_patient='10012')
-mb = MatchboxData(config['url'], config['creds'], test_patient='15371')
+# mb = MatchboxData(config['url'], config['creds'], test_patient='15371')
 pp(vars(mb))
 

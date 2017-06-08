@@ -1,7 +1,6 @@
 from unittest import TestCase
-
-import matchbox_api_utils.Matchbox 
+from matchbox_api_utils.Matchbox import Matchbox, MatchboxData
 
 class TestImport(TestCase):
     def test_can_import(self):
-        self.assertTrue()
+        self.func = MatchboxData()
