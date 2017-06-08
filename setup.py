@@ -13,7 +13,7 @@ config = {
     'description'            : ('MATCHBox API utlilites package to retrieve and analyze variant, patient, and disease information'
                                 'from MATCHBox in a quick and informative way.'),
     'long_description'       : readme(),
-    'version'                : '0.9.11a1',
+    'version'                : '0.9.13a1',
     'author'                 : 'Dave Sims',
     'author_email'           : 'simsdj@mail.nih.gov',
     'download_url'           : 'https://github.com/drmrgd/matchbox_api_utils.git',
