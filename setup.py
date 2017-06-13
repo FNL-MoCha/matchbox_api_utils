@@ -23,6 +23,7 @@ config = {
     'test_suite'             : 'nose.collector',
     'tests_require'          : ['nose'],
     'packages'               : ['matchbox_api_utils'],
+    'install_requires'       : ['setuptools', 'requests'],
     'scripts'                : ['bin/map_msn_psn.py',
                                 'bin/matchbox_json_dump.py',
                                 'bin/match_specimen_tracking.py',
