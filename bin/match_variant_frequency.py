@@ -7,7 +7,7 @@ import csv
 import argparse
 from pprint import pprint as pp
 
-from Matchbox import *
+from matchbox_api_utils.Matchbox import MatchboxData
 
 version = '0.9.0_112216'
 
@@ -112,7 +112,12 @@ def split_genes(x):
     return [y.upper() for y in x.split(',')]
 
 if __name__=='__main__':
-    config_file = 'config.json'
+    try:
+        config_file = os.path.isfile(os.path.join(os.getcwd(), '/config.json'))
+    except:
+        config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
+
+    # config_file = 'config.json'
     config_data = Config.read_config(config_file)
     args = get_args()
 

@@ -11,6 +11,8 @@ import requests
 from pprint import pprint as pp
 from collections import defaultdict
 
+from matchbox_api_utils.Matchbox import MatchboxData
+
 version = '1.0.0_121616'
 
 class Config(object):
@@ -37,33 +39,6 @@ class Config(object):
         with open(config_file) as fh:
             data = json.load(fh)
         return data
-
-class MatchboxData(object):
-    def __init__(self,url,creds):
-        self.url = url
-        self.creds = creds
-        self.data = self.req_manifest()
-
-    def req_manifest(self):
-        request = requests.get(self.url, data=self.creds)
-        try:
-            request.raise_for_status()
-        except request.exceptions.HTTPError as error:
-            sys.stderr.write('HTTP Error: {}\n'.format(error.message))
-            sys.exit(1)
-        return request.json()
-
-    def __repr__(self):
-        # return '%s:%s' % (self.__class__,self.__dict__)
-        return json.dumps(self.__dict__)
-
-    def __str__(self):
-        return json.dumps(self.data,sort_keys=True,indent=4)
-
-    def __iter__(self):
-        # return self.data.itervalues()
-        return iter(self.data)
-
 
 def trim_timestamp(val):
     return val.split('T')[0]
@@ -92,7 +67,10 @@ def print_results(data):
         print(','.join(out_data))
 
 def main():
-    config_file = 'config.json'
+    try:
+        config_file = os.path.isfile(os.path.join(os.getcwd(), '/config.json'))
+    except:
+        config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
     config_data = Config(config_file)
 
     sys.stdout.write('Retrieving a JSON of MATCH specimen tracking info...')

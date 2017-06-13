@@ -8,12 +8,13 @@ from pprint import pprint as pp
 
 # Dirty hack for right now to see if we can figure out how call this as an external script
 # TODO: Fix this once we make a real package.
-bin_path = os.path.dirname(os.path.realpath(__file__)).rstrip('/bin')
-sys.path.append(bin_path)
-from Matchbox import MatchboxData
+# bin_path = os.path.dirname(os.path.realpath(__file__)).rstrip('/bin')
+# sys.path.append(bin_path)
+from matchbox_api_utils.Matchbox import MatchboxData
+
+version = '0.7.0_061217'
 
 def get_args():
-    version = '0.6.0_112216'
     parser = argparse.ArgumentParser(
         formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
         description=
