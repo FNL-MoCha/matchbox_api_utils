@@ -6,7 +6,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.14_060817'
+version = '0.9.15_061317'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -270,18 +270,18 @@ class MatchboxData(object):
     def __iter__(self):
         return self.data.itervalues()
 
-    def get_num_patients(self,no_biopsy=None,no_msn=None,no_seqdata=None):
+    def get_num_patients(self,has_biopsy=None,has_msn=None,has_seqdata=None):
         '''Return number of patients registered in MATCHBox.  Can exclude patients without a biopsy,
            patients without an MSN (i.e. no NA has been generated yet), or without any sequencing
            data yet uploaded.
         '''
         count = 0
         for p in self.data:
-            if no_biopsy and self.data[p]['bsn'] == '--':
+            if has_biopsy and self.data[p]['bsn'] == '--':
                 continue
-            elif no_msn and len(self.data[p]['msn']) < 1:
+            elif has_msn and len(self.data[p]['msn']) < 1:
                 continue
-            elif no_seqdata and 'mois' not in self.data[p]:
+            elif has_seqdata and 'mois' not in self.data[p]:
                 continue
             else:
                 count += 1
@@ -346,7 +346,7 @@ class MatchboxData(object):
 
         for psn in psn_list:
             output_data.append(self.__get_patient_disease(psn))
-        return output_data,len(self.data.keys())
+        return output_data
 
     def find_variant_frequency(self,query,query_patients=None):
         '''
