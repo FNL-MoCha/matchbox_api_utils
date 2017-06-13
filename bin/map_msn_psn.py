@@ -9,7 +9,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData 
 
-version = '1.1.0_060817'
+version = '1.2.0_061317'
 
 
 class Config(object):
@@ -101,9 +101,9 @@ def print_results(data,id_type):
             print('{},{}'.format('PSN'+data[k],'MSN'+k))
 
 if __name__=='__main__':
-    if os.path.isfile(os.path.join(os.getcwd(),'/config.json')):
-        config_file = os.path.join(os.getcwd(), '/config.json')
-    else:
+    try:
+        config_file = (os.path.join(os.path.dirname(__file__), '../config.json'))
+    except:
         config_file = os.path.join(os.environ['HOME'],'.mb_utils/config.json')
 
     try:
@@ -112,6 +112,7 @@ if __name__=='__main__':
         print("ERROR: no configuration file found. Need to create a config file in the current directory or use system "
               "provided file in ~/.mb_utils")
         sys.exit(1)
+
     args = get_args()
 
     query_list = []
