@@ -126,6 +126,8 @@ if __name__=='__main__':
     if not args.json:
         sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
         sys.stdout.flush()
+
+    #Either way make a matchbox data obj with arg.json = dump file or args.json = None and we make one.
     data = MatchboxData(config_data['url'],config_data['creds'],dumped_data=args.json)
     sys.stdout.write('\n')
 
