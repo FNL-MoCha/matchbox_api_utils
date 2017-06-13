@@ -24,10 +24,10 @@ config = {
     'tests_require'          : ['nose'],
     'packages'               : ['matchbox_api_utils'],
     'scripts'                : ['bin/map_msn_psn.py',
-                                'bin/matchbox_json_dump.py'
-                                'bin/match_specimen_tracking.py'
-                                'bin/match_variant_frequency.py'
-                                'bin/matchbox_patient_summary.py'
+                                'bin/matchbox_json_dump.py',
+                                'bin/match_specimen_tracking.py',
+                                'bin/match_variant_frequency.py',
+                                'bin/matchbox_patient_summary.py',
                                ],
     'data_files'             : [(os.environ['HOME']+'/.mb_utils/', ['config.json'])],
     'include_package_data'   : True,
