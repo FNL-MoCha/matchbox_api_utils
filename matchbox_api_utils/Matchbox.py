@@ -209,9 +209,12 @@ class Matchbox(object):
         Fix the fusion driver / partner annotation since it is not always correct the way it's being parsed.  Also
         add in a 'gene' field so that it's easier to aggregate data later on (the rest of the elements use 'gene').
         '''
-        drivers = ['ABL1','AKT3','ALK','AXL','BRAF','EGFR','ERBB2','ERG','ETV1','ETV1a','ETV1b','ETV4','ETV4a',
-                   'ETV5','ETV5a','ETV5d','FGFR1','FGFR2','FGFR3','MET','NTRK1','NTRK2','NTRK3','PDGFRA','PPARG',
-                   'RAF1','RET','ROS1']
+        drivers = ['ABL1','AKT2','AKT3','ALK','AR','AXL','BRAF','BRCA1','BRCA2','CDKN2A','EGFR','ERBB2','ERBB4','ERG',
+                   'ETV1','ETV1a','ETV1b','ETV4','ETV4a','ETV5','ETV5a','ETV5d','FGFR1','FGFR2','FGFR3','FGR','FLT3',
+                   'JAK2','KRAS','MDM4','MET','MYB','MYBL1','NF1','NOTCH1','NOTCH4','NRG1','NTRK1','NTRK2','NTRK3',
+                   'NUTM1','PDGFRA','PDGFRB','PIK3CA','PPARG','PRKACA','PRKACB','PTEN','RAD51B','RAF1','RB1','RELA',
+                   'RET','ROS1','RSPO2','RSPO3','TERT']
+
         for fusion in fusion_data:
             gene1 = fusion['driverGene']
             gene2 = fusion['partnerGene']
