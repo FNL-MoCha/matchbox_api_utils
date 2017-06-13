@@ -262,13 +262,30 @@ class MatchboxData(object):
         return [elem for elem in data if elem['gene'] in gene_list ]
 
     def __str__(self):
-        return json.dumps(self.data)
+        return json.dumps(self.data,sort_keys=True,indent=4)
 
     def __getitem__(self,key):
         return self.data[key]
 
     def __iter__(self):
         return self.data.itervalues()
+
+    def get_num_patients(self,no_biopsy=None,no_msn=None,no_seqdata=None):
+        '''Return number of patients registered in MATCHBox.  Can exclude patients without a biopsy,
+           patients without an MSN (i.e. no NA has been generated yet), or without any sequencing
+           data yet uploaded.
+        '''
+        count = 0
+        for p in self.data:
+            if no_biopsy and self.data[p]['bsn'] == '--':
+                continue
+            elif no_msn and len(self.data[p]['msn']) < 1:
+                continue
+            elif no_seqdata and 'mois' not in self.data[p]:
+                continue
+            else:
+                count += 1
+        return count
 
     def _matchbox_dump(self,filename=None):
         '''Dump the whole DB as a JSON Obj'''
@@ -329,7 +346,7 @@ class MatchboxData(object):
 
         for psn in psn_list:
             output_data.append(self.__get_patient_disease(psn))
-        return output_data
+        return output_data,len(self.data.keys())
 
     def find_variant_frequency(self,query,query_patients=None):
         '''
