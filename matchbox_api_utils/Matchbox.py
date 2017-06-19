@@ -6,7 +6,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.15_061317'
+version = '0.9.16_061917'
 
 class Matchbox(object):
     def __init__(self,url,creds):
@@ -259,6 +259,7 @@ class MatchboxData(object):
 
     @staticmethod
     def __get_var_data_by_gene(data,gene_list):
+        # XXX
         return [elem for elem in data if elem['gene'] in gene_list ]
 
     def __str__(self):
@@ -369,26 +370,34 @@ class MatchboxData(object):
             if 'msn' in self.data[patient]: 
                 count += 1
             matches = []
+
             if 'mois' in self.data[patient]:
                 input_data = dict(self.data[patient]['mois'])
-                if 'snvs' in query and 'singleNucleotideVariants' in input_data:
-                    matches = matches + self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
+                # We might want to just print out all MOIs for a patient rather than having to 
+                # absolutely print out by MOIs.  Maybe there is a better way...write a new function?
+                if len(query) < 1:
+                    for var_type in input_data.keys():
+                        for var in input_data[var_type]:
+                            matches.append(var)
+                else:
+                    if 'snvs' in query and 'singleNucleotideVariants' in input_data:
+                        matches = matches + self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
 
-                if 'indels' in query and 'indels' in input_data:
-                    matches = matches + self.__get_var_data_by_gene(input_data['indels'],query['indels'])
+                    if 'indels' in query and 'indels' in input_data:
+                        matches = matches + self.__get_var_data_by_gene(input_data['indels'],query['indels'])
 
-                if 'cnvs' in query and 'copyNumberVariants' in input_data:
-                    matches = matches + self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
+                    if 'cnvs' in query and 'copyNumberVariants' in input_data:
+                        matches = matches + self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
 
-                if 'fusions' in query and 'unifiedGeneFusions' in input_data:
-                    # input_data['unifiedGeneFusions'] is a list
-                    filtered_fusions = []
-                    for fusion in input_data['unifiedGeneFusions']:
-                        if fusion['identifier'].endswith('Novel') or fusion['identifier'].endswith('Non-Targeted'): 
-                            continue
-                        else:
-                            filtered_fusions.append(fusion)
-                    matches = matches + self.__get_var_data_by_gene(filtered_fusions,query['fusions'])
+                    if 'fusions' in query and 'unifiedGeneFusions' in input_data:
+                        # input_data['unifiedGeneFusions'] is a list
+                        filtered_fusions = []
+                        for fusion in input_data['unifiedGeneFusions']:
+                            if fusion['identifier'].endswith('Novel') or fusion['identifier'].endswith('Non-Targeted'): 
+                                continue
+                            else:
+                                filtered_fusions.append(fusion)
+                        matches = matches + self.__get_var_data_by_gene(filtered_fusions,query['fusions'])
 
             if matches:
                 results[patient] = {
