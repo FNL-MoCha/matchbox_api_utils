@@ -9,7 +9,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData
 
-version = '0.9.0_112216'
+version = '0.9.1_061917'
 
 class Config(object):
     def __init__(self,config_file):
@@ -60,9 +60,11 @@ def get_args():
             help='Output file to which to write data. Default is stdout')
     args = parser.parse_args()
 
-    if args.snv == args.indel == args.cnv == args.fusion == None:
-        sys.stderr.write('ERROR: No SNV, Indel, CNV, or Fusion gene(s) added to query. You must select at least one type to search!\n')
-        sys.exit(1)
+    #if args.snv == args.indel == args.cnv == args.fusion == None:
+    if all(x == None for x in [args.snv,args.indel,args.cnv,args.fusion]):
+        #sys.stderr.write('ERROR: No SNV, Indel, CNV, or Fusion gene(s) added to query. You must select at least one type to search!\n')
+        sys.stderr.write('WARN: No SNV, Indel, CNV, or Fusion gene(s) added to query. Will output all MOIs.\n')
+        #sys.exit(1)
     return args
 
 def parse_query_results(data,vartype):
@@ -112,12 +114,13 @@ def split_genes(x):
     return [y.upper() for y in x.split(',')]
 
 if __name__=='__main__':
+    #os.path.dirname(os.path.realpath(__file__)).rstrip('bin') + 'config.json'
     try:
-        config_file = os.path.isfile(os.path.join(os.getcwd(), '/config.json'))
+        config_file = os.path.dirname(os.path.realpath(__file__)).rstrip('bin') + 'config.json'
+        #config_file = os.path.isfile(os.path.join(os.getcwd(), '/config.json'))
     except:
         config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
 
-    # config_file = 'config.json'
     config_data = Config.read_config(config_file)
     args = get_args()
 
@@ -132,7 +135,10 @@ if __name__=='__main__':
         query_list['fusions'] = split_genes(args.fusion)
 
     print("variants to query: ")
-    pp(query_list)
+    if query_list:
+        pp(query_list)
+    else:
+        sys.stdout.write("\t-> Output all MOIs\n")
     patient_list = []
 
     if args.psn:
