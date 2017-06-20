@@ -34,25 +34,28 @@ class Config(object):
 
 
 def get_args():
-
     parser = argparse.ArgumentParser(
-        formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
+        formatter_class = lambda prog: 
+            argparse.HelpFormatter(prog, max_help_position=100, width=150),
         description=
         '''
-        Get parsed dataset from MATCHBox and dump as a JSON object that we can use later on to speed up development and
-        periodic searching for data.  
+        Get parsed dataset from MATCHBox and dump as a JSON object that we can use 
+        later on to speed up development and periodic searching for data.  
         '''
     )
     parser.add_argument('-d', '--data', metavar='<raw_mb_datafile.json>',
-            help='Load a raw MATCHBox database file (usually after running with the -r option).')
+            help='Load a raw MATCHBox database file (usually after running with '
+                 'the -r option).')
     parser.add_argument('-r', '--raw', action='store_true',
-        help='Generate a raw dump of MATCHbox so that we can see the raw data structure available for debugging '
-              'and dev purposes.')
+        help='Generate a raw dump of MATCHbox so that we can see the raw data '
+             'structure available for debugging and dev purposes.')
     parser.add_argument('-p', '--patient', metavar='<psn>', 
-            help='Patient sequence number used to limit output for testing and dev purposes')
+            help='Patient sequence number used to limit output for testing and '
+                 'dev purposes')
     parser.add_argument('-o', '--outfile', metavar='<out.json>', 
             help='Name of output JSON file. DEFAULT: "mb_<datestring>.json"')
-    parser.add_argument('-v', '--version', action='version', version = '%(prog)s  -  ' + version)
+    parser.add_argument('-v', '--version', action='version', 
+            version = '%(prog)s  -  ' + version)
     args = parser.parse_args()
     return args
 
@@ -61,27 +64,31 @@ def main(data,outfile=None):
     sys.stdout.write("Done!\n")
 
 if __name__=='__main__':
-    if os.path.isfile(os.path.join(os.getcwd(), '/config.json')):
-        config_file = os.path.join(os.getcwd(), '/config.json')
-    else:
-        config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
-    
+    config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
+    if not os.path.isfile(config_file):
+        # TODO: Get rid of this and insist on generating a config file. Maybe 
+        # need to create a helper script for this?
+        config_file = os.path.join(os.getcwd(), 'config.json')
+
     try:
         config_data = Config.read_config(config_file)
     except IOError:
-        sys.stderr.write('ERROR: No configuration file found. Need to create a config file int he current direcotry or '
-                          'use the system provided one in ~/.mb_utils/config.json\n')
+        sys.stderr.write('ERROR: No configuration file found. Need to create a '
+            'config file in the current directory or use the system provided one '
+            'in ~/.mb_utils/config.json\n')
         sys.exit(1)
 
     args = get_args()
     if args.raw:
-        sys.stdout.write('\n*** Making a raw dump of MATCHBox for dev / testing purposes ***\n')
+        sys.stdout.write('\n*** Making a raw dump of MATCHBox for dev / testing '
+            'purposes ***\n')
         sys.stdout.flush()
         MatchboxData(config_data['url'],config_data['creds'],raw_dump=True)
         sys.stdout.write('Done!\n')
         sys.exit()
 
-    sys.stdout.write("Dumping matchbox as a JSON file for easier and faster code testing...")
+    sys.stdout.write("Dumping matchbox as a JSON file for easier and faster code "
+        "testing...")
     sys.stdout.flush()
 
     data = MatchboxData(
