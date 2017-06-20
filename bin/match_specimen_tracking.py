@@ -67,14 +67,25 @@ def print_results(data):
         print(','.join(out_data))
 
 def main():
+    #TODO: Let's make this a part of the setup package.  We can enforce a config file in 
+    #      $HOME, but if not there, then one in the cwd.  Else throw an error and encourage
+    #      to re-run setup.
+    config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
+    if not os.path.isfile(config_file):
+        config_file = os.path.join(os.getcwd(), '/config.json')
+
     try:
-        config_file = os.path.isfile(os.path.join(os.getcwd(), '/config.json'))
+        config_data = Config(config_file)
+    except IOError:
+        sys.stderr.write('ERROR: Can not find a config file in $HOME/.mb_utils or the current working directory.  You must create a config file to continue!\n')
+        sys.exit(1)
     except:
-        config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
-    config_data = Config(config_file)
+        sys.stderr.write('ERROR: Can not read file %s. Check that file is intact and recreate if necessary!\n' % config_file)
+        sys.exit(1)
 
     sys.stdout.write('Retrieving a JSON of MATCH specimen tracking info...')
     sys.stdout.flush()
+
     match_data = MatchboxData(config_data['manifest_url'],config_data['creds'])
     sys.stdout.write('Done!\n')
     parsed_data = parse_json(match_data)
@@ -89,4 +100,10 @@ def main():
     print_results(parsed_data)
     '''
 if __name__=='__main__':
+    print(
+        '''This script has some issues.  I am accessing MATCHBox through a different URL this time for some reasont that I don't remember.  I think I need to 
+           revisit this in a big way ti remmember just what I was trying to do here.  For now, just bail on this.
+        '''
+    )
+    sys.exit()
     main()
