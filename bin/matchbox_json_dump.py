@@ -7,7 +7,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData
 
-version = '1.4.0_060817'
+version = '1.5.0_062117'
 
 
 class Config(object):
