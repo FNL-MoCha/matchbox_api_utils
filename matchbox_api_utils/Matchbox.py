@@ -6,33 +6,42 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.16_061917'
+version = '0.9.17_062117'
 
 class Matchbox(object):
-    def __init__(self,url,creds):
-        self.url = url
+    def __init__(self,url,creds,load_raw=None,make_raw=None):
+        self.url   = url
         self.creds = creds
+
+        if load_raw:
+            self.api_data = load_raw
+        else:
+            self.api_data = self.api_call()
+
+        # For debugging purposes, we may want to dump the whole raw dataset out 
+        # to see what keys / vals are availble.  Only really for dev and debugging,
+        # though.
+        if make_raw: 
+            today = datetime.date.today().strftime('%m%d%y')
+            self.__raw_dump(self.api_data,'raw_mb_dump_'+today+'.json')
+            return
 
     @staticmethod
     def __ascii_encode_dict(data):
-        '''From SO9590382, a method to encode the JSON obj into ascii instead of unicode.'''
+        '''From SO9590382, a method to encode the JSON obj into ascii instead of 
+           unicode.
+        '''
         ascii_encode = lambda x: x.encode('ascii') if isinstance(x,bytes) else x
         return dict(map(ascii_encode,pair) for pair in data.items())
 
     def api_call(self):
-        print('requesting data from: %s' % self.url)
-        request = requests.get(self.url,data=self.creds)
-        try:
-            request.raise_for_status()
-        except requests.exceptions.HTTPError as error:
-            sys.stderr.write('HTTP Error: {}'.format(error.message))
-            sys.exit(1)
-        json_data = request.json(object_hook=self.__ascii_encode_dict)
-        return json_data
-
-    def api_call2(self):
-        '''Use os and system curl to get a much (much!!!!) quicker connection with MB'''
-        request = os.popen("curl -s " + self.url).read()
+        '''Use os and system curl to get a much (much!!!!) quicker connection with 
+           MB
+        '''
+        curl_cmd = 'curl -u {}:{} -s {}'.format(
+            self.creds['username'],self.creds['password'],self.url
+        )
+        request = os.popen(curl_cmd).read()
         return json.loads(request)
         
     @staticmethod
@@ -43,20 +52,11 @@ class Matchbox(object):
         with open(filename,'w') as fh:
             json.dump(data,fh)
 
-    def gen_patients_list(self,dump=None):
+    #XXX
+    def gen_patients_list(self):
         patients = defaultdict(dict)
-        # api_data = self.api_call()
-        # use this system curl call rather than mess with requests library and huge (!!) overhead!
-        api_data = self.api_call2()
 
-        # For debugging purposes, we may want to dump the whole raw dataset out to see what keys / vals are availble.  
-        # Only really for dev and debugging, though.
-        today = datetime.date.today().strftime('%m%d%y')
-        if dump: 
-            self.__raw_dump(api_data,'raw_mb_dump_'+today+'.json')
-            return
-
-        for record in api_data:
+        for record in self.api_data:
             # Can have registered patient who have not yet be biopsied.  Let's pass over those for now, but maybe 
             # pick back up later if we want to be able to get a track record of registered vs tested.
             if len(record['biopsies']) < 1 or record['latestBiopsy'] == 'None':
@@ -237,29 +237,47 @@ class Matchbox(object):
 
 
 class MatchboxData(object):
-    def __init__(self,url,creds,dumped_data=None,patient=None,raw_dump=None):
+    def __init__(self,url,creds,patient=None,dumped_data=None,load_raw=None,make_raw=None):
+        '''
+           Generate a MATCHBox data object that can be parsed and queried 
+           downstream with some methods. Entry points can be  either the live 
+           MATCHBox instance or a JSON file containing:
+               url         : MATCHBox URL to use; usually from creds in config file.
+               creds       : MATCHBox credentials to use; usually from creds in 
+                             config file.
+               dumped_data : MATCHbox JSON file containing the whole dataset.
+               raw_dump    : After reading MATCHBox in, dump out the whole thing 
+                             as a raw JSON file.  This can be used as an entry 
+                             point.
+        '''
+        if patient:
+            url = url + '?patientId=%s' % patient
+
+        # Starting from processed MB JSON obj.
         if dumped_data:
-            self.data = self.__load_dumped_json(dumped_data)
+            print('\n\t->  Starting from a processed MB JSON Obj')
+            self.data = load_dumped_json(dumped_data)
             if patient:
+                print('filtering on patient: %s\n' % patient)
                 self.data = self.__filter_by_patient(self.data,patient)
+        # Starting from raw MB JSON obj.
+        elif load_raw:
+            print('\n\t->  Starting from a raw MB JSON Obj')
+            mb_raw_data = load_dumped_json(load_raw)
+            self.matchbox = Matchbox(url,creds,load_raw=mb_raw_data)
+            self.data = self.matchbox.gen_patients_list()
+        # Starting from a live instance, and possibly making a raw dump
         else:
-            if patient:
-                url = url + '?patientId=%s' % patient
-            self.matchbox = Matchbox(url,creds)
-            self.data = self.matchbox.gen_patients_list(raw_dump)
+            print('\n\t->  Starting from a live MB instance')
+            self.matchbox = Matchbox(url,creds,make_raw=make_raw)
+            self.data = self.matchbox.gen_patients_list()
 
     @staticmethod
     def __filter_by_patient(json,patient):
         return json[patient]
 
     @staticmethod
-    def __load_dumped_json(json_file):
-        with open(json_file) as fh:
-            return json.load(fh)
-
-    @staticmethod
     def __get_var_data_by_gene(data,gene_list):
-        # XXX
         return [elem for elem in data if elem['gene'] in gene_list ]
 
     def __str__(self):
@@ -411,3 +429,8 @@ class MatchboxData(object):
     def get_vcf(self,msn=None):
         '''Get path of VCF file from MB Obj and return the VCF file from either the MB mirror or the source.'''
         return
+
+def load_dumped_json(json_file):
+    with open(json_file) as fh:
+        return json.load(fh)
+
