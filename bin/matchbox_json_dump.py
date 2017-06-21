@@ -79,11 +79,12 @@ if __name__=='__main__':
         sys.exit(1)
 
     args = get_args()
+
     if args.raw:
         sys.stdout.write('\n*** Making a raw dump of MATCHBox for dev / testing '
             'purposes ***\n')
         sys.stdout.flush()
-        MatchboxData(config_data['url'],config_data['creds'],raw_dump=True)
+        MatchboxData(config_data['url'],config_data['creds'],make_raw=True)
         sys.stdout.write('Done!\n')
         sys.exit()
 
@@ -94,7 +95,7 @@ if __name__=='__main__':
     data = MatchboxData(
         config_data['url'],
         config_data['creds'],
-        dumped_data=args.data,
+        load_raw=args.data,
         patient=args.patient
     )
 
