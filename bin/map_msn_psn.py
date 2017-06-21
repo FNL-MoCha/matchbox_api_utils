@@ -9,7 +9,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData 
 
-version = '1.2.0_061317'
+version = '1.3.0_062117'
 
 
 class Config(object):
@@ -39,22 +39,26 @@ def get_args():
         formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
         description=
         '''
-        Map an MSN to a PSN and vice versa.  Useful when trying to retrieve the correct dataset and you only
-        know one piece of information.
+        Map an MSN to a PSN and vice versa.  Useful when trying to retrieve the 
+        correct dataset and you only know one piece of information.
         '''
     )
     parser.add_argument('ids', metavar='<IDs>', nargs='?',
             help='MATCH IDs to query.  Can be single or comma separated list.  Must be used with PSN or MSN option.')
     parser.add_argument('-j', '--json', metavar='<mb_json_file>', 
             help='Load a MATCHBox JSON file derived from "matchbox_json_dump.py" instead of a live query')
-    parser.add_argument('-p', '--psn', action='store_true', help='Input is a PSN to be translated to a MSN')
-    parser.add_argument('-m', '--msn', action='store_true', help='Input is a MSN to be translated to a PSN')
-    parser.add_argument('-b', '--batch', metavar="<input_file>", help='Load a batch file of all MSNs or PSNs to proc')
+    parser.add_argument('-p', '--psn', action='store_true', 
+            help='Input is a PSN to be translated to a MSN')
+    parser.add_argument('-m', '--msn', action='store_true', 
+            help='Input is a MSN to be translated to a PSN')
+    parser.add_argument('-b', '--batch', metavar="<input_file>", 
+            help='Load a batch file of all MSNs or PSNs to proc')
     parser.add_argument('-v','--version',action='version', version = '%(prog)s  -  ' + version)
     args = parser.parse_args()
 
     if not args.psn and not args.msn:
-        sys.stderr.write("ERROR: you must indicate whether PSNs or MSNs are being loaded!\n")
+        sys.stderr.write('ERROR: you must indicate whether PSNs or MSNs are '
+        'being loaded!\n')
         sys.exit(1)
 
     return args
@@ -79,20 +83,21 @@ def map_id(mb_data,id_list,psn,msn):
     print_results(results,id_type)
 
 def validate_list(id_list):
-    '''Strip off leading PSN or MSN if it was added and validate that the rest of the strings input
-    are real MSNs or PSNs and not some other random string.  Print warning if there is an issue with
-    any inputs.'''
+    '''Strip off leading PSN or MSN if it was added and validate that the rest of 
+    the strings input are real MSNs or PSNs and not some other random string.  
+    Print warning if there is an issue with any inputs.'''
     valid_list = []
     for elem in id_list:
         try:
             trimmed = re.search('^([PM]SN)?(\d+)$',elem).group(2)
             valid_list.append(trimmed)
         except:
-            sys.stdout.write("WARN: id '{}' is not valid.  Skipping entry!\n".format(elem))
+            sys.stdout.write("WARN: id '{}' is not valid. Skipping entry!\n".format(elem))
     return valid_list
 
 def print_results(data,id_type):
-    '''since we either get a PSN result or a list of MSNs, handle printing accordingly'''
+    '''since we either get a PSN result or a list of MSNs, handle printing 
+    accordingly'''
     if id_type == 'psn':
         for k in data:
             print('{},{}'.format('PSN'+k, ','.join(data[k])))
@@ -101,16 +106,16 @@ def print_results(data,id_type):
             print('{},{}'.format('PSN'+data[k],'MSN'+k))
 
 if __name__=='__main__':
-    try:
-        config_file = (os.path.join(os.path.dirname(__file__), '../config.json'))
-    except:
-        config_file = os.path.join(os.environ['HOME'],'.mb_utils/config.json')
+    config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
+    if not os.path.isfile(config_file):
+        config_file = os.path.join(os.getcwd(), 'config.json')
 
     try:
         config_data = Config.read_config(config_file)
     except IOError:
-        print("ERROR: no configuration file found. Need to create a config file in the current directory or use system "
-              "provided file in ~/.mb_utils")
+        sys.stderr.write('ERROR: No configuration file found. Need to create a '
+            'config file in the current directory or use the system provided one '
+            'in ~/.mb_utils/\n')
         sys.exit(1)
 
     args = get_args()
@@ -124,11 +129,17 @@ if __name__=='__main__':
 
     # Make a call to MATCHbox to get a JSON obj of data.
     if not args.json:
-        sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
+        sys.stdout.write('Retrieving MATCHBox data object.  This will take a few '
+            'minutes...')
         sys.stdout.flush()
 
-    #Either way make a matchbox data obj with arg.json = dump file or args.json = None and we make one.
-    data = MatchboxData(config_data['url'],config_data['creds'],dumped_data=args.json)
+    # Either way make a matchbox data obj with arg.json = dump file or 
+    # args.json = None and we make one.
+    data = MatchboxData(
+            config_data['url'],
+            config_data['creds'],
+            dumped_data=args.json
+    )
     sys.stdout.write('\n')
 
     print('Getting MSN / PSN mapping data...')
