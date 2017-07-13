@@ -54,7 +54,7 @@ def pre_build_mb_obj(root_dir):
     os.system('chown {} {}'.format(system_user,mb_obj_file))
     sys.stdout.write('Done!\n\n')
     sys.stdout.write('@'*75 + "\n")
-    sys.stdout.write('\t\t -> We recommend you run the matchbox_data_dump.py program routintely '
+    sys.stdout.write('\tWe recommend you run the matchbox_data_dump.py program \n\troutintely '
         'to pick up any new data that has been generated since last polling\n')
     sys.stdout.write('@'*75 + "\n")
 
