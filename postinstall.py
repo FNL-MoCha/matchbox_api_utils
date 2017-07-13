@@ -4,8 +4,13 @@ import sys
 import os
 import json
 from subprocess import call
+from pprint import pprint as pp
 
-system_user = os.environ['SUDO_USER']
+# Want to store data in user's home dir, but if running with `sudo` need to make special consideration.
+if 'SUDO_USER' in os.environ:
+    system_user = os.environ['SUDO_USER']
+else:
+    system_user = os.environ['USER']
 
 def write_json(user,passwd,root_dir):
     config_file = os.path.join(root_dir,'config.json')
