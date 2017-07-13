@@ -58,6 +58,7 @@ def get_args():
             help='Format for output. Can choose pretty print (pp), CSV, or TSV')
     parser.add_argument('-o', '--output', metavar='<output_file>', default='stdout',
             help='Output file to which to write data. Default is stdout')
+    parser.add_argument('-v', '--version', action='version', version = '%(prog)s - ' + version)
     args = parser.parse_args()
 
     #if args.snv == args.indel == args.cnv == args.fusion == None:
