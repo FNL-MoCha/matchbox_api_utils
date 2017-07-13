@@ -1,10 +1,14 @@
 #!/usr/bin/env python
+# Post install script to set up environment
 import sys
 import os
 import json
 from subprocess import call
 
+system_user = os.environ['SUDO_USER']
+
 def write_json(user,passwd,root_dir):
+    config_file = os.path.join(root_dir,'config.json')
     config_data = {
         'name' : 'MATCHBox API config file',
         'version' : '1.0',
@@ -17,10 +21,10 @@ def write_json(user,passwd,root_dir):
         'url' : 'https://matchbox.nci.nih.gov/match/common/rs/getPatients',
         'manifest_url' : 'https://matchbox.nci.nih.gov/reportapi/patientSpecimenTrackingSummary'
     }
-    with open(os.path.join(root_dir,'config.json'), 'w') as fh:
+    with open(config_file, 'w') as fh:
         json.dump(config_data, fh, indent=4)
+    os.system('chown {} {}'.format(system_user,config_file))
     sys.stdout.write('Done with config creation!\n')
-    
 
 def make_config_file(root_dir):
     '''Create a config file for use in connecting with MATCHBox.'''
@@ -34,19 +38,20 @@ def pre_build_mb_obj(root_dir):
     '''First time launch, build a matchbox json dump file and put it into 
        $HOME/.mb_utils.
     '''
+    mb_obj_file = os.path.join(root_dir,'mb_obj.json')
     sys.stdout.write('Creating a MATCHBox data dump for quicker lookups. This '
-        'will take a few minutes...')
+        'will take a few minutes...\n')
     sys.stdout.write('(NOTE: can do live queries at any time, but this can take '
         'quite a while and the use of routinely collected data dumps using '
-        'matchbox_data_dump.py is preferred and encouraged.')
+        'matchbox_data_dump.py is preferred and encouraged.\n')
 
-    call(['bin/matchbox_json_dump.py','-o', os.path.join(root_dir,'mb_obj.json')])
-    #call(['bin/matchbox_json_dump.py','-d', 'raw_mb_dump_062117.json','-o',
-          #'mb_obj.json'])
-    sys.stdout.write('Done!\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n')
-    sys.stdout.write('  We recommend you run the matchbox_data_dump.py program '
-        'routintely to pick up any new data\n')
-    sys.stdout.write('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n')
+    call(['bin/matchbox_json_dump.py','-o', mb_obj_file])
+    os.system('chown {} {}'.format(system_user,mb_obj_file))
+    sys.stdout.write('Done!\n\n')
+    sys.stdout.write('@'*75, "\n")
+    sys.stdout.write('\t\t -> We recommend you run the matchbox_data_dump.py program routintely '
+        'to pick up any new data that has been generated since last polling\n')
+    sys.stdout.write('@'*75, "\n")
 
 if __name__=='__main__':
     root_dir = os.path.join(os.environ['HOME'], '.mb_utils/')
