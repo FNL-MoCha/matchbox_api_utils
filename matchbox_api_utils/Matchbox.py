@@ -6,7 +6,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.17_062117'
+version = '0.9.18_071317'
 
 class Matchbox(object):
     def __init__(self,url,creds,load_raw=None,make_raw=None):
@@ -255,20 +255,20 @@ class MatchboxData(object):
 
         # Starting from processed MB JSON obj.
         if dumped_data:
-            print('\n\t->  Starting from a processed MB JSON Obj')
+            print('\n  ->  Starting from a processed MB JSON Obj')
             self.data = load_dumped_json(dumped_data)
             if patient:
                 print('filtering on patient: %s\n' % patient)
                 self.data = self.__filter_by_patient(self.data,patient)
         # Starting from raw MB JSON obj.
         elif load_raw:
-            print('\n\t->  Starting from a raw MB JSON Obj')
+            print('\n  ->  Starting from a raw MB JSON Obj')
             mb_raw_data = load_dumped_json(load_raw)
             self.matchbox = Matchbox(url,creds,load_raw=mb_raw_data)
             self.data = self.matchbox.gen_patients_list()
         # Starting from a live instance, and possibly making a raw dump
         else:
-            print('\n\t->  Starting from a live MB instance')
+            print('\n  ->  Starting from a live MB instance')
             self.matchbox = Matchbox(url,creds,make_raw=make_raw)
             self.data = self.matchbox.gen_patients_list()
 
@@ -369,15 +369,15 @@ class MatchboxData(object):
 
     def find_variant_frequency(self,query,query_patients=None):
         '''
-        Based on an input query, generate a dict of patient data that can be further filtered.  Input required is a dict
-        query data in the form:
+        Based on an input query, generate a dict of patient data that can be 
+        further filtered.  Input required is a dict query data in the form:
             {'snvs' : ['GENE1','GENE2',etc.],
              'indels' : ['GENE1', 'GENE2', etc.],
                      .
                      .
                      .
             }
-            and so on
+        and so on
         Will return a dict of matching data with disease and MOI information
         '''
         results = {} 
@@ -390,7 +390,9 @@ class MatchboxData(object):
             matches = []
 
             if 'mois' in self.data[patient]:
-                input_data = dict(self.data[patient]['mois'])
+                # input_data = dict(self.data[patient]['mois'])
+                input_data = self.data[patient]['mois']
+
                 # We might want to just print out all MOIs for a patient rather than having to 
                 # absolutely print out by MOIs.  Maybe there is a better way...write a new function?
                 if len(query) < 1:
@@ -399,7 +401,9 @@ class MatchboxData(object):
                             matches.append(var)
                 else:
                     if 'snvs' in query and 'singleNucleotideVariants' in input_data:
-                        matches = matches + self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
+                        matches = matches + self.__get_var_data_by_gene(
+                            input_data['singleNucleotideVariants'],query['snvs']
+                        )
 
                     if 'indels' in query and 'indels' in input_data:
                         matches = matches + self.__get_var_data_by_gene(input_data['indels'],query['indels'])
@@ -416,7 +420,6 @@ class MatchboxData(object):
                             else:
                                 filtered_fusions.append(fusion)
                         matches = matches + self.__get_var_data_by_gene(filtered_fusions,query['fusions'])
-
             if matches:
                 results[patient] = {
                     'psn'     : self.data[patient]['psn'],
