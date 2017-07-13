@@ -9,7 +9,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData
 
-version = '0.10.0_071317'
+version = '0.10.1_071317'
 
 class Config(object):
     def __init__(self,config_file):
@@ -40,7 +40,6 @@ def get_args():
         Input a list of genes by variant type and get back a table of NCI-MATCH hits that can be further 
         analyzed in Excel.  
         ''',
-        #version = '%(prog)s  -  ' + version,
     )
     parser.add_argument('-j', '--json', metavar='<mb_json_file>', 
             help='Load a MATCHBox JSON file derived from "matchbox_json_dump.py" instead of a live query')
@@ -63,7 +62,6 @@ def get_args():
 
     #if args.snv == args.indel == args.cnv == args.fusion == None:
     if all(x == None for x in [args.snv,args.indel,args.cnv,args.fusion]):
-        #sys.stderr.write('ERROR: No SNV, Indel, CNV, or Fusion gene(s) added to query. You must select at least one type to search!\n')
         sys.stderr.write('WARN: No SNV, Indel, CNV, or Fusion gene(s) added to query. Will output all MOIs.\n')
         #sys.exit(1)
     return args
@@ -119,7 +117,6 @@ if __name__=='__main__':
     if not os.path.isfile(config_file):
         config_file = os.path.join(os.getcwd(), 'config.json')
 
-
     try:
         config_data = Config.read_config(config_file)
     except IOError:
@@ -157,7 +154,7 @@ if __name__=='__main__':
     if not args.json:
         sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
         sys.stdout.flush()
-    data = MatchboxData(config_data['url'],config_data['creds'],args.json)
+    data = MatchboxData(config_data['url'],config_data['creds'],dumped_data=args.json)
     sys.stdout.write('\n')
 
     # Gen a query result
