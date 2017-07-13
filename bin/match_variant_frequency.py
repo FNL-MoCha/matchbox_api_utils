@@ -9,7 +9,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData
 
-version = '0.9.1_061917'
+version = '0.10.0_071317'
 
 class Config(object):
     def __init__(self,config_file):
@@ -114,14 +114,19 @@ def split_genes(x):
     return [y.upper() for y in x.split(',')]
 
 if __name__=='__main__':
-    #os.path.dirname(os.path.realpath(__file__)).rstrip('bin') + 'config.json'
-    try:
-        config_file = os.path.dirname(os.path.realpath(__file__)).rstrip('bin') + 'config.json'
-        #config_file = os.path.isfile(os.path.join(os.getcwd(), '/config.json'))
-    except:
-        config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
+    config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
+    if not os.path.isfile(config_file):
+        config_file = os.path.join(os.getcwd(), 'config.json')
 
-    config_data = Config.read_config(config_file)
+
+    try:
+        config_data = Config.read_config(config_file)
+    except IOError:
+        sys.stderr.write('ERROR: No configuration file found! Need to create a '
+            'config file in the current directory or use the system provided one '
+            'in ~/.mb_utils/config.json (preferred).\n')
+        sys.exit(1)
+
     args = get_args()
 
     query_list = {}
