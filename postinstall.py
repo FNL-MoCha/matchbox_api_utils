@@ -53,10 +53,10 @@ def pre_build_mb_obj(root_dir):
     call(['bin/matchbox_json_dump.py','-o', mb_obj_file])
     os.system('chown {} {}'.format(system_user,mb_obj_file))
     sys.stdout.write('Done!\n\n')
-    sys.stdout.write('@'*75, "\n")
+    sys.stdout.write('@'*75 + "\n")
     sys.stdout.write('\t\t -> We recommend you run the matchbox_data_dump.py program routintely '
         'to pick up any new data that has been generated since last polling\n')
-    sys.stdout.write('@'*75, "\n")
+    sys.stdout.write('@'*75 + "\n")
 
 if __name__=='__main__':
     root_dir = os.path.join(os.environ['HOME'], '.mb_utils/')
