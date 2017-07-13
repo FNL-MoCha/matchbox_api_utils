@@ -8,7 +8,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData
 
-version = '0.7.0_061217'
+version = '0.8.0_061217'
 
 class Config(object):
     def __init__(self,config_file):
@@ -84,10 +84,9 @@ def patient_summary(data,patients=None):
     return
 
 if __name__=='__main__':
-    try:
-        config_file = (os.path.join(os.path.dirname(__file__), '../config.json'))
-    except:
-        config_file = os.path.join(os.environ['HOME'],'.mb_utils/config.json')
+    config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
+    if not os.path.isfile(config_file):
+        config_file = os.path.join(os.getcwd(), 'config.json')
 
     try:
         config_data = Config.read_config(config_file)
