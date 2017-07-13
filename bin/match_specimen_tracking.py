@@ -13,7 +13,7 @@ from collections import defaultdict
 
 from matchbox_api_utils.Matchbox import MatchboxData
 
-version = '1.0.0_121616'
+version = '1.1.0_071317'
 
 class Config(object):
     '''Read in a config file and return JSON obj that we can use to modify our credentials and whatnot.'''
@@ -77,10 +77,9 @@ def main():
     try:
         config_data = Config(config_file)
     except IOError:
-        sys.stderr.write('ERROR: Can not find a config file in $HOME/.mb_utils or the current working directory.  You must create a config file to continue!\n')
-        sys.exit(1)
-    except:
-        sys.stderr.write('ERROR: Can not read file %s. Check that file is intact and recreate if necessary!\n' % config_file)
+        sys.stderr.write('ERROR: No configuration file found! Need to create a '
+            'config file in the current directory or use the system provided one '
+            'in ~/.mb_utils/config.json (preferred).\n')
         sys.exit(1)
 
     sys.stdout.write('Retrieving a JSON of MATCH specimen tracking info...')
