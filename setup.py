@@ -2,7 +2,7 @@ import sys, os
 from setuptools import setup
 from distutils.command.install import install as _install
 
-version = '0.9.17a1'
+version = '0.9.18a1'
 
 class install(_install):
     def run(self):
