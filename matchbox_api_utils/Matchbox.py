@@ -6,7 +6,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.18_071317'
+version = '0.9.19_071417'
 
 class Matchbox(object):
     def __init__(self,url,creds,load_raw=None,make_raw=None):
@@ -348,23 +348,20 @@ class MatchboxData(object):
             diseases[self.data[psn]['ctep_term']] += 1
         return total_patients, diseases
 
-    def __get_patient_disease(self,psn):
-        return (psn,self.data[psn]['ctep_term'])
-
     def get_patients_and_disease(self,query_psn=None):
         '''
         Print out a list of patients and their disease. Can either input a single psn to query, or can input
         a list of PSNs.
         '''
-        output_data = []
         psn_list = []
         if query_psn:
             psn_list.append(query_psn)
         else:
             psn_list = self.data.keys()
 
+        output_data = {}
         for psn in psn_list:
-            output_data.append(self.__get_patient_disease(psn))
+            output_data[psn] = self.data[psn]['ctep_term']
         return output_data
 
     def find_variant_frequency(self,query,query_patients=None):
