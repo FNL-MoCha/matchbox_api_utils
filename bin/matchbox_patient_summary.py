@@ -8,7 +8,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData
 
-version = '0.8.0_061217'
+version = '0.9.0_071417'
 
 class Config(object):
     def __init__(self,config_file):
@@ -66,21 +66,24 @@ def disease_summary(data):
     for elem in sorted(diseases,key=diseases.get,reverse=True):
         print('\t'.join([elem,str(diseases[elem])]))
 
+def print_line(x,y):
+    print(','.join([x,y]))
+
 def patient_summary(data,patients=None):
     '''Print out a summary for each patient and their disease, excluding any that do not have disease data indicated'''
-    filtered = data.get_patients_and_disease()
+    patients_list = data.get_patients_and_disease()
     total_screened = data.get_num_patients(has_biopsy=True)
-    
-    if patients:
-        results = [','.join(patient) for patient in filtered if patient[1] != '-' and patient[0] in patients]
-    else:
-        results = [','.join(patient) for patient in filtered if patient[1] != '-']
 
-    gen_header('Patient', '{}/{}'.format(len(results),total_screened))
-
+    gen_header('Patient', '{}/{}'.format(len(patients_list),total_screened))   
     print('PSN,Disease')
-    for i in results:
-        print(i)
+    if patients:
+        for patient in patients:
+            if patient in patients_list and patients_list[patient] != '-':
+                print_line(patient,patients_list[patient])
+    else:
+        for patient in sorted(patients_list):
+            if patients_list[patient] != '-':
+                print_line(patient,patients_list[patient])
     return
 
 if __name__=='__main__':
