@@ -8,7 +8,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData
 
-version = '0.9.0_071417'
+version = '0.10.0_071717'
 
 class Config(object):
     def __init__(self,config_file):
@@ -53,9 +53,9 @@ def get_args():
     args = parser.parse_args()
     return args
 
-def gen_header(dtype,total):
+def gen_header(dtype,psns,biopsies):
     today = datetime.date.today().strftime('%m/%d/%Y')
-    print(":::  MATCH {} Summary as of {} (Total Screened: {})  :::\n".format(dtype,today,total))
+    print(":::  MATCH {} Summary as of {} (Query PSNs: {}; Total Passed Biopsies: {})  :::\n".format(dtype,today,psns,biopsies))
 
 def disease_summary(data):
     '''
@@ -66,24 +66,33 @@ def disease_summary(data):
     for elem in sorted(diseases,key=diseases.get,reverse=True):
         print('\t'.join([elem,str(diseases[elem])]))
 
-def print_line(x,y):
-    print(','.join([x,y]))
+def print_line(x,y,z):
+    print(','.join([x,y,z]))
 
-def patient_summary(data,patients=None):
+def patient_summary(data,patients=None,outside=False):
     '''Print out a summary for each patient and their disease, excluding any that do not have disease data indicated'''
-    patients_list = data.get_patients_and_disease()
-    total_screened = data.get_num_patients(has_biopsy=True)
+    # TODO: Placeholder for outputting outside assay data.  For now, just skip it all.
+    biopsy_numbers = data.get_biopsy_numbers(has_biopsy=True)
+    num_collected_biopsies = biopsy_numbers['passed_biopsy']
 
-    gen_header('Patient', '{}/{}'.format(len(patients_list),total_screened))   
-    print('PSN,Disease')
+    results = {}
     if patients:
         for patient in patients:
-            if patient in patients_list and patients_list[patient] != '-':
-                print_line(patient,patients_list[patient])
+            return_data = data.get_patients_and_disease(query_psn=patient)
+            if return_data:
+                results[patient] = return_data[patient]
     else:
-        for patient in sorted(patients_list):
-            if patients_list[patient] != '-':
-                print_line(patient,patients_list[patient])
+        results = data.get_patients_and_disease(outside=outside)
+
+    if results:
+        gen_header('Patient', len(results), num_collected_biopsies)
+        print('PSN,BSN,Disease')
+        for res in sorted(results):
+            bsn = data.get_bsn(psn=res)
+            print_line(res,bsn,results[res])
+    else:
+        sys.stderr.write("ERROR: No data for input patient list!\n")
+        sys.exit(1)
     return
 
 if __name__=='__main__':
@@ -107,7 +116,6 @@ if __name__=='__main__':
     if not args.json:
         sys.stdout.write('WARN: No MATCHBox JSON dump obj loaded. Performing live queries can take a few minutes, and '
                          'be sped up by loading a JSON obj from `matchbox_json_dump.py` first.\n')
-
         sys.stdout.flush()
 
     data = MatchboxData(config_data['url'], config_data['creds'],dumped_data=args.json)
