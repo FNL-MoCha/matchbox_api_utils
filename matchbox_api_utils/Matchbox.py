@@ -6,7 +6,7 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.9.19_071417'
+version = '0.10.0_071717'
 
 class Matchbox(object):
     def __init__(self,url,creds,load_raw=None,make_raw=None):
@@ -22,7 +22,8 @@ class Matchbox(object):
         # to see what keys / vals are availble.  Only really for dev and debugging,
         # though.
         if make_raw: 
-            today = datetime.date.today().strftime('%m%d%y')
+            # today = datetime.date.today().strftime('%m%d%y')
+            today = get_today()
             self.__raw_dump(self.api_data,'raw_mb_dump_'+today+'.json')
             return
 
@@ -57,17 +58,28 @@ class Matchbox(object):
         patients = defaultdict(dict)
 
         for record in self.api_data:
-            # Can have registered patient who have not yet be biopsied.  Let's pass over those for now, but maybe 
-            # pick back up later if we want to be able to get a track record of registered vs tested.
-            if len(record['biopsies']) < 1 or record['latestBiopsy'] == 'None':
-                continue
-            psn                          = record['patientSequenceNumber']       
+            psn = record['patientSequenceNumber']       
+
+            # if record['latestBiopsy'] == None or record['latestBiopsy']['failure'] == 'true':
+                # print(psn)
+            # continue
+
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
             patients[psn]['gender']      = record['gender']
             patients[psn]['id_field']    = record['id']
             patients[psn]['ethnicity']   = record['ethnicity']
+
+            patients[psn]['dna_bam_path'] = '---'
+            patients[psn]['ir_runid']     = '---'
+            patients[psn]['rna_bam_path'] = '---'
+            patients[psn]['vcf_name']     = '---'
+            patients[psn]['vcf_path']     = '---'
+            patients[psn]['mois']         = '---'
+            patients[psn]['bsn']          = '---'
+            patients[psn]['ihc']          = '---'
+            patients[psn]['msn']          = '---'
 
             try:
                 race = record['races'][0]
@@ -87,49 +99,37 @@ class Matchbox(object):
                 medra_code = '-'
             patients[psn]['medra_code'] = medra_code
 
-            biopsy_data = record['latestBiopsy']
-
-            if biopsy_data['failure'] == 'false': 
-                continue 
-
-            patients[psn]['bsn'] = biopsy_data['biopsySequenceNumber']
-            patients[psn]['ihc'] = self.__get_ihc_results(biopsy_data['assayMessagesWithResult'])
-
-            '''----------------------------------  OUTSIDE ASSSAY FLAWs HERE  ---------------------------'''
-            #XXX
-            msns = []
-            for message in biopsy_data['mdAndersonMessages']:
-                if message['message'] == 'NUCLEIC_ACID_SENDOUT':
-                    msns.append(message['molecularSequenceNumber'])
-            patients[psn]['msn'] = msns # Can have more than one in the case of re-extractions.
-
-            # for e in patients[psn]:
-                # print('{}: {}'.format(e,patients[psn][e]))
-            # sys.exit()
-
-            if 'OUTSIDE_ASSAY' in patients[psn]['source']:
-                # TODO: Finish this later.  For now skip so that we can analyze patients....
-                # outside_results =  self.__proc_outside_assay_entry(biopsy_data)
-
-                patients[psn]['dna_bam_path'] = '---'
-                patients[psn]['ir_runid']     = '---'
-                patients[psn]['rna_bam_path'] = '---'
-                patients[psn]['vcf_name']     = '---'
-                patients[psn]['vcf_path']     = '---'
-                patients[psn]['mois']         = '---'
+            if record['latestBiopsy'] == None:
+                patients[psn]['biopsy'] = 'No Biopsy'
+            elif record['latestBiopsy']['failure']:
+                patients[psn]['biopsy'] = 'Biopsy Failure'
             else:
-                for result in biopsy_data['nextGenerationSequences']:
-                    if result['status'] != 'CONFIRMED':  
-                        continue 
-                    patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
-                    patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
-                    patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
-                    patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
-                    patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+                patients[psn]['biopsy'] = 'Pass'
+                biopsy_data = record['latestBiopsy']
 
-                    # Get and add MOI data to patient record
-                    variant_report                = result['ionReporterResults']['variantReport']
-                    patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
+                patients[psn]['bsn'] = biopsy_data['biopsySequenceNumber']
+                patients[psn]['ihc'] = self.__get_ihc_results(biopsy_data['assayMessagesWithResult'])
+
+                msns = []
+                for message in biopsy_data['mdAndersonMessages']:
+                    if message['message'] == 'NUCLEIC_ACID_SENDOUT':
+                        msns.append(message['molecularSequenceNumber'])
+                patients[psn]['msn'] = msns # Can have more than one in the case of re-extractions.
+
+                if 'OUTSIDE_ASSAY' not in patients[psn]['source']: # Skip outside assays as the data is not useful yet.
+                    for result in biopsy_data['nextGenerationSequences']:
+                        if result['status'] != 'CONFIRMED':  
+                            continue 
+                        patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
+                        patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
+                        patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
+                        patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
+                        patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+
+                        # Get and add MOI data to patient record
+                        variant_report                = result['ionReporterResults']['variantReport']
+                        patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
+
         # pp(dict(patients))
         # sys.exit()
         return patients
@@ -289,28 +289,40 @@ class MatchboxData(object):
     def __iter__(self):
         return self.data.itervalues()
 
-    def get_num_patients(self,has_biopsy=None,has_msn=None,has_seqdata=None):
-        '''Return number of patients registered in MATCHBox.  Can exclude patients without a biopsy,
-           patients without an MSN (i.e. no NA has been generated yet), or without any sequencing
-           data yet uploaded.
+    def get_biopsy_numbers(self,has_biopsy=None,has_msn=None,has_seqdata=None):
+        '''Return number of patients registered in MATCHBox with biopsy and sequencing
+        information. Categories returned are total PSNs (excluding outside assay
+        patients), total passed biopsies, total failed biopsies, total MSNs (
+        not including multiple MSNs / patient) as a method of figuring out how
+        many NAs were prepared, and total with sequencing data.
         '''
-        count = 0
+        count = {
+            'psn'           : 0,
+            'passed_biopsy' : 0,
+            'failed_biopsy' : 0,
+            'no_biopsy'     : 0,
+            'msn'           : 0,
+            'sequenced'     : 0,
+        }
+
         for p in self.data:
-            if has_biopsy and self.data[p]['bsn'] == '--':
-                continue
-            elif has_msn and len(self.data[p]['msn']) < 1:
-                continue
-            elif has_seqdata and 'mois' not in self.data[p]:
-                continue
+            count['psn'] += 1
+            if self.data[p]['biopsy'] == 'No Biopsy':
+                count['no_biopsy'] += 1
+            elif self.data[p]['biopsy'] == 'Biopsy Failure':
+                count['failed_biopsy'] += 1 
             else:
-                count += 1
+                pass
+                count['passed_biopsy'] += 1 
+                if 'msn' in self.data[p] and self.data[p]['msn'] > 0:
+                    count['msn'] += 1
+                if 'mois' in self.data[p]:
+                    count['sequenced'] += 1
         return count
 
     def _matchbox_dump(self,filename=None):
         '''Dump the whole DB as a JSON Obj'''
-        # with open('mb.json', 'w') as outfile:
-        today = datetime.date.today()
-        formatted_date = today.strftime('%m%d%y')
+        formatted_date = get_today()
         if not filename:
             filename = 'mb_' + formatted_date + '.json'
         with open(filename, 'w') as outfile:
@@ -318,13 +330,12 @@ class MatchboxData(object):
 
     def map_msn_psn(self,pt_id,id_type):
         '''Given a patient ID (either MSN or PSN) and a type val, output corresponding MSN / PSN mapping. 
-                 map_msn_psn(<id_string>,'msn' | 'psn')
+                 map_msn_psn(<id_string>, <'msn'|'psn'>)
         '''
         result = ''
         if id_type == 'psn':
             result = self.data[pt_id]['msn']
         elif id_type == 'msn':
-            print('getting psn for msn %s' % pt_id)
             result = self.__return_key_by_val(pt_id)
 
         if not result:
@@ -433,4 +444,7 @@ class MatchboxData(object):
 def load_dumped_json(json_file):
     with open(json_file) as fh:
         return json.load(fh)
+
+def get_today():
+    return datetime.date.today().strftime('%m%d%y')
 
