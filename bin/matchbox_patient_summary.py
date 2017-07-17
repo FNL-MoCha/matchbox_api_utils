@@ -8,7 +8,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils.Matchbox import MatchboxData
 
-version = '0.10.0_071717'
+version = '0.10.1_071717'
 
 class Config(object):
     def __init__(self,config_file):
@@ -47,6 +47,8 @@ def get_args():
             help='Filter patient summary to only these patients. Can be a comma separated list')
     parser.add_argument('-t', '--tumor', metavar='<tumor_type>', 
             help='Retrieve data for only these tumor types')
+    parser.add_argument('-O','--Outside', action='store_true', 
+            help='Include Outside Assay study data (DEFAULT: False).')
     parser.add_argument('-o', '--outfile', metavar='<results.txt>', 
             help='Name of output file. DEFAULT: STDOUT.')
     parser.add_argument('-v', '--version', action='version', version = '%(prog)s  -  ' + version)    
@@ -71,7 +73,6 @@ def print_line(x,y,z):
 
 def patient_summary(data,patients=None,outside=False):
     '''Print out a summary for each patient and their disease, excluding any that do not have disease data indicated'''
-    # TODO: Placeholder for outputting outside assay data.  For now, just skip it all.
     biopsy_numbers = data.get_biopsy_numbers(has_biopsy=True)
     num_collected_biopsies = biopsy_numbers['passed_biopsy']
 
@@ -121,7 +122,7 @@ if __name__=='__main__':
     data = MatchboxData(config_data['url'], config_data['creds'],dumped_data=args.json)
 
     if args.result_type == 'patient':
-        patient_summary(data,patients)
+        patient_summary(data,patients,outside=args.Outside)
     elif args.result_type == 'disease':
         # TODO: Would be cool to add a filter here to, say, filter on only Breast Cancer or something
         disease_summary(data)
