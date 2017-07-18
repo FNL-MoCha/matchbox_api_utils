@@ -1,10 +1,3 @@
-'''
-.. module:: Matchbox
-   :platform: Unix
-   :synopsis: A set of tools to load, parse, and summarize MATCHBox data.
-.. moduleauthor:: Dave Sims <david.sims2@nih.gov>
-
-'''
 import os
 import sys
 import requests
@@ -14,8 +7,6 @@ from collections import defaultdict
 from pprint import pprint as pp
 
 class Matchbox(object):
-    '''Matchbox API class.'''
-
     def __init__(self,url,creds,load_raw=None,make_raw=None):
         '''MATCHBox API class. Used for calling to the MATCHBox API, loading data
         and, creating a basic data structure. Can load a raw MATCHBox API dataset
