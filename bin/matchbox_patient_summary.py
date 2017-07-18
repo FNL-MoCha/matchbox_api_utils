@@ -6,7 +6,7 @@ import argparse
 import datetime
 from pprint import pprint as pp
 
-from matchbox_api_utils.Matchbox import MatchboxData
+from matchbox_api_utils import MatchboxData
 
 version = '0.10.1_071717'
 
@@ -33,7 +33,7 @@ class Config(object):
 
 def get_args():
     parser = argparse.ArgumentParser(
-        formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
+        formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=125),
         description=
         '''
         Get patient or disease summary statistics and data from the MATCH dataset.  

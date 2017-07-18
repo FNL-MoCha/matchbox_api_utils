@@ -5,7 +5,7 @@ import json
 import argparse
 from pprint import pprint as pp
 
-from matchbox_api_utils.Matchbox import MatchboxData
+from matchbox_api_utils import MatchboxData
 
 version = '1.5.0_062117'
 

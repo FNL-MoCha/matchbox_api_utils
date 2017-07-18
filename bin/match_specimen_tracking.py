@@ -11,7 +11,7 @@ import requests
 from pprint import pprint as pp
 from collections import defaultdict
 
-from matchbox_api_utils.Matchbox import MatchboxData
+from matchbox_api_utils import MatchboxData
 
 version = '1.1.0_071317'
 
