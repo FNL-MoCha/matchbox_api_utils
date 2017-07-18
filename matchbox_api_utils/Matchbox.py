@@ -1,3 +1,10 @@
+'''
+.. module:: Matchbox
+   :platform: Unix
+   :synopsis: A set of tools to load, parse, and summarize MATCHBox data.
+.. moduleauthor:: Dave Sims <david.sims2@nih.gov>
+
+'''
 import os
 import sys
 import requests
@@ -6,17 +13,40 @@ import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
-version = '0.10.2_071717'
-
 class Matchbox(object):
+    '''Matchbox API class.'''
+
     def __init__(self,url,creds,load_raw=None,make_raw=None):
+        '''MATCHBox API class. Used for calling to the MATCHBox API, loading data
+        and, creating a basic data structure. Can load a raw MATCHBox API dataset
+        JSON file, or create one.  Requires credentials, generally acquired from
+        the config file generated upon package setup.
+
+        Args:
+            url (str): API URL for MATCHbox. Generally only using one at the moment,
+                       but possible to add others later.
+            creds (dict): Username and Password credentials obtained from the config
+                          file generated upon setup. Can also just input a dict in 
+                          the form of:
+                              'username' : <username>,
+                              'password' : <password>
+
+            load_raw (str): Raw, unprocessed MATCHBox API JSON file (generally obtained
+                            from the "make_raw" option. For dev purposes only, and useful
+                            when we can not get a live connection to MATCHbox for some 
+                            reason.
+            make_raw (bool): Make a raw, unprocessed MATCHBox API JSON file.
+
+        Returns:
+            MATCHBox API dataset, used in the MatchboxData class below.
+        '''
         self.url   = url
         self.creds = creds
 
         if load_raw:
             self.api_data = load_raw
         else:
-            self.api_data = self.api_call()
+            self.api_data = self.__api_call()
 
         # For debugging purposes, we may want to dump the whole raw dataset out 
         # to see what keys / vals are availble.  Only really for dev and debugging,
@@ -31,16 +61,12 @@ class Matchbox(object):
 
     @staticmethod
     def __ascii_encode_dict(data):
-        '''From SO9590382, a method to encode the JSON obj into ascii instead of 
-           unicode.
-        '''
         ascii_encode = lambda x: x.encode('ascii') if isinstance(x,bytes) else x
         return dict(map(ascii_encode,pair) for pair in data.items())
 
-    def api_call(self):
-        '''Use os and system curl to get a much (much!!!!) quicker connection with 
-           MB
-        '''
+    def __api_call(self):
+        # Call to API  to get data using cURL rather than requests or the like.  Works
+        # a ton (!!) faster!
         curl_cmd = 'curl -u {}:{} -s {}'.format(
             self.creds['username'],self.creds['password'],self.url
         )
@@ -49,7 +75,7 @@ class Matchbox(object):
         
     @staticmethod
     def __raw_dump(data,filename=None):
-        '''Dump a raw, unprocessed matchbox for dev purposes'''
+        # Dump a raw, unprocessed matchbox for dev purposes.
         if not filename:
             filename = 'raw_mb_dump.json'
         with open(filename,'w') as fh:
@@ -57,6 +83,15 @@ class Matchbox(object):
 
     #XXX
     def gen_patients_list(self):
+        '''
+        Process the MATCHBox API JSON data into a much more concise and easily
+        parsable dict of data. This dict will be the main dataset used for later
+        data analysis and queries.
+
+        Returns:
+            patients (dict): Dict of parsed MATCHBox API data.
+
+        '''
         patients = defaultdict(dict)
 
         for record in self.api_data:
@@ -146,7 +181,7 @@ class Matchbox(object):
         return ihc_results
 
     def __proc_ngs_data(self,ngs_results):
-        '''Create and return a dict of variant call data that can be stored in the patient's obj'''
+        # Create and return a dict of variant call data that can be stored in the patient's obj
         variant_call_data = defaultdict(list)
         variant_list = ['singleNucleotideVariants', 'indels', 'copyNumberVariants', 'unifiedGeneFusions']
 
@@ -184,10 +219,8 @@ class Matchbox(object):
 
     @staticmethod
     def __remap_fusion_genes(fusion_data):
-        '''
-        Fix the fusion driver / partner annotation since it is not always correct the way it's being parsed.  Also
-        add in a 'gene' field so that it's easier to aggregate data later on (the rest of the elements use 'gene').
-        '''
+        # Fix the fusion driver / partner annotation since it is not always correct the way it's being parsed.  Also
+        # add in a 'gene' field so that it's easier to aggregate data later on (the rest of the elements use 'gene').
         drivers = ['ABL1','AKT2','AKT3','ALK','AR','AXL','BRAF','BRCA1','BRCA2','CDKN2A','EGFR','ERBB2','ERBB4','ERG',
                    'ETV1','ETV1a','ETV1b','ETV4','ETV4a','ETV5','ETV5a','ETV5d','FGFR1','FGFR2','FGFR3','FGR','FLT3',
                    'JAK2','KRAS','MDM4','MET','MYB','MYBL1','NF1','NOTCH1','NOTCH4','NRG1','NTRK1','NTRK2','NTRK3',
@@ -216,6 +249,7 @@ class Matchbox(object):
 
 
 class MatchboxData(object):
+    '''MatchboxData class'''
     def __init__(self,url,creds,patient=None,dumped_data=None,load_raw=None,make_raw=None):
         '''
            Generate a MATCHBox data object that can be parsed and queried 
@@ -228,6 +262,7 @@ class MatchboxData(object):
                raw_dump    : After reading MATCHBox in, dump out the whole thing 
                              as a raw JSON file.  This can be used as an entry 
                              point.
+              make_raw     : Make a raw MATCHBox dataset.
         '''
         if patient:
             url = url + '?patientId=%s' % patient
@@ -282,24 +317,40 @@ class MatchboxData(object):
             'no_biopsy'     : 0,
             'msn'           : 0,
             'sequenced'     : 0,
+            'outside'       : 0,
         }
 
         for p in self.data:
             count['psn'] += 1
-            if self.data[p]['biopsy'] == 'No Biopsy':
+            biopsy_flag = self.data[p]['biopsy']
+            if biopsy_flag == 'No Biopsy':
                 count['no_biopsy'] += 1
-            elif self.data[p]['biopsy'] == 'Failed Biopsy':
+            elif biopsy_flag == 'Failed Biopsy':
                 count['failed_biopsy'] += 1 
-            else:
-                pass
+            elif biopsy_flag == 'Outside':
+                count['outside'] += 1
+            elif biopsy_flag == 'Pass':
                 count['passed_biopsy'] += 1 
                 if 'msn' in self.data[p] and self.data[p]['msn'] > 0:
                     count['msn'] += 1
+                # TODO: verfiy that this is the best way to count "sequenced" samples
                 if 'mois' in self.data[p]:
                     count['sequenced'] += 1
         return count
 
     def get_bsn(self,psn=None,msn=None):
+        '''
+        Retrieve a patient BSN from either an input PSN or MSN.
+        Args:
+            psn (str): A PSN number to query.  Must be a string.
+            msn (str): A MSN number to query.  Must be a string.
+
+        Returns:
+            bsn (str): A BSN that maps to the PSN or MSN input.
+
+        >>> print(get_bsn(psn='14420'))
+        T-17-000550
+        '''
         if psn and psn in self.data:
             return self.data[psn]['bsn']
         elif msn:
@@ -308,7 +359,15 @@ class MatchboxData(object):
                     return self.data[p]['bsn']
     
     def _matchbox_dump(self,filename=None):
-        '''Dump the whole DB as a JSON Obj'''
+        '''Dump a parsed MATCHBox dataset (not the raw total API dataset) as a 
+        JSON file that can later be loaded in, rather than making an API call
+        and reprocessing. Useful for quicker look ups as the API call can be 
+        very, very slow with such a large DB.
+
+        Args:
+            filename (str): Filename to use for output. Default filename is:
+            'mb_<date_generated>.json'
+        '''
         formatted_date = get_today()
         if not filename:
             filename = 'mb_' + formatted_date + '.json'
@@ -316,7 +375,25 @@ class MatchboxData(object):
             json.dump(self.data,outfile,sort_keys=True,indent=4)
 
     def map_msn_psn(self,pt_id,id_type):
-        '''Given a patient ID (either MSN or PSN) and a type val, output corresponding MSN / PSN mapping. 
+        '''
+        Given a patient ID (either MSN or PSN) and a type val, output corresponding 
+        MSN / PSN mapping. 
+
+        .. note::
+           If requesting an MSN as output, you will recieve an array of data since
+           there can be more than one MSN / PSN.  When requesting a PSN from an 
+           MSN, you will recieve only one value.
+
+        Args:
+            pt_id (str): Patient ID as either a MSN or PSN
+            id_type (str): Type of ID input ('msn' | 'psn').
+
+        Returns
+            result (str): Corresponding MSN or PSN that maps to the input MSN or PSN.
+
+        >>> print(map_msn_psn('14420','psn'))
+        [u'MSN44180']
+
                  map_msn_psn(<id_string>, <'msn'|'psn'>)
         '''
         result = ''
@@ -337,6 +414,9 @@ class MatchboxData(object):
                 return p
 
     def get_disease_summary(self):
+        '''
+        Return a summary of registered diseases and counts.
+        '''
         total_patients = 0
         diseases = defaultdict(int)
         for psn in self.data:
@@ -348,7 +428,15 @@ class MatchboxData(object):
 
     def get_patients_and_disease(self,outside=None,query_psn=None):
         '''
-        Return dict of PSN:Disease for valid biopsies.  To be valid, must not have a "
+        Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
+        are defined as being only Passed and can not be Failed, No Biopsy or
+        outside assay biopsies at this time.
+
+        :param name: get_patients_and_disease
+        :param str outside: Return outside assay results or filter them out.
+        :param str query_psn: Optional PSN to filter data on.  
+        :return: Dict of PSN : Disease mappings
+        :rtype dict
         '''
         psn_list = []
         if query_psn:
@@ -437,7 +525,12 @@ class MatchboxData(object):
         return results,count
 
     def get_vcf(self,msn=None):
-        '''Get path of VCF file from MB Obj and return the VCF file from either the MB mirror or the source.'''
+        '''
+        .. note: 
+           THIS METHOD IS NOT YET IMPLEMENTED AND IS JUST A PLACEHOLDER.
+
+        Get path of VCF file from MB Obj and return the VCF file from either the MB mirror or the source.
+        '''
         return
 
 def load_dumped_json(json_file):
