@@ -1,13 +1,27 @@
-#!/usr/bin/env python
 import sys
 import os
 import json
 
+import matchbox_api_utils
+
 class Config(object):
-    '''Configuration class for Matchbox. Can be run standalone or called (more properly) from matchbox'''
-    def __init__(self,config_file):
-        self.config_file = config_file
+    def __init__(self,mb_config_file=None,mb_json_data=None):
+        """MATCHBox Configuration Class
+
+        Allow for import of custon configuration and mb.json data, or else just
+        load the standard dataset deployed during package installation.
+
+        """
+        if mb_config_file:
+            self.config_file = mb_config_file
+        else:
+            self.config_file = matchbox_api_utils.mb_config_file
         self.config_data = Config.read_config(self.config_file)
+
+        if mb_json_data:
+            self.config_data['mb_json_data'] = mb_json_data
+        else:
+            self.config_data['mb_json_data'] = matchbox_api_utils.mb_json_data
 
     def __repr__(self):
         return '%s:%s' % (self.__class__,self.__dict__)
@@ -20,18 +34,11 @@ class Config(object):
 
     @classmethod
     def read_config(cls,config_file):
-        with open(config_file) as fh:
-            data = json.load(fh)
+        try:
+            with open(config_file) as fh:
+                data = json.load(fh)
+        except IOError:
+            sys.stderr.write('ERROR: No configuration file found. You must either run the package configuration '
+                'tools or provide a config file using the "config" option. Can not continue!\n')
+            sys.exit(1)
         return data
-
-if __name__=='__main__':
-    config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
-    if not os.path.isfile(config_file):
-        config_file = os.path.join(os.getcwd(), 'config.json')
-
-    try:
-        config_data = Config(config_file)
-    except IOError:
-        print("ERROR: no configuration file found. Need to create a config file in the current directory or use system "
-              "provided file in ~/.mb_utils")
-        sys.exit(1)
