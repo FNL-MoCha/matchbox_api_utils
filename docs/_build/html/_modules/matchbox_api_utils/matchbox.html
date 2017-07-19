@@ -1,0 +1,691 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>matchbox_api_utils.matchbox &#8212; matchbox_api_utils  documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for matchbox_api_utils.matchbox</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="k">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+
+<span class="kn">import</span> <span class="nn">matchbox_conf</span>
+
+<div class="viewcode-block" id="Matchbox"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.Matchbox">[docs]</a><span class="k">class</span> <span class="nc">Matchbox</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">url</span><span class="p">,</span><span class="n">creds</span><span class="p">,</span><span class="n">load_raw</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">make_raw</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;MATCHBox API class. Used for calling to the MATCHBox API, loading data</span>
+<span class="sd">        and, creating a basic data structure. Can load a raw MATCHBox API dataset</span>
+<span class="sd">        JSON file, or create one.  Requires credentials, generally acquired from</span>
+<span class="sd">        the config file generated upon package setup.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            url (str): API URL for MATCHbox. Generally only using one at the moment,</span>
+<span class="sd">                       but possible to add others later.</span>
+<span class="sd">            creds (dict): Username and Password credentials obtained from the config</span>
+<span class="sd">                          file generated upon setup. Can also just input a dict in </span>
+<span class="sd">                          the form of:</span>
+<span class="sd">                              &#39;username&#39; : &lt;username&gt;,</span>
+<span class="sd">                              &#39;password&#39; : &lt;password&gt;</span>
+
+<span class="sd">            load_raw (str): Raw, unprocessed MATCHBox API JSON file (generally obtained</span>
+<span class="sd">                            from the &quot;make_raw&quot; option. For dev purposes only, and useful</span>
+<span class="sd">                            when we can not get a live connection to MATCHbox for some </span>
+<span class="sd">                            reason.</span>
+<span class="sd">            make_raw (bool): Make a raw, unprocessed MATCHBox API JSON file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            MATCHBox API dataset, used in the MatchboxData class below.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span>   <span class="o">=</span> <span class="n">url</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">creds</span> <span class="o">=</span> <span class="n">creds</span>
+
+        <span class="k">if</span> <span class="n">load_raw</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">api_data</span> <span class="o">=</span> <span class="n">load_raw</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">api_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api_call</span><span class="p">()</span>
+
+        <span class="c1"># For debugging purposes, we may want to dump the whole raw dataset out </span>
+        <span class="c1"># to see what keys / vals are availble.  Only really for dev and debugging,</span>
+        <span class="c1"># though.</span>
+        <span class="k">if</span> <span class="n">make_raw</span><span class="p">:</span> 
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;Making a raw MATCHBox API dump that can be loaded for development &#39;</span>
+                <span class="s1">&#39;purposes rather than a live call to MATCHBox prior to parsing and filtering.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">today</span> <span class="o">=</span> <span class="n">get_today</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__raw_dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_data</span><span class="p">,</span><span class="s1">&#39;raw_mb_dump_&#39;</span><span class="o">+</span><span class="n">today</span><span class="o">+</span><span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+            <span class="k">return</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__ascii_encode_dict</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+        <span class="n">ascii_encode</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">ascii_encode</span><span class="p">,</span><span class="n">pair</span><span class="p">)</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">__api_call</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Call to API  to get data using cURL rather than requests or the like.  Works</span>
+        <span class="c1"># a ton (!!) faster!</span>
+        <span class="n">curl_cmd</span> <span class="o">=</span> <span class="s1">&#39;curl -u </span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="s1"> -s </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">creds</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">creds</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span>
+        <span class="p">)</span>
+        <span class="n">request</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">popen</span><span class="p">(</span><span class="n">curl_cmd</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__raw_dump</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Dump a raw, unprocessed matchbox for dev purposes.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;raw_mb_dump.json&#39;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">fh</span><span class="p">)</span>
+
+    <span class="c1">#XXX</span>
+<div class="viewcode-block" id="Matchbox.gen_patients_list"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.Matchbox.gen_patients_list">[docs]</a>    <span class="k">def</span> <span class="nf">gen_patients_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Process the MATCHBox API JSON data into a much more concise and easily</span>
+<span class="sd">        parsable dict of data. This dict will be the main dataset used for later</span>
+<span class="sd">        data analysis and queries.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            patients (dict): Dict of parsed MATCHBox API data.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">patients</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_data</span><span class="p">:</span>
+            <span class="n">psn</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;patientSequenceNumber&#39;</span><span class="p">]</span>       
+
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;source&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;patientTriggers&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;patientStatus&#39;</span><span class="p">]</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;psn&#39;</span><span class="p">]</span>         <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;patientSequenceNumber&#39;</span><span class="p">]</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;concordance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;concordance&#39;</span><span class="p">]</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;gender&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;gender&#39;</span><span class="p">]</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;id_field&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;ethnicity&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;ethnicity&#39;</span><span class="p">]</span>
+
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;dna_bam_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;---&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;ir_runid&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="s1">&#39;---&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;rna_bam_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;---&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;vcf_name&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="s1">&#39;---&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;vcf_path&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="s1">&#39;---&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;mois&#39;</span><span class="p">]</span>         <span class="o">=</span> <span class="s1">&#39;---&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;bsn&#39;</span><span class="p">]</span>          <span class="o">=</span> <span class="s1">&#39;---&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;ihc&#39;</span><span class="p">]</span>          <span class="o">=</span> <span class="s1">&#39;---&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;msn&#39;</span><span class="p">]</span>          <span class="o">=</span> <span class="s1">&#39;---&#39;</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">race</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;races&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="n">race</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;race&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">race</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ctep_term</span>   <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;diseases&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;ctepTerm&#39;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="n">ctep_term</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;ctep_term&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ctep_term</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">medra_code</span>  <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;diseases&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;medraCode&#39;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="n">medra_code</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span>
+            <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;medra_code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">medra_code</span>
+
+            <span class="k">if</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;latestBiopsy&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;biopsy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;No Biopsy&#39;</span>
+            <span class="k">elif</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;latestBiopsy&#39;</span><span class="p">][</span><span class="s1">&#39;failure&#39;</span><span class="p">]:</span>
+                <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;biopsy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Failed Biopsy&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;biopsy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Pass&#39;</span>
+                <span class="n">biopsy_data</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;latestBiopsy&#39;</span><span class="p">]</span>
+
+                <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;bsn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">biopsy_data</span><span class="p">[</span><span class="s1">&#39;biopsySequenceNumber&#39;</span><span class="p">]</span>
+                <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;ihc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get_ihc_results</span><span class="p">(</span><span class="n">biopsy_data</span><span class="p">[</span><span class="s1">&#39;assayMessagesWithResult&#39;</span><span class="p">])</span>
+
+                <span class="c1"># Skip outside assays as the data is not useful yet.</span>
+                <span class="k">if</span> <span class="s1">&#39;OUTSIDE_ASSAY&#39;</span> <span class="ow">in</span> <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;source&#39;</span><span class="p">]:</span> 
+                    <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;biopsy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Outside&#39;</span>
+                    <span class="k">continue</span>
+
+                <span class="n">msns</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">biopsy_data</span><span class="p">[</span><span class="s1">&#39;mdAndersonMessages&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;NUCLEIC_ACID_SENDOUT&#39;</span><span class="p">:</span>
+                        <span class="n">msns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;molecularSequenceNumber&#39;</span><span class="p">])</span>
+                <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;msn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">msns</span> <span class="c1"># Can have more than one in the case of re-extractions.</span>
+
+                <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">biopsy_data</span><span class="p">[</span><span class="s1">&#39;nextGenerationSequences&#39;</span><span class="p">]:</span>
+                    <span class="c1"># Skip all Failed and Pending reports.</span>
+                    <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;CONFIRMED&#39;</span><span class="p">:</span>  
+                        <span class="k">continue</span> 
+                    <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;dna_bam_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;ionReporterResults&#39;</span><span class="p">][</span><span class="s1">&#39;dnaBamFilePath&#39;</span><span class="p">]</span>
+                    <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;ir_runid&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;ionReporterResults&#39;</span><span class="p">][</span><span class="s1">&#39;jobName&#39;</span><span class="p">]</span>
+                    <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;rna_bam_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;ionReporterResults&#39;</span><span class="p">][</span><span class="s1">&#39;rnaBamFilePath&#39;</span><span class="p">]</span>
+                    <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;vcf_name&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;ionReporterResults&#39;</span><span class="p">][</span><span class="s1">&#39;vcfFilePath&#39;</span><span class="p">])</span>
+                    <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;vcf_path&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;ionReporterResults&#39;</span><span class="p">][</span><span class="s1">&#39;vcfFilePath&#39;</span><span class="p">]</span>
+
+                    <span class="c1"># Get and add MOI data to patient record</span>
+                    <span class="n">variant_report</span>                <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;ionReporterResults&#39;</span><span class="p">][</span><span class="s1">&#39;variantReport&#39;</span><span class="p">]</span>
+                    <span class="n">patients</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;mois&#39;</span><span class="p">]</span>         <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__proc_ngs_data</span><span class="p">(</span><span class="n">variant_report</span><span class="p">)</span>
+
+        <span class="c1"># pp(dict(patients))</span>
+        <span class="c1"># sys.exit()</span>
+        <span class="k">return</span> <span class="n">patients</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__get_ihc_results</span><span class="p">(</span><span class="n">ihc_data</span><span class="p">):</span>
+        <span class="n">ihc_results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;biomarker&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;ICC&#39;</span><span class="p">)</span> <span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">ihc_data</span><span class="p">}</span>
+        <span class="c1"># Won&#39;t always get RB IHC; depends on if we have other qualifying genomic event.  Fill in data anyway.</span>
+        <span class="k">if</span> <span class="s1">&#39;RB&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ihc_results</span><span class="p">:</span>
+            <span class="n">ihc_results</span><span class="p">[</span><span class="s1">&#39;RB&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;ND&#39;</span>
+        <span class="k">return</span> <span class="n">ihc_results</span>
+
+    <span class="k">def</span> <span class="nf">__proc_ngs_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ngs_results</span><span class="p">):</span>
+        <span class="c1"># Create and return a dict of variant call data that can be stored in the patient&#39;s obj</span>
+        <span class="n">variant_call_data</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="n">variant_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;singleNucleotideVariants&#39;</span><span class="p">,</span> <span class="s1">&#39;indels&#39;</span><span class="p">,</span> <span class="s1">&#39;copyNumberVariants&#39;</span><span class="p">,</span> <span class="s1">&#39;unifiedGeneFusions&#39;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">var_type</span> <span class="ow">in</span> <span class="n">variant_list</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">variant</span> <span class="ow">in</span> <span class="n">ngs_results</span><span class="p">[</span><span class="n">var_type</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">variant</span><span class="p">[</span><span class="s1">&#39;confirmed&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;false&#39;</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">variant_call_data</span><span class="p">[</span><span class="n">var_type</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__gen_variant_dict</span><span class="p">(</span><span class="n">variant</span><span class="p">,</span><span class="n">var_type</span><span class="p">))</span>
+
+        <span class="c1"># Remap the driver / partner genes so that we know they&#39;re correct, and add a &#39;gene&#39; field to use later on.</span>
+        <span class="k">if</span> <span class="s1">&#39;unifiedGeneFusions&#39;</span> <span class="ow">in</span> <span class="n">variant_call_data</span><span class="p">:</span>
+            <span class="n">variant_call_data</span><span class="p">[</span><span class="s1">&#39;unifiedGeneFusions&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__remap_fusion_genes</span><span class="p">(</span><span class="n">variant_call_data</span><span class="p">[</span><span class="s1">&#39;unifiedGeneFusions&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">variant_call_data</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__gen_variant_dict</span><span class="p">(</span><span class="n">vardata</span><span class="p">,</span><span class="n">vartype</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">vartype</span> <span class="o">==</span> <span class="s1">&#39;singleNucleotideVariants&#39;</span> <span class="ow">or</span> <span class="n">vartype</span> <span class="o">==</span> <span class="s1">&#39;indels&#39;</span><span class="p">:</span>
+            <span class="n">meta_key</span> <span class="o">=</span> <span class="s1">&#39;snvs_indels&#39;</span>
+        <span class="k">elif</span> <span class="n">vartype</span> <span class="o">==</span> <span class="s1">&#39;copyNumberVariants&#39;</span><span class="p">:</span>
+            <span class="n">meta_key</span> <span class="o">=</span> <span class="s1">&#39;cnvs&#39;</span>
+        <span class="k">elif</span> <span class="n">vartype</span> <span class="o">==</span> <span class="s1">&#39;unifiedGeneFusions&#39;</span><span class="p">:</span>
+            <span class="n">meta_key</span> <span class="o">=</span> <span class="s1">&#39;fusions&#39;</span>
+        <span class="n">include_fields</span> <span class="o">=</span> <span class="p">{</span> 
+                <span class="s1">&#39;snvs_indels&#39;</span> <span class="p">:</span>  <span class="p">[</span><span class="s1">&#39;alleleFrequency&#39;</span><span class="p">,</span> <span class="s1">&#39;alternative&#39;</span><span class="p">,</span> <span class="s1">&#39;alternativeAlleleObservationCount&#39;</span><span class="p">,</span> <span class="s1">&#39;chromosome&#39;</span><span class="p">,</span> 
+                    <span class="s1">&#39;exon&#39;</span><span class="p">,</span> <span class="s1">&#39;flowAlternativeAlleleObservationCount&#39;</span><span class="p">,</span> <span class="s1">&#39;flowReferenceAlleleObservations&#39;</span><span class="p">,</span> <span class="s1">&#39;function&#39;</span><span class="p">,</span> 
+                    <span class="s1">&#39;gene&#39;</span><span class="p">,</span> <span class="s1">&#39;hgvs&#39;</span><span class="p">,</span> <span class="s1">&#39;identifier&#39;</span><span class="p">,</span> <span class="s1">&#39;oncominevariantclass&#39;</span><span class="p">,</span> <span class="s1">&#39;position&#39;</span><span class="p">,</span> <span class="s1">&#39;readDepth&#39;</span><span class="p">,</span> <span class="s1">&#39;reference&#39;</span><span class="p">,</span> 
+                    <span class="s1">&#39;referenceAlleleObservations&#39;</span><span class="p">,</span> <span class="s1">&#39;transcript&#39;</span><span class="p">,</span> <span class="s1">&#39;protein&#39;</span><span class="p">,</span> <span class="s1">&#39;confirmed&#39;</span><span class="p">],</span> 
+                <span class="s1">&#39;cnvs&#39;</span>        <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;chromosome&#39;</span><span class="p">,</span> <span class="s1">&#39;gene&#39;</span><span class="p">,</span> <span class="s1">&#39;confidenceInterval5percent&#39;</span><span class="p">,</span> <span class="s1">&#39;confidenceInterval95percent&#39;</span><span class="p">,</span> 
+                    <span class="s1">&#39;copyNumber&#39;</span><span class="p">,</span><span class="s1">&#39;confirmed&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;fusions&#39;</span>     <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;annotation&#39;</span><span class="p">,</span> <span class="s1">&#39;identifier&#39;</span><span class="p">,</span> <span class="s1">&#39;driverReadCount&#39;</span><span class="p">,</span> <span class="s1">&#39;driverGene&#39;</span><span class="p">,</span> <span class="s1">&#39;partnerGene&#39;</span><span class="p">,</span><span class="s1">&#39;confirmed&#39;</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">vardata</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">include_fields</span><span class="p">[</span><span class="n">meta_key</span><span class="p">])</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meta_key</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__remap_fusion_genes</span><span class="p">(</span><span class="n">fusion_data</span><span class="p">):</span>
+        <span class="c1"># Fix the fusion driver / partner annotation since it is not always correct the way it&#39;s being parsed.  Also</span>
+        <span class="c1"># add in a &#39;gene&#39; field so that it&#39;s easier to aggregate data later on (the rest of the elements use &#39;gene&#39;).</span>
+        <span class="n">drivers</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ABL1&#39;</span><span class="p">,</span><span class="s1">&#39;AKT2&#39;</span><span class="p">,</span><span class="s1">&#39;AKT3&#39;</span><span class="p">,</span><span class="s1">&#39;ALK&#39;</span><span class="p">,</span><span class="s1">&#39;AR&#39;</span><span class="p">,</span><span class="s1">&#39;AXL&#39;</span><span class="p">,</span><span class="s1">&#39;BRAF&#39;</span><span class="p">,</span><span class="s1">&#39;BRCA1&#39;</span><span class="p">,</span><span class="s1">&#39;BRCA2&#39;</span><span class="p">,</span><span class="s1">&#39;CDKN2A&#39;</span><span class="p">,</span><span class="s1">&#39;EGFR&#39;</span><span class="p">,</span><span class="s1">&#39;ERBB2&#39;</span><span class="p">,</span><span class="s1">&#39;ERBB4&#39;</span><span class="p">,</span><span class="s1">&#39;ERG&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;ETV1&#39;</span><span class="p">,</span><span class="s1">&#39;ETV1a&#39;</span><span class="p">,</span><span class="s1">&#39;ETV1b&#39;</span><span class="p">,</span><span class="s1">&#39;ETV4&#39;</span><span class="p">,</span><span class="s1">&#39;ETV4a&#39;</span><span class="p">,</span><span class="s1">&#39;ETV5&#39;</span><span class="p">,</span><span class="s1">&#39;ETV5a&#39;</span><span class="p">,</span><span class="s1">&#39;ETV5d&#39;</span><span class="p">,</span><span class="s1">&#39;FGFR1&#39;</span><span class="p">,</span><span class="s1">&#39;FGFR2&#39;</span><span class="p">,</span><span class="s1">&#39;FGFR3&#39;</span><span class="p">,</span><span class="s1">&#39;FGR&#39;</span><span class="p">,</span><span class="s1">&#39;FLT3&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;JAK2&#39;</span><span class="p">,</span><span class="s1">&#39;KRAS&#39;</span><span class="p">,</span><span class="s1">&#39;MDM4&#39;</span><span class="p">,</span><span class="s1">&#39;MET&#39;</span><span class="p">,</span><span class="s1">&#39;MYB&#39;</span><span class="p">,</span><span class="s1">&#39;MYBL1&#39;</span><span class="p">,</span><span class="s1">&#39;NF1&#39;</span><span class="p">,</span><span class="s1">&#39;NOTCH1&#39;</span><span class="p">,</span><span class="s1">&#39;NOTCH4&#39;</span><span class="p">,</span><span class="s1">&#39;NRG1&#39;</span><span class="p">,</span><span class="s1">&#39;NTRK1&#39;</span><span class="p">,</span><span class="s1">&#39;NTRK2&#39;</span><span class="p">,</span><span class="s1">&#39;NTRK3&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;NUTM1&#39;</span><span class="p">,</span><span class="s1">&#39;PDGFRA&#39;</span><span class="p">,</span><span class="s1">&#39;PDGFRB&#39;</span><span class="p">,</span><span class="s1">&#39;PIK3CA&#39;</span><span class="p">,</span><span class="s1">&#39;PPARG&#39;</span><span class="p">,</span><span class="s1">&#39;PRKACA&#39;</span><span class="p">,</span><span class="s1">&#39;PRKACB&#39;</span><span class="p">,</span><span class="s1">&#39;PTEN&#39;</span><span class="p">,</span><span class="s1">&#39;RAD51B&#39;</span><span class="p">,</span><span class="s1">&#39;RAF1&#39;</span><span class="p">,</span><span class="s1">&#39;RB1&#39;</span><span class="p">,</span><span class="s1">&#39;RELA&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;RET&#39;</span><span class="p">,</span><span class="s1">&#39;ROS1&#39;</span><span class="p">,</span><span class="s1">&#39;RSPO2&#39;</span><span class="p">,</span><span class="s1">&#39;RSPO3&#39;</span><span class="p">,</span><span class="s1">&#39;TERT&#39;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">fusion</span> <span class="ow">in</span> <span class="n">fusion_data</span><span class="p">:</span>
+            <span class="n">gene1</span> <span class="o">=</span> <span class="n">fusion</span><span class="p">[</span><span class="s1">&#39;driverGene&#39;</span><span class="p">]</span>
+            <span class="n">gene2</span> <span class="o">=</span> <span class="n">fusion</span><span class="p">[</span><span class="s1">&#39;partnerGene&#39;</span><span class="p">]</span>
+
+            <span class="c1"># handle intragenic fusions</span>
+            <span class="k">if</span> <span class="n">gene1</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;MET&#39;</span><span class="p">,</span><span class="s1">&#39;EGFR&#39;</span><span class="p">]:</span>
+                <span class="n">driver</span> <span class="o">=</span> <span class="n">partner</span> <span class="o">=</span> <span class="n">gene1</span>
+
+            <span class="c1"># figure out others.</span>
+            <span class="k">if</span> <span class="n">gene1</span> <span class="ow">in</span> <span class="n">drivers</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">driver</span><span class="p">,</span><span class="n">partner</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">gene1</span><span class="p">,</span><span class="n">gene2</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">gene2</span> <span class="ow">in</span> <span class="n">drivers</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">driver</span><span class="p">,</span><span class="n">partner</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">gene2</span><span class="p">,</span><span class="n">gene1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">partner</span> <span class="o">=</span> <span class="p">[</span><span class="n">gene1</span><span class="p">,</span><span class="n">gene2</span><span class="p">]</span>
+                <span class="n">driver</span> <span class="o">=</span> <span class="s1">&#39;UNKNOWN&#39;</span>
+            <span class="n">fusion</span><span class="p">[</span><span class="s1">&#39;gene&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fusion</span><span class="p">[</span><span class="s1">&#39;driverGene&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">driver</span>
+            <span class="n">fusion</span><span class="p">[</span><span class="s1">&#39;partnerGene&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">partner</span>
+        <span class="k">return</span> <span class="n">fusion_data</span></div>
+
+
+<div class="viewcode-block" id="MatchboxData"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.MatchboxData">[docs]</a><span class="k">class</span> <span class="nc">MatchboxData</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;MatchboxData class</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># def __init__(self,url,creds,patient=None,dumped_data=None,load_raw=None,make_raw=None):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">creds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">patient</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">dumped_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">load_raw</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">make_raw</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">           Generate a MATCHBox data object that can be parsed and queried </span>
+<span class="sd">           downstream with some methods. Entry points can be  either the live </span>
+<span class="sd">           MATCHBox instance or a JSON file containing:</span>
+<span class="sd">               url         : MATCHBox URL to use; usually from creds in config file.</span>
+<span class="sd">               creds       : MATCHBox credentials to use; usually from creds in </span>
+<span class="sd">                             config file.</span>
+<span class="sd">               dumped_data : MATCHbox JSON file containing the whole dataset.</span>
+<span class="sd">               raw_dump    : After reading MATCHBox in, dump out the whole thing </span>
+<span class="sd">                             as a raw JSON file.  This can be used as an entry </span>
+<span class="sd">                             point.</span>
+<span class="sd">               make_raw    : Make a raw MATCHBox dataset.</span>
+
+<span class="sd">          URL and credentials can be manually applied to API or (preferred!) obtained from the default</span>
+<span class="sd">          config file in $HOME/.mb_utils/config.json. The Config class in matchbox_conf will load up</span>
+<span class="sd">          the data.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">config_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;HOME&#39;</span><span class="p">],</span> <span class="s1">&#39;.mb_utils/config.json&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">config_file</span><span class="p">):</span>
+            <span class="n">config_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s1">&#39;config.json&#39;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">config_data</span> <span class="o">=</span> <span class="n">matchbox_conf</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ERROR: no configuration file found. Need to create a config file in the current directory or use system &quot;</span>
+                  <span class="s2">&quot;provided file in ~/.mb_utils&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;pass for now....but will fix this up later to be more robust.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">config_data</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">creds</span><span class="p">:</span>
+            <span class="n">creds</span> <span class="o">=</span> <span class="n">config_data</span><span class="p">[</span><span class="s1">&#39;creds&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">patient</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">url</span> <span class="o">+</span> <span class="s1">&#39;?patientId=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">patient</span>
+
+        <span class="c1"># Starting from processed MB JSON obj.</span>
+        <span class="c1"># TODO: Change this to a data dump by default and live query only on request.</span>
+        <span class="k">if</span> <span class="n">dumped_data</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">  -&gt;  Starting from a processed MB JSON Obj&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">load_dumped_json</span><span class="p">(</span><span class="n">dumped_data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">patient</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;filtering on patient: </span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">patient</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__filter_by_patient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">patient</span><span class="p">)</span>
+        <span class="c1"># Starting from raw MB JSON obj.</span>
+        <span class="k">elif</span> <span class="n">load_raw</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">  -&gt;  Starting from a raw MB JSON Obj&#39;</span><span class="p">)</span>
+            <span class="n">mb_raw_data</span> <span class="o">=</span> <span class="n">load_dumped_json</span><span class="p">(</span><span class="n">load_raw</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">matchbox</span> <span class="o">=</span> <span class="n">Matchbox</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">creds</span><span class="p">,</span><span class="n">load_raw</span><span class="o">=</span><span class="n">mb_raw_data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matchbox</span><span class="o">.</span><span class="n">gen_patients_list</span><span class="p">()</span>
+        <span class="c1"># Starting from a live instance, and possibly making a raw dump</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">  -&gt;  Starting from a live MB instance&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">matchbox</span> <span class="o">=</span> <span class="n">Matchbox</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">creds</span><span class="p">,</span><span class="n">make_raw</span><span class="o">=</span><span class="n">make_raw</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matchbox</span><span class="o">.</span><span class="n">gen_patients_list</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__filter_by_patient</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="n">patient</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">json</span><span class="p">[</span><span class="n">patient</span><span class="p">]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__get_var_data_by_gene</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">gene_list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">elem</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">if</span> <span class="n">elem</span><span class="p">[</span><span class="s1">&#39;gene&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">gene_list</span> <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">itervalues</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MatchboxData.get_biopsy_numbers"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.MatchboxData.get_biopsy_numbers">[docs]</a>    <span class="k">def</span> <span class="nf">get_biopsy_numbers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">category</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return dict of patients registered in MATCHBox with biopsy and sequencing</span>
+<span class="sd">        information. </span>
+<span class="sd">        </span>
+<span class="sd">        Categories returned are total PSNs issued (including outside </span>
+<span class="sd">        assay patients), total passed biopsies, total failed biopsies (per MDACC </span>
+<span class="sd">        message), total MSNs (only counting latest MSN if more than one issued to</span>
+<span class="sd">        a biopsy due to a failure) as a method of figuring out how many NAs were </span>
+<span class="sd">        prepared, and total with sequencing data.</span>
+
+<span class="sd">        Can filter output based on any one criteria by leveraging the &quot;category&quot; </span>
+<span class="sd">        variable</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            catetory (str): biopsy category to return</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: whole set of category:count or single category:count data.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;psn&#39;</span>           <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;passed_biopsy&#39;</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;failed_biopsy&#39;</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;no_biopsy&#39;</span>     <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;msn&#39;</span>           <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;sequenced&#39;</span>     <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;outside&#39;</span>       <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="n">count</span><span class="p">[</span><span class="s1">&#39;psn&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">biopsy_flag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">&#39;biopsy&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">biopsy_flag</span> <span class="o">==</span> <span class="s1">&#39;No Biopsy&#39;</span><span class="p">:</span>
+                <span class="n">count</span><span class="p">[</span><span class="s1">&#39;no_biopsy&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">biopsy_flag</span> <span class="o">==</span> <span class="s1">&#39;Failed Biopsy&#39;</span><span class="p">:</span>
+                <span class="n">count</span><span class="p">[</span><span class="s1">&#39;failed_biopsy&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span> 
+            <span class="k">elif</span> <span class="n">biopsy_flag</span> <span class="o">==</span> <span class="s1">&#39;Outside&#39;</span><span class="p">:</span>
+                <span class="n">count</span><span class="p">[</span><span class="s1">&#39;outside&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">biopsy_flag</span> <span class="o">==</span> <span class="s1">&#39;Pass&#39;</span><span class="p">:</span>
+                <span class="n">count</span><span class="p">[</span><span class="s1">&#39;passed_biopsy&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span> 
+                <span class="k">if</span> <span class="s1">&#39;msn&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">&#39;msn&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">count</span><span class="p">[</span><span class="s1">&#39;msn&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="c1"># From above, everything will get a default &#39;---&#39; val, but only CONFIRMED</span>
+                <span class="c1"># results actually get data.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">&#39;mois&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;---&#39;</span><span class="p">:</span>
+                    <span class="n">count</span><span class="p">[</span><span class="s1">&#39;sequenced&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">category</span> <span class="ow">and</span> <span class="n">category</span> <span class="ow">in</span> <span class="n">count</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">category</span><span class="p">:</span><span class="n">count</span><span class="p">[</span><span class="n">category</span><span class="p">]}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">count</span></div>
+
+<div class="viewcode-block" id="MatchboxData.get_bsn"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.MatchboxData.get_bsn">[docs]</a>    <span class="k">def</span> <span class="nf">get_bsn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">psn</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">msn</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve a patient BSN from either an input PSN or MSN.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            psn (str): A PSN number to query. </span>
+<span class="sd">            msn (str): A MSN number to query.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bsn (str): A BSN that maps to the PSN or MSN input.</span>
+
+<span class="sd">        &gt;&gt;&gt; print(get_bsn(psn=&#39;14420&#39;))</span>
+<span class="sd">        T-17-000550</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">psn</span> <span class="ow">and</span> <span class="n">psn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;bsn&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">msn</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">&#39;msn&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">msn</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">&#39;bsn&#39;</span><span class="p">]</span></div>
+    
+    <span class="k">def</span> <span class="nf">_matchbox_dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Dump a parsed MATCHBox dataset.</span>
+<span class="sd">        </span>
+<span class="sd">        Call to the API and make a JSON file that can later be loaded in, rather </span>
+<span class="sd">        than making an API call and reprocessing. Useful for quicker look ups as </span>
+<span class="sd">        the API call can be very, very slow with such a large DB.</span>
+
+<span class="sd">        .. note:: This is a different dataset than the raw dump.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            filename (str): Filename to use for output. Default filename is:</span>
+<span class="sd">            &#39;mb_&lt;date_generated&gt;.json&#39;</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            file: MATCHBox API JSON file.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">formatted_date</span> <span class="o">=</span> <span class="n">get_today</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;mb_&#39;</span> <span class="o">+</span> <span class="n">formatted_date</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">outfile</span><span class="p">,</span><span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MatchboxData.map_msn_psn"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.MatchboxData.map_msn_psn">[docs]</a>    <span class="k">def</span> <span class="nf">map_msn_psn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pt_id</span><span class="p">,</span><span class="n">id_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Map a MSN to PSN or PSN to MSN</span>
+
+<span class="sd">        Given a patient ID (either MSN or PSN) and a type val, output corresponding </span>
+<span class="sd">        MSN / PSN mapping. </span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">           If requesting an MSN as output, you will recieve an array of data since</span>
+<span class="sd">           there can be more than one MSN / PSN.  When requesting a PSN from an </span>
+<span class="sd">           MSN, you will recieve only one value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pt_id (str): Patient ID as either a MSN or PSN</span>
+<span class="sd">            id_type (str): Type of ID input (&#39;msn&#39; | &#39;psn&#39;).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            result (str): Corresponding MSN or PSN that maps to the input MSN or PSN.</span>
+
+<span class="sd">        &gt;&gt;&gt; print(map_msn_psn(&#39;14420&#39;,&#39;psn&#39;))</span>
+<span class="sd">        [u&#39;MSN44180&#39;]</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">id_type</span> <span class="o">==</span> <span class="s1">&#39;psn&#39;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">pt_id</span><span class="p">][</span><span class="s1">&#39;msn&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">id_type</span> <span class="o">==</span> <span class="s1">&#39;msn&#39;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__return_key_by_val</span><span class="p">(</span><span class="n">pt_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No result found for id </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">pt_id</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+    <span class="k">def</span> <span class="nf">__return_key_by_val</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">msn_id</span><span class="p">):</span>
+        <span class="n">msn_id</span> <span class="o">=</span> <span class="s1">&#39;MSN&#39;</span><span class="o">+</span><span class="n">msn_id</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">msn_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">&#39;msn&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">p</span>
+
+<div class="viewcode-block" id="MatchboxData.get_disease_summary"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.MatchboxData.get_disease_summary">[docs]</a>    <span class="k">def</span> <span class="nf">get_disease_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a summary of registered diseases and counts.&quot;&quot;&quot;</span>
+        <span class="n">total_patients</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">diseases</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">psn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="c1"># Skip the registered but not yet biopsied patients.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;medra_code&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">total_patients</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">diseases</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;ctep_term&#39;</span><span class="p">]]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">total_patients</span><span class="p">,</span> <span class="n">diseases</span></div>
+
+<div class="viewcode-block" id="MatchboxData.get_patients_and_disease"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.MatchboxData.get_patients_and_disease">[docs]</a>    <span class="k">def</span> <span class="nf">get_patients_and_disease</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outside</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">query_psn</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return dict of PSN:Disease for valid biopsies.  Valid biopsies can </span>
+<span class="sd">        are defined as being only Passed and can not be Failed, No Biopsy or</span>
+<span class="sd">        outside assay biopsies at this time.</span>
+
+<span class="sd">        .. py:function:: get_patients_and_disease([outside=None],[query_psn=None])</span>
+
+<span class="sd">        Return PSN and Disease for valid biopsies.</span>
+
+<span class="sd">        :param name: get_patients_and_disease</span>
+<span class="sd">        :param str outside: Return outside assay results or filter them out.</span>
+<span class="sd">        :param str query_psn: Optional PSN to filter data on.  </span>
+<span class="sd">        :return: Dict of PSN : Disease mappings</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">psn_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">query_psn</span><span class="p">:</span>
+            <span class="n">psn_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">query_psn</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">psn_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+        <span class="n">output_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">psn</span> <span class="ow">in</span> <span class="n">psn_list</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">biopsy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;biopsy&#39;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;WARN: Can not find data for PSN</span><span class="si">%s</span><span class="s2"> in dataset! Skipping.</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">psn</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;bsn&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;---&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c1"># Capture and remove &quot;No Biopsy&quot; and &quot;Failed Biopsy&quot; entries</span>
+            <span class="k">elif</span> <span class="s1">&#39;Biopsy&#39;</span> <span class="ow">in</span> <span class="n">biopsy</span><span class="p">:</span> 
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">biopsy</span> <span class="o">==</span> <span class="s1">&#39;Outside&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">outside</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">output_data</span><span class="p">[</span><span class="n">psn</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">psn</span><span class="p">][</span><span class="s1">&#39;ctep_term&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">output_data</span></div>
+
+<div class="viewcode-block" id="MatchboxData.find_variant_frequency"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.MatchboxData.find_variant_frequency">[docs]</a>    <span class="k">def</span> <span class="nf">find_variant_frequency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">query</span><span class="p">,</span><span class="n">query_patients</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Based on an input query, generate a dict of patient data that can be </span>
+<span class="sd">        further filtered.  Input required is a dict query data in the form:</span>
+<span class="sd">            {&#39;snvs&#39; : [&#39;GENE1&#39;,&#39;GENE2&#39;,etc.],</span>
+<span class="sd">             &#39;indels&#39; : [&#39;GENE1&#39;, &#39;GENE2&#39;, etc.],</span>
+<span class="sd">                     .</span>
+<span class="sd">                     .</span>
+<span class="sd">                     .</span>
+<span class="sd">            }</span>
+<span class="sd">        and so on</span>
+<span class="sd">        Will return a dict of matching data with disease and MOI information</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span> 
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">patient</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">query_patients</span> <span class="ow">and</span> <span class="n">patient</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">query_patients</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="s1">&#39;msn&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">patient</span><span class="p">]:</span> 
+                <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">matches</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">if</span> <span class="s1">&#39;mois&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">patient</span><span class="p">]:</span>
+                <span class="c1"># input_data = dict(self.data[patient][&#39;mois&#39;])</span>
+                <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">patient</span><span class="p">][</span><span class="s1">&#39;mois&#39;</span><span class="p">]</span>
+
+                <span class="c1"># We might want to just print out all MOIs for a patient rather than having to </span>
+                <span class="c1"># absolutely print out by MOIs.  Maybe there is a better way...write a new function?</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">var_type</span> <span class="ow">in</span> <span class="n">input_data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">input_data</span><span class="p">[</span><span class="n">var_type</span><span class="p">]:</span>
+                            <span class="n">matches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="s1">&#39;snvs&#39;</span> <span class="ow">in</span> <span class="n">query</span> <span class="ow">and</span> <span class="s1">&#39;singleNucleotideVariants&#39;</span> <span class="ow">in</span> <span class="n">input_data</span><span class="p">:</span>
+                        <span class="n">matches</span> <span class="o">=</span> <span class="n">matches</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get_var_data_by_gene</span><span class="p">(</span>
+                            <span class="n">input_data</span><span class="p">[</span><span class="s1">&#39;singleNucleotideVariants&#39;</span><span class="p">],</span><span class="n">query</span><span class="p">[</span><span class="s1">&#39;snvs&#39;</span><span class="p">]</span>
+                        <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="s1">&#39;indels&#39;</span> <span class="ow">in</span> <span class="n">query</span> <span class="ow">and</span> <span class="s1">&#39;indels&#39;</span> <span class="ow">in</span> <span class="n">input_data</span><span class="p">:</span>
+                        <span class="n">matches</span> <span class="o">=</span> <span class="n">matches</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get_var_data_by_gene</span><span class="p">(</span><span class="n">input_data</span><span class="p">[</span><span class="s1">&#39;indels&#39;</span><span class="p">],</span><span class="n">query</span><span class="p">[</span><span class="s1">&#39;indels&#39;</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="s1">&#39;cnvs&#39;</span> <span class="ow">in</span> <span class="n">query</span> <span class="ow">and</span> <span class="s1">&#39;copyNumberVariants&#39;</span> <span class="ow">in</span> <span class="n">input_data</span><span class="p">:</span>
+                        <span class="n">matches</span> <span class="o">=</span> <span class="n">matches</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get_var_data_by_gene</span><span class="p">(</span><span class="n">input_data</span><span class="p">[</span><span class="s1">&#39;copyNumberVariants&#39;</span><span class="p">],</span><span class="n">query</span><span class="p">[</span><span class="s1">&#39;cnvs&#39;</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="s1">&#39;fusions&#39;</span> <span class="ow">in</span> <span class="n">query</span> <span class="ow">and</span> <span class="s1">&#39;unifiedGeneFusions&#39;</span> <span class="ow">in</span> <span class="n">input_data</span><span class="p">:</span>
+                        <span class="c1"># input_data[&#39;unifiedGeneFusions&#39;] is a list</span>
+                        <span class="n">filtered_fusions</span> <span class="o">=</span> <span class="p">[]</span>
+                        <span class="k">for</span> <span class="n">fusion</span> <span class="ow">in</span> <span class="n">input_data</span><span class="p">[</span><span class="s1">&#39;unifiedGeneFusions&#39;</span><span class="p">]:</span>
+                            <span class="k">if</span> <span class="n">fusion</span><span class="p">[</span><span class="s1">&#39;identifier&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;Novel&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">fusion</span><span class="p">[</span><span class="s1">&#39;identifier&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;Non-Targeted&#39;</span><span class="p">):</span> 
+                                <span class="k">continue</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">filtered_fusions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fusion</span><span class="p">)</span>
+                        <span class="n">matches</span> <span class="o">=</span> <span class="n">matches</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get_var_data_by_gene</span><span class="p">(</span><span class="n">filtered_fusions</span><span class="p">,</span><span class="n">query</span><span class="p">[</span><span class="s1">&#39;fusions&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">matches</span><span class="p">:</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">patient</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s1">&#39;psn&#39;</span>     <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">patient</span><span class="p">][</span><span class="s1">&#39;psn&#39;</span><span class="p">],</span>
+                    <span class="s1">&#39;disease&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">patient</span><span class="p">][</span><span class="s1">&#39;ctep_term&#39;</span><span class="p">],</span>
+                    <span class="s1">&#39;msn&#39;</span>     <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">patient</span><span class="p">][</span><span class="s1">&#39;msn&#39;</span><span class="p">],</span>
+                    <span class="s1">&#39;mois&#39;</span>    <span class="p">:</span> <span class="n">matches</span>
+                <span class="p">}</span>
+        <span class="k">return</span> <span class="n">results</span><span class="p">,</span><span class="n">count</span></div>
+
+<div class="viewcode-block" id="MatchboxData.get_vcf"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.MatchboxData.get_vcf">[docs]</a>    <span class="k">def</span> <span class="nf">get_vcf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">msn</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        .. note: </span>
+<span class="sd">           THIS METHOD IS NOT YET IMPLEMENTED AND IS JUST A PLACEHOLDER.</span>
+
+<span class="sd">        Get path of VCF file from MB Obj and return the VCF file from either the MB mirror or the source.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span></div></div>
+
+<div class="viewcode-block" id="load_dumped_json"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.load_dumped_json">[docs]</a><span class="k">def</span> <span class="nf">load_dumped_json</span><span class="p">(</span><span class="n">json_file</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fh</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_today"><a class="viewcode-back" href="../../matchbox_api_utils.html#matchbox_api_utils.matchbox.get_today">[docs]</a><span class="k">def</span> <span class="nf">get_today</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%m</span><span class="si">%d</span><span class="s1">%y&#39;</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">matchbox_api_utils</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../matchbox_api_utils.html">matchbox_api_utils package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
