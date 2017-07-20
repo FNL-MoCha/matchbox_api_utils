@@ -1,36 +1,45 @@
+# -*- coding: utf-8 -*-
 import sys
 import os
 import re
+import datetime
+
 import matchbox_api_utils
 from matchbox import MatchboxData, Matchbox
 
 __all__ = ['matchbox','matchbox_conf']
 
-#mb_config_file = os.path.join(mb_utils_root, 'config.json' 
-#mb_json_data = os.path.join(mb_utils_root, 'mb_obj.json')
-
-def get_latest_data(dfiles):
-    largest = 0
-    for f in dfiles:
-        datestring = re.search('mb_obj_([0-9]{6})\.json',f).group(1)
-        if int(datestring) > int(largest):
-            largest = datestring
-    for f in dfiles:
-        if largest in f:
-            return f
-
 mb_utils_root = os.path.join(os.environ['HOME'], '.mb_utils/')
 
-dir_contents = os.listdir(mb_utils_root)
-json_files = [f for f in dir_contents if f.endswith('.json')]
+def get_latest_data(dfiles):
+    """
+    Get the most recent mb_obj file in the utils dir in the event that there are
+    mulitple in there.
+    """
+    largest = 0
+    indexed_files = {}
+
+    for f in dfiles:
+        filename = os.path.basename(f)
+        try:
+            datestring = re.search('mb_obj_([0-9]{6})\.json',filename).group(1)
+        except AttributeError:
+            datestring = datetime.datetime.fromtimestamp(os.path.getctime(f)).strftime('%m%d%y')
+        indexed_files[datestring] = f
+
+    largest = sorted(indexed_files.keys())[-1]
+    return indexed_files[largest]
+
+
+json_files = [os.path.join(mb_utils_root,f) for f in os.listdir(mb_utils_root) if f.endswith('.json')]
 
 mb_data_files = []
 for f in json_files:
-    if f == 'config.json':
-        mb_config_file = os.path.join(mb_utils_root,f)
-    elif f.startswith('mb_obj'):
+    if 'config.json' in f:
+        mb_config_file = f
+    elif os.path.basename(f).startswith('mb_obj'):
         mb_data_files.append(f)
 
-mb_json_data = os.path.join(mb_utils_root,get_latest_data(mb_data_files))
+mb_json_data = get_latest_data(mb_data_files)
 
-__version__ = '0.11.1'
+__version__ = '0.12.0'
