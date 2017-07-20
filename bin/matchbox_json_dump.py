@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import sys
 import os
 import json
@@ -7,36 +8,12 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchboxData
 
-version = '1.5.0_062117'
-
-
-class Config(object):
-    def __init__(self,config_file):
-        self.config_file = config_file
-        self.config_data = {}
-        self.config_data = Config.read_config(self.config_file)
-
-    def __repr__(self):
-        return '%s:%s' % (self.__class__,self.__dict__)
-
-    def __getitem__(self,key):
-        return self.config_data[key]
-
-    def __iter__(self):
-        return self.config_data.itervalues()
-
-    @classmethod
-    def read_config(cls,config_file):
-        '''Read in a config file of params to use in this program'''
-        with open(config_file) as fh:
-            data = json.load(fh)
-        return data
-
+version = '2.0.0_071917'
 
 def get_args():
     parser = argparse.ArgumentParser(
         formatter_class = lambda prog: 
-            argparse.HelpFormatter(prog, max_help_position=100, width=150),
+            argparse.HelpFormatter(prog, max_help_position=100, width=125),
         description=
         '''
         Get parsed dataset from MATCHBox and dump as a JSON object that we can use 
@@ -53,7 +30,7 @@ def get_args():
             help='Patient sequence number used to limit output for testing and '
                  'dev purposes')
     parser.add_argument('-o', '--outfile', metavar='<out.json>', 
-            help='Name of output JSON file. DEFAULT: "mb_<datestring>.json"')
+            help='Name of output JSON file. DEFAULT: "mb_obj_<datestring>.json"')
     parser.add_argument('-v', '--version', action='version', 
             version = '%(prog)s  -  ' + version)
     args = parser.parse_args()
@@ -64,27 +41,13 @@ def main(data,outfile=None):
     sys.stdout.write("Done!\n")
 
 if __name__=='__main__':
-    config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
-    if not os.path.isfile(config_file):
-        # TODO: Get rid of this and insist on generating a config file. Maybe 
-        # need to create a helper script for this?
-        config_file = os.path.join(os.getcwd(), 'config.json')
-
-    try:
-        config_data = Config.read_config(config_file)
-    except IOError:
-        sys.stderr.write('ERROR: No configuration file found. Need to create a '
-            'config file in the current directory or use the system provided one '
-            'in ~/.mb_utils/config.json\n')
-        sys.exit(1)
-
     args = get_args()
 
     if args.raw:
         sys.stdout.write('\n*** Making a raw dump of MATCHBox for dev / testing '
             'purposes ***\n')
         sys.stdout.flush()
-        MatchboxData(config_data['url'],config_data['creds'],make_raw=True)
+        MatchboxData(make_raw=True)
         sys.stdout.write('Done!\n')
         sys.exit()
 
@@ -92,12 +55,7 @@ if __name__=='__main__':
         "testing...")
     sys.stdout.flush()
 
-    data = MatchboxData(
-        config_data['url'],
-        config_data['creds'],
-        load_raw=args.data,
-        patient=args.patient
-    )
+    data = MatchboxData(dumped_data=None,load_raw=args.data, patient=args.patient)
 
     outfile = args.outfile
     main(data,outfile)
