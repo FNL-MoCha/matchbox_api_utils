@@ -273,31 +273,39 @@ class MatchboxData(object):
     """
 
     def __init__(self,config_file=None,url=None,creds=None,patient=None,dumped_data='sys_default',load_raw=None,make_raw=None):
-        """Generate a MATCHBox data object that can be parsed and queried downstream with some methods. 
+        """Generate a MATCHBox data object that can be parsed and queried 
+        downstream with some methods. 
         
-         Can instantiate with either a config JSON file (generated from the package configuration)
-         or by loading required args below. Can do a live query, or load a MATCHBox JSON file
-         (derived from matchbox_json_dump.py in the package).
+         Can instantiate with either a config JSON file (generated from the 
+         package configuration) or by loading required args below. Can do a 
+         live query, or load a MATCHBox JSON file (derived from 
+         matchbox_json_dump.py in the package).
 
          Args:
-               config_file (file): Custom config file to use if not using system default.
+               config_file (file): Custom config file to use if not using system 
+                                   default.
                url (str):          MATCHBox API URL to use.
-               creds (dict):       MATCHBox credentials to use. Needs to be in the form of:
+               creds (dict):       MATCHBox credentials to use. Needs to be in the 
+                                   form of:
 
                             {'username':<username>,'password':<password>}
 
                patient (str):      Limit data to a specific PSN.
-               dumped_data (file): MATCHbox processed JSON file containing the whole dataset. This
-                                   is usually generated from 'matchbox_json_dump.py'. The default
-                                   value is 'sys_default' which loads the default package data. If
-                                   you wish you get a live call, set this variable to "None".
-               load_raw (file):    Load a raw API dataset rather than making a fresh call to the API.
-                                   This is intended for dev purposed only and will be disabled.
-               make_raw (bool):    Make a raw API JSON dataset for dev purposes only.
+               dumped_data (file): MATCHbox processed JSON file containing the 
+                                   whole dataset. This is usually generated from 
+                                   'matchbox_json_dump.py'. The default value is 
+                                   'sys_default' which loads the default package 
+                                   data. If you wish you get a live call, set this
+                                   variable to "None".
+               load_raw (file):    Load a raw API dataset rather than making a fresh
+                                   call to the API. This is intended for dev purpose
+                                   only and will be disabled.
+               make_raw (bool):    Make a raw API JSON dataset for dev purposes only
+                                   .
 
-          URL and credentials can be manually applied to API or (preferred!) obtained from the default
-          config file in $HOME/.mb_utils/config.json. The Config class in matchbox_conf will load up
-          the data.
+          URL and credentials can be manually applied to API or (preferred!) 
+          obtained from the default config file in $HOME/.mb_utils/config.json. 
+          The Config class in matchbox_conf will load up the data.
 
         """
         self._url = url
@@ -452,7 +460,7 @@ class MatchboxData(object):
 
         Args:
             filename (str): Filename to use for output. Default filename is:
-            'mb_<date_generated>.json'
+            'mb_obj_<date_generated>.json'
 
         Returns:
             file: MATCHBox API JSON file.
@@ -460,7 +468,7 @@ class MatchboxData(object):
         """
         formatted_date = get_today()
         if not filename:
-            filename = 'mb_' + formatted_date + '.json'
+            filename = 'mb_obj_' + formatted_date + '.json'
         with open(filename, 'w') as outfile:
             json.dump(self.data,outfile,sort_keys=True,indent=4)
 
@@ -621,7 +629,14 @@ class MatchboxData(object):
         return
 
 def load_dumped_json(json_file):
-    sys.stderr.write('Loading MATCHBox JSON file created on: %s\n' % datetime.datetime.fromtimestamp(os.path.getctime(json_file)))
+    #sys.stderr.write('Loading MATCHBox JSON file created on: %s\n' % datetime.datetime.fromtimestamp(os.path.getctime(json_file)))
+    #print('file: %s' % json_file)
+    date_string = os.path.basename(json_file).lstrip('mb_obj_').rstrip('.json')
+    #print(date_string)
+    formatted_date=datetime.datetime.strptime(date_string,'%M%d%y').strftime('%M/%d/%Y')
+    #print('date: %s' % formatted_date)
+    sys.stderr.write('Loading MATCHBox JSON file created on: %s\n' % formatted_date)
+    #sys.exit()
     with open(json_file) as fh:
         return json.load(fh)
 
