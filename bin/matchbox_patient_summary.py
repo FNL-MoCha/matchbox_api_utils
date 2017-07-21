@@ -8,28 +8,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchboxData
 
-version = '0.10.1_071717'
-
-class Config(object):
-    def __init__(self,config_file):
-        self.config_file = config_file
-        self.config_data = Config.read_config(self.config_file)
-
-    def __repr__(self):
-        return '%s:%s' % (self.__class__,self.__dict__)
-
-    def __getitem__(self,key):
-        return self.config_data[key]
-
-    def __iter__(self):
-        return self.config_data.itervalues()
-
-    @classmethod
-    def read_config(cls,config_file):
-        with open(config_file) as fh:
-            data = json.load(fh)
-        return data
-
+version = '1.0.071717'
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -41,7 +20,7 @@ def get_args():
     )
     parser.add_argument('result_type', choices=['patient','disease'], 
             help='Type of data to output.')
-    parser.add_argument('-j', '--json', metavar='<mb_json_file>',
+    parser.add_argument('-j', '--json', metavar='<mb_json_file>', default='sys_default',
             help='MATCHBox JSON file containing patient data, usually from matchbox_json_dump.py')
     parser.add_argument('-p', '--psn', metavar='PSN', 
             help='Filter patient summary to only these patients. Can be a comma separated list')
@@ -53,6 +32,10 @@ def get_args():
             help='Name of output file. DEFAULT: STDOUT.')
     parser.add_argument('-v', '--version', action='version', version = '%(prog)s  -  ' + version)    
     args = parser.parse_args()
+
+    if args.json == 'None':
+        args.json = None
+
     return args
 
 def gen_header(dtype,psns,biopsies):
@@ -73,8 +56,7 @@ def print_line(x,y,z):
 
 def patient_summary(data,patients=None,outside=False):
     '''Print out a summary for each patient and their disease, excluding any that do not have disease data indicated'''
-    biopsy_numbers = data.get_biopsy_numbers(has_biopsy=True)
-    num_collected_biopsies = biopsy_numbers['passed_biopsy']
+    num_collected_biopsies = data.get_biopsy_numbers(category='passed_biopsy')
 
     results = {}
     if patients:
@@ -97,17 +79,6 @@ def patient_summary(data,patients=None,outside=False):
     return
 
 if __name__=='__main__':
-    config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
-    if not os.path.isfile(config_file):
-        config_file = os.path.join(os.getcwd(), 'config.json')
-
-    try:
-        config_data = Config.read_config(config_file)
-    except IOError:
-        print("ERROR: no configuration file found. Need to create a config file in the current directory or use system "
-              "provided file in ~/.mb_utils")
-        sys.exit(1)
-
     args = get_args()
 
     patients = []
@@ -119,7 +90,7 @@ if __name__=='__main__':
                          'be sped up by loading a JSON obj from `matchbox_json_dump.py` first.\n')
         sys.stdout.flush()
 
-    data = MatchboxData(config_data['url'], config_data['creds'],dumped_data=args.json)
+    data = MatchboxData(dumped_data=args.json)
 
     if args.result_type == 'patient':
         patient_summary(data,patients,outside=args.Outside)
