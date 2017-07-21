@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# TODO:
+#    - get_disease(psn,bsn,msn): Return disease type.
 import os
 import sys
 import requests
@@ -368,11 +370,6 @@ class MatchboxData(object):
         config_data = matchbox_conf.Config(self._config_file)
         return config_data[item]
 
-    def __return_key_by_val(self,msn_id):
-        msn_id = 'MSN'+msn_id
-        for p in self.data:
-            if msn_id in self.data[p]['msn']:
-                return p
 
     def get_biopsy_numbers(self,category=None):
         """Return dict of patients registered in MATCHBox with biopsy and sequencing
@@ -425,29 +422,6 @@ class MatchboxData(object):
             return {category:count[category]}
         else:
             return count
-
-    # TODO:
-    def get_bsn(self,psn=None,msn=None):
-        """
-        Retrieve a patient BSN from either an input PSN or MSN.
-
-        Args:
-            psn (str): A PSN number to query. 
-            msn (str): A MSN number to query.
-
-        Returns:
-            bsn (str): A BSN that maps to the PSN or MSN input.
-
-        >>> print(get_bsn(psn='14420'))
-        T-17-000550
-
-        """
-        if psn and psn in self.data:
-            return self.data[psn]['bsn']
-        elif msn:
-            for p in self.data:
-                if self.data[p]['msn'] == msn:
-                    return self.data[p]['bsn']
     
     def _matchbox_dump(self,filename=None):
         """Dump a parsed MATCHBox dataset.
@@ -475,10 +449,12 @@ class MatchboxData(object):
     def map_msn_psn(self,pt_id,id_type):
         """Map a MSN to PSN or PSN to MSN
 
+        NOTE: This function is deprecated in favor of individual get_bsn, get_psn,
+        get_msn class of functions. 
         Given a patient ID (either MSN or PSN) and a type val, output corresponding 
         MSN / PSN mapping. 
 
-        .. note::
+        Note:
            If requesting an MSN as output, you will recieve an array of data since
            there can be more than one MSN / PSN.  When requesting a PSN from an 
            MSN, you will recieve only one value.
@@ -498,12 +474,133 @@ class MatchboxData(object):
         if id_type == 'psn':
             result = self.data[pt_id]['msn']
         elif id_type == 'msn':
+            for p in self.data:
+                if pt_id in self.data[p]['msn']:
+                    result = p
             result = self.__return_key_by_val(pt_id)
 
         if not result:
             print('No result found for id %s' % pt_id)
             return None
         return result
+
+    def __return_key_by_val(self):
+        """
+        TODO: remove this function '''
+
+        """
+        msn_id = 'MSN'+msn_id
+        for p in self.data:
+            if msn_id in self.data[p]['msn']:
+                return p
+
+    def __search_for_value(self,key,val,retval):
+        """
+        Input a key and return a value or None
+        Ex __search_for_value(key=psn,val=14420,retval=msn)
+          => search for PSN14420 in dataset and return MSN<whatever>
+
+        Ex __search_for_value(key=psn,val=14420,retval=bsn)
+          => serach for PSN14420 in datasert and return BSN<whatever>
+
+        """
+        result = ''
+        val = str(val)
+        for p in self.data:
+            if key == 'msn' and val in self.data[p]['msn']:
+                if retval == 'psn':
+                    result = p
+                elif retval == 'bsn':
+                    result = self.data[p]['bsn']
+            if key == 'psn' and p == val:
+                if retval == 'msn':
+                    result = ','.join(self.data[p]['msn'])
+                elif retval == 'bsn':
+                    result = self.data[p]['bsn']
+            if key == 'bsn' and self.data[p]['bsn'] == val:
+                if retval == 'psn':
+                    result = p
+                elif retval == 'msn':
+                    result = ','.join(self.data[p]['msn'])
+        if result:
+            return result
+        else:
+            sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
+            return None
+
+    def get_psn(self,msn=None,bsn=None):
+        """
+        Retrieve a patient PSN from either an input MSN or BSN.
+
+        Args:
+            msn (str): A MSN number to query. 
+            bsn (str): A BSN number to query.
+
+        Returns:
+            psn (str): A PSN that maps to the MSN or BSN input.
+
+        >>> print(get_psn(bsn='T-17-000550'))
+        14420
+
+        """
+
+        if msn:
+            if not msn.startswith('MSN'):
+                msn = 'MSN'+msn
+            return self.__search_for_value(key='msn',val=msn,retval='psn')
+        elif bsn:
+            return self.__search_for_value(key='bsn',val=bsn,retval='psn')
+        else:
+            sys.stderr.write('ERROR: No MSN or BSN entered!\n')
+            return None
+
+    def get_msn(self,psn=None,bsn=None):
+        """
+        Retrieve a patient BSN from either an input PSN or MSN.
+
+        Args:
+            psn (str): A MSN number to query. 
+            bsn (str): A BSN number to query.
+
+        Returns:
+            msn (str): A string of comma separated MSNs that map to an input BSN or PSN.
+
+        >>> print(get_msn(bsn='T-17-000550'))
+        MSN44180
+
+        """
+        if psn:
+            return self.__search_for_value(key='psn',val=psn,retval='msn')
+        elif bsn:
+            return self.__search_for_value(key='bsn',val=bsn,retval='msn')
+        else:
+            sys.stderr.write('ERROR: No PSN or BSN entered!\n')
+            return None
+
+    def get_bsn(self,psn=None,msn=None):
+        """
+        Retrieve a patient BSN from either an input PSN or MSN.
+
+        Args:
+            psn (str): A PSN number to query. 
+            msn (str): A MSN number to query.
+
+        Returns:
+            bsn (str): A BSN that maps to the PSN or MSN input.
+
+        >>> print(get_bsn(psn='14420'))
+        T-17-000550
+
+        """
+        if msn:
+            if not msn.startswith('MSN'):
+                msn = 'MSN'+msn
+            return self.__search_for_value(key='msn',val=msn,retval='bsn')
+        elif psn:
+            return self.__search_for_value(key='psn',val=psn,retval='bsn')
+        else:
+            sys.stderr.write('ERROR: No PSN or MSN entered!\n')
+            return None
 
     def get_disease_summary(self):
         """Return a summary of registered diseases and counts."""
@@ -518,6 +615,7 @@ class MatchboxData(object):
 
     def get_patients_and_disease(self,outside=None,query_psn=None):
         """
+        #TODO: strip PSN string from input. 
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
         are defined as being only Passed and can not be Failed, No Biopsy or
         outside assay biopsies at this time.
@@ -558,7 +656,9 @@ class MatchboxData(object):
         return output_data
 
     def find_variant_frequency(self,query,query_patients=None):
-        '''
+        """
+        TODO: Update docs
+              Add aMOI designator (also arm?)
         Based on an input query, generate a dict of patient data that can be 
         further filtered.  Input required is a dict query data in the form:
             {'snvs' : ['GENE1','GENE2',etc.],
@@ -569,7 +669,7 @@ class MatchboxData(object):
             }
         and so on
         Will return a dict of matching data with disease and MOI information
-        '''
+        """
         results = {} 
         count = 0
         for patient in self.data:
@@ -629,14 +729,13 @@ class MatchboxData(object):
         return
 
 def load_dumped_json(json_file):
-    #sys.stderr.write('Loading MATCHBox JSON file created on: %s\n' % datetime.datetime.fromtimestamp(os.path.getctime(json_file)))
-    #print('file: %s' % json_file)
     date_string = os.path.basename(json_file).lstrip('mb_obj_').rstrip('.json')
-    #print(date_string)
-    formatted_date=datetime.datetime.strptime(date_string,'%M%d%y').strftime('%M/%d/%Y')
-    #print('date: %s' % formatted_date)
+    try:
+        formatted_date=datetime.datetime.strptime(date_string,'%M%d%y').strftime('%M/%d/%Y')
+    except ValueError:
+        creation_date = os.path.getctime(json_file)
+        formatted_date=datetime.datetime.fromtimestamp(creation_date).strftime('%M/%d/%Y')
     sys.stderr.write('Loading MATCHBox JSON file created on: %s\n' % formatted_date)
-    #sys.exit()
     with open(json_file) as fh:
         return json.load(fh)
 
