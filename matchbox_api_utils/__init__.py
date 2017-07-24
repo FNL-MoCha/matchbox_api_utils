@@ -42,4 +42,4 @@ for f in json_files:
 
 mb_json_data = get_latest_data(mb_data_files)
 
-__version__ = '0.13.0'
+__version__ = '0.13.1'
