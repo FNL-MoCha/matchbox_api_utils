@@ -8,12 +8,12 @@ class FunctionTests(TestCase):
 
     def test_get_psn_from_msn(self):
         msn = 'MSN44180'
-        self.assertEqual(self.data.get_psn(msn=msn),'14420')
+        self.assertEqual(self.data.get_psn(msn=msn),'PSN14420')
         self.assertFalse(self.data.get_psn(msn='6'),None)
 
     def test_get_psn_from_bsn(self):
         bsn = 'T-17-000550'
-        self.assertEqual(self.data.get_psn(bsn=bsn),'14420')
+        self.assertEqual(self.data.get_psn(bsn=bsn),'PSN14420')
         self.assertFalse(self.data.get_psn(bsn='no_biopsy'),None)
 
     def test_get_msn_from_psn(self):
