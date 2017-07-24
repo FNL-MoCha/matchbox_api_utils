@@ -540,16 +540,16 @@ class MatchboxData(object):
             psn (str): A PSN that maps to the MSN or BSN input.
 
         >>> print(get_psn(bsn='T-17-000550'))
-        14420
+        PSN14420
 
         """
 
         if msn:
             if not msn.startswith('MSN'):
                 msn = 'MSN'+msn
-            return self.__search_for_value(key='msn',val=msn,retval='psn')
+            return 'PSN' + self.__search_for_value(key='msn',val=msn,retval='psn')
         elif bsn:
-            return self.__search_for_value(key='bsn',val=bsn,retval='psn')
+            return 'PSN' + self.__search_for_value(key='bsn',val=bsn,retval='psn')
         else:
             sys.stderr.write('ERROR: No MSN or BSN entered!\n')
             return None
