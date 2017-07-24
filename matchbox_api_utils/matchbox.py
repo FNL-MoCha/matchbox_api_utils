@@ -544,14 +544,21 @@ class MatchboxData(object):
 
         """
 
+        psn = ''
         if msn:
             if not msn.startswith('MSN'):
                 msn = 'MSN'+msn
-            return 'PSN' + self.__search_for_value(key='msn',val=msn,retval='psn')
+            psn = self.__search_for_value(key='msn',val=msn,retval='psn')
         elif bsn:
-            return 'PSN' + self.__search_for_value(key='bsn',val=bsn,retval='psn')
+            psn = self.__search_for_value(key='bsn',val=bsn,retval='psn')
+            # return 'PSN' + self.__search_for_value(key='bsn',val=bsn,retval='psn')
         else:
             sys.stderr.write('ERROR: No MSN or BSN entered!\n')
+            return None
+        
+        if psn:
+            return "PSN"+psn
+        else:
             return None
 
     def get_msn(self,psn=None,bsn=None):
@@ -731,10 +738,10 @@ class MatchboxData(object):
 def load_dumped_json(json_file):
     date_string = os.path.basename(json_file).lstrip('mb_obj_').rstrip('.json')
     try:
-        formatted_date=datetime.datetime.strptime(date_string,'%M%d%y').strftime('%M/%d/%Y')
+        formatted_date=datetime.datetime.strptime(date_string,'%m%d%y').strftime('%m/%d/%Y')
     except ValueError:
         creation_date = os.path.getctime(json_file)
-        formatted_date=datetime.datetime.fromtimestamp(creation_date).strftime('%M/%d/%Y')
+        formatted_date=datetime.datetime.fromtimestamp(creation_date).strftime('%m/%d/%Y')
     sys.stderr.write('Loading MATCHBox JSON file created on: %s\n' % formatted_date)
     with open(json_file) as fh:
         return json.load(fh)
