@@ -41,5 +41,3 @@ for f in json_files:
         mb_data_files.append(f)
 
 mb_json_data = get_latest_data(mb_data_files)
-
-__version__ = '0.13.1'
