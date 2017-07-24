@@ -27,7 +27,15 @@ def get_latest_data(dfiles):
             datestring = datetime.datetime.fromtimestamp(os.path.getctime(f)).strftime('%m%d%y')
         indexed_files[datestring] = f
 
-    largest = sorted(indexed_files.keys())[-1]
+    try:
+        largest = sorted(indexed_files.keys())[-1]
+    except IndexError:
+        # there is no MATCHBox JSON Obj here from setup or whatever.
+        sys.stderr.write(
+            '  -> WARN: No system default MATCHBox DB Obj location. Recommend running "matchbox_json_dump.py" and\n'
+            '           storing the resultant file in $HOME/.mb_utils/ for easier work later on.  Alternatively,\n'
+            '           you can always do a live query.\n')
+        return None
     return indexed_files[largest]
 
 
