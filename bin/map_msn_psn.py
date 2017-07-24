@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import sys
 import os
 import json
@@ -9,138 +10,111 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchboxData 
 
-version = '1.3.0_062117'
-
-
-class Config(object):
-    def __init__(self,config_file):
-        self.config_file = config_file
-        self.config_data = Config.read_config(self.config_file)
-
-    def __repr__(self):
-        return '%s:%s' % (self.__class__,self.__dict__)
-
-    def __getitem__(self,key):
-        return self.config_data[key]
-
-    def __iter__(self):
-        return self.config_data.itervalues()
-
-    @classmethod
-    def read_config(cls,config_file):
-        '''Read in a config file of params to use in this program'''
-        with open(config_file) as fh:
-            data = json.load(fh)
-        return data
-
+version = '3.0.0_072417'
 
 def get_args():
     parser = argparse.ArgumentParser(
-        formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
+        formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=125),
         description=
         '''
-        Map an MSN to a PSN and vice versa.  Useful when trying to retrieve the 
+        Input a MSN, BSN, or PSN, and return the other identifiers. Useful when trying to retrieve the 
         correct dataset and you only know one piece of information.
+
+        Note: We are only working with internal BSN, MSN, and PSN numbers for now and can not return
+        Outside Assay identifiers at this time. 
         '''
     )
     parser.add_argument('ids', metavar='<IDs>', nargs='?',
             help='MATCH IDs to query.  Can be single or comma separated list.  Must be used with PSN or MSN option.')
-    parser.add_argument('-j', '--json', metavar='<mb_json_file>', 
-            help='Load a MATCHBox JSON file derived from "matchbox_json_dump.py" instead of a live query')
-    parser.add_argument('-p', '--psn', action='store_true', 
-            help='Input is a PSN to be translated to a MSN')
-    parser.add_argument('-m', '--msn', action='store_true', 
-            help='Input is a MSN to be translated to a PSN')
-    parser.add_argument('-b', '--batch', metavar="<input_file>", 
+    parser.add_argument('-j', '--json', metavar='<mb_json_file>', default='sys_default',
+            help='Load a MATCHBox JSON file derived from "matchbox_json_dump.py" instead '
+                 'of a live query. By default will load the "sys_default" created during '
+                 'package installation. If you wish to do a live query (i.e. not load a '
+                 'previously downloaded JSON dump, set -j to "None".')
+    parser.add_argument('-t', '--type', choices=['psn','msn','bsn'], required=True, type=str.lower,
+            help='Type of query string input. Can be MSN, PSN, or BSN')
+    parser.add_argument('-f', '--file', metavar="<input_file>", 
             help='Load a batch file of all MSNs or PSNs to proc')
     parser.add_argument('-v','--version',action='version', version = '%(prog)s  -  ' + version)
     args = parser.parse_args()
 
-    if not args.psn and not args.msn:
-        sys.stderr.write('ERROR: you must indicate whether PSNs or MSNs are '
-        'being loaded!\n')
-        sys.exit(1)
-
+    # Kludy way to use a sys default for the API, while still allowing for live queries
+    # if need be.  Probably a better way, but whatever!
+    if args.json == 'None':
+        args.json = None
     return args
 
 def read_batchfile(input_file):
     with open(input_file) as fh:
         return [ line.rstrip('\n') for line in fh ]
 
-def map_id(mb_data,id_list,psn,msn):
+def map_id(mb_data,id_list,qtype):
+    """Call to MATCHBox and return PSN, MSN, or BSN data based on the qtype."""
     results = {}
-    id_type = ''
-
-    if psn:
-        id_type = 'psn'
-    elif msn:
-        id_type = 'msn'
 
     for pt in id_list:
-        return_val = mb_data.map_msn_psn(pt,id_type)
-        if return_val:
-            results[pt] = return_val
-    print_results(results,id_type)
+        if qtype == 'psn':
+            msn = mb_data.get_msn(psn=pt)
+            bsn = mb_data.get_bsn(psn=pt)
+            psn = 'PSN' + pt.lstrip('PSN')
+            return_val = (psn,bsn,msn)
+        elif qtype == 'msn':
+            psn = mb_data.get_psn(msn=pt)
+            bsn = mb_data.get_bsn(msn=pt)
+            msn = 'MSN' + pt.lstrip('MSN')
+            return_val = (psn,bsn,msn)
 
-def validate_list(id_list):
-    '''Strip off leading PSN or MSN if it was added and validate that the rest of 
-    the strings input are real MSNs or PSNs and not some other random string.  
-    Print warning if there is an issue with any inputs.'''
+        elif qtype == 'bsn':
+            psn = mb_data.get_psn(bsn=pt)
+            msn = mb_data.get_msn(bsn=pt)
+            return_val = (psn,pt,msn)
+
+        print(','.join(return_val))
+
+def validate_list(id_list,qtype):
+    """
+    Validate the ID string matches the query type, or skip this entry and print
+    a warning. Can only work with normal MATCH samples right now and will not
+    work with Outside Assays until I have some idea of the pattern needed.
+
+    """
     valid_list = []
+    type_regex = {
+        'obsn' : re.compile(r'^(FMI|MDA|CARIS|MSKCC)-(.*?)$'),
+        'bsn'  : re.compile(r'^(T-[0-9]{2}-[0-9]{6})$'),
+        'msn'  : re.compile(r'^(?:MSN)?([0-9]+)$'),
+        'psn'  : re.compile(r'^(?:PSN)?([0-9]+)$'),
+    }
+
     for elem in id_list:
         try:
-            trimmed = re.search('^([PM]SN)?(\d+)$',elem).group(2)
+            trimmed = re.search(type_regex[qtype],elem).group(1)
             valid_list.append(trimmed)
-        except:
+        except AttributeError:
             sys.stdout.write("WARN: id '{}' is not valid. Skipping entry!\n".format(elem))
     return valid_list
 
-def print_results(data,id_type):
-    '''since we either get a PSN result or a list of MSNs, handle printing 
-    accordingly'''
-    if id_type == 'psn':
-        for k in data:
-            print('{},{}'.format('PSN'+k, ','.join(data[k])))
-    else: 
-        for k in data:
-            print('{},{}'.format('PSN'+data[k],'MSN'+k))
-
 if __name__=='__main__':
-    config_file = os.path.join(os.environ['HOME'], '.mb_utils/config.json')
-    if not os.path.isfile(config_file):
-        config_file = os.path.join(os.getcwd(), 'config.json')
+    args = vars(get_args())
+    query_list = []
 
-    try:
-        config_data = Config.read_config(config_file)
-    except IOError:
-        sys.stderr.write('ERROR: No configuration file found. Need to create a '
-            'config file in the current directory or use the system provided one '
-            'in ~/.mb_utils/\n')
+    if args['file']:
+        query_list = read_batchfile(args['file'])
+    else:
+        query_list = args['ids'].split(',')
+
+    valid_ids = validate_list(query_list,args['type'])
+    if not valid_ids:
+        sys.stderr.write("ERROR: No valid IDs input!\n")
         sys.exit(1)
 
-    args = get_args()
-
-    query_list = []
-    if args.batch:
-        query_list = read_batchfile(args.batch)
-    else:
-        query_list = args.ids.split(',')
-    valid_ids = validate_list(query_list)
-
     # Make a call to MATCHbox to get a JSON obj of data.
-    if not args.json:
-        sys.stdout.write('Retrieving MATCHBox data object.  This will take a few '
-            'minutes...')
+    if not args['json']:
+        sys.stdout.write('Retrieving a live MATCHBox data object. This may take a few minutes...\n')
         sys.stdout.flush()
 
-    # Either way make a matchbox data obj with arg.json = dump file or 
-    # args.json = None and we make one.
-    data = MatchboxData(
-            config_data['url'],
-            config_data['creds'],
-            dumped_data=args.json
-    )
+    data = MatchboxData(dumped_data=args['json'])
     sys.stdout.write('\n')
 
     print('Getting MSN / PSN mapping data...')
-    map_id(data,valid_ids,args.psn,args.msn)
+    map_id(data,valid_ids,args['type'])
