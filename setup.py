@@ -3,10 +3,11 @@ from setuptools import setup
 from setuptools.command.install import install as _install
 from subprocess import call
 
-import matchbox_api_utils
+version = '0.13.2'
 
 def _post_install(dir):
     call([sys.executable, 'postinstall.py'])
+        
 
 class install(_install):
     def run(self):
@@ -21,7 +22,7 @@ config = {
     'name'                   : 'matchbox_api_utils',
     'description'            : ('MATCHBox API Utlilites Package'),
     'long_description'       : readme(),
-    'version'                : matchbox_api_utils.__version__,
+    'version'                : version,
     'author'                 : 'Dave Sims',
     'author_email'           : 'david.sims2@nih.gov',
     'download_url'           : 'https://github.com/drmrgd/matchbox_api_utils.git',
@@ -29,7 +30,7 @@ config = {
     'test_suite'             : 'nose.collector',
     'tests_require'          : ['nose'],
     'packages'               : ['matchbox_api_utils'],
-    'install_requires'       : ['requests == 2.17.3'],
+    'install_requires'       : ['requests'],
     'scripts'                : ['bin/map_msn_psn.py',
                                 'bin/matchbox_json_dump.py',
                                 'bin/match_specimen_tracking.py',
