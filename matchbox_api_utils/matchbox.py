@@ -331,20 +331,20 @@ class MatchboxData(object):
             self._dumped_data = self.__get_config_data('mb_json_data')
 
         if self._dumped_data:
-            print('\n  ->  Starting from a processed MB JSON Obj')
+            # print('\n  ->  Starting from a processed MB JSON Obj')
             self.data = load_dumped_json(self._dumped_data)
             if self._patient:
                 print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
         # Starting from raw MB JSON obj.
         elif self._load_raw:
-            print('\n  ->  Starting from a raw MB JSON Obj')
+            # print('\n  ->  Starting from a raw MB JSON Obj')
             mb_raw_data = load_dumped_json(self._load_raw)
             self.matchbox = Matchbox(self._url,self._creds,load_raw=mb_raw_data)
             self.data = self.matchbox.gen_patients_list()
         # Starting from a live instance, and possibly making a raw dump
         else:
-            print('\n  ->  Starting from a live MB instance')
+            # print('\n  ->  Starting from a live MB instance')
             self.matchbox = Matchbox(self._url,self._creds,make_raw=self._make_raw)
             self.data = self.matchbox.gen_patients_list()
 
