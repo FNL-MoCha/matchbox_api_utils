@@ -3,6 +3,7 @@
 import sys
 import os
 import json
+import datetime
 from subprocess import call
 from pprint import pprint as pp
 
@@ -43,32 +44,35 @@ def pre_build_mb_obj(root_dir):
     '''First time launch, build a matchbox json dump file and put it into 
        $HOME/.mb_utils.
     '''
-    mb_obj_file = os.path.join(root_dir,'mb_obj.json')
-    sys.stdout.write('Creating a MATCHBox data dump for quicker lookups. This '
-        'will take a few minutes...\n')
-    sys.stdout.write('(NOTE: can do live queries at any time, but this can take '
-        'quite a while and the use of routinely collected data dumps using '
-        'matchbox_data_dump.py is preferred and encouraged.\n')
+    datestring=datetime.date.today().strftime('%m%d%y')
+    mb_obj_file = os.path.join(root_dir,'mb_obj_' + datestring + '.json')
+    sys.stdout.write('Creating a MATCHBox data dump for quicker lookups.\n')
+    sys.stdout.write(
+        '''(NOTE: can do live queries at any time, but this can take quite a while and the use
+        of routinely collected data dumps using matchbox_data_dump.py is preferred and
+        encouraged.\n
+        '''
+    )
 
     call(['bin/matchbox_json_dump.py','-o', mb_obj_file])
     os.system('chown {} {}'.format(system_user,mb_obj_file))
-    sys.stdout.write('Done!\n\n')
-    sys.stdout.write('@'*75 + "\n")
+    
+    sys.stdout.write("\n" + '@'*75 + "\n")
     sys.stdout.write('\tWe recommend you run the matchbox_data_dump.py program\n\troutintely '
         'to pick up any new data that has been generated\n\tsince last polling.\n')
     sys.stdout.write('@'*75 + "\n")
 
 if __name__=='__main__':
-    print('@'*75)
-    print('\tSkipping all postinstall tasks for now.')
-    print('@'*75)
+    # print('@'*75)
+    # print('\tSkipping all postinstall tasks for now.')
+    # print('@'*75)
 
-    #root_dir = os.path.join(os.environ['HOME'], '.mb_utils/')
-    #if not os.path.isdir(root_dir):
-        #mkdir(root_dir)
-    #sys.stdout.write('\n' + '-'*25 +'  MATCHBox API Utils Setup  '+ '-'*25 + '\n')
+    root_dir = os.path.join(os.environ['HOME'], '.mb_utils/')
+    if not os.path.isdir(root_dir):
+        mkdir(root_dir)
+    sys.stdout.write('\n' + '-'*25 +'  MATCHBox API Utils Setup  '+ '-'*25 + '\n')
 
-    #make_config_file(root_dir)
-    #pre_build_mb_obj(root_dir)
+    make_config_file(root_dir)
+    pre_build_mb_obj(root_dir)
 
-    #sys.stdout.write('Done with post-install config tasks.\n' + '-'*78 + '\n\n')
+    sys.stdout.write('Done with post-install config tasks.\n' + '-'*78 + '\n\n')
