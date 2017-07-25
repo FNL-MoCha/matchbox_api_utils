@@ -449,6 +449,8 @@ class MatchboxData(object):
     def map_msn_psn(self,pt_id,id_type):
         """Map a MSN to PSN or PSN to MSN
 
+        Note: This function is going to be deprecated in favor of individual calls.
+
         NOTE: This function is deprecated in favor of individual get_bsn, get_psn,
         get_msn class of functions. 
         Given a patient ID (either MSN or PSN) and a type val, output corresponding 
@@ -494,40 +496,6 @@ class MatchboxData(object):
             if msn_id in self.data[p]['msn']:
                 return p
 
-    def __search_for_value(self,key,val,retval):
-        """
-        Input a key and return a value or None
-        Ex __search_for_value(key=psn,val=14420,retval=msn)
-          => search for PSN14420 in dataset and return MSN<whatever>
-
-        Ex __search_for_value(key=psn,val=14420,retval=bsn)
-          => serach for PSN14420 in datasert and return BSN<whatever>
-
-        """
-        result = ''
-        val = str(val)
-        for p in self.data:
-            if key == 'msn' and val in self.data[p]['msn']:
-                if retval == 'psn':
-                    result = p
-                elif retval == 'bsn':
-                    result = self.data[p]['bsn']
-            if key == 'psn' and p == val:
-                if retval == 'msn':
-                    result = ','.join(self.data[p]['msn'])
-                elif retval == 'bsn':
-                    result = self.data[p]['bsn']
-            if key == 'bsn' and self.data[p]['bsn'] == val:
-                if retval == 'psn':
-                    result = p
-                elif retval == 'msn':
-                    result = ','.join(self.data[p]['msn'])
-        if result:
-            return result
-        else:
-            sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
-            return None
-
     def get_psn(self,msn=None,bsn=None):
         """
         Retrieve a patient PSN from either an input MSN or BSN.
@@ -546,12 +514,11 @@ class MatchboxData(object):
 
         psn = ''
         if msn:
-            if not msn.startswith('MSN'):
-                msn = 'MSN'+msn
+            if not str(msn).startswith('MSN'):
+                msn = 'MSN'+str(msn)
             psn = self.__search_for_value(key='msn',val=msn,retval='psn')
         elif bsn:
             psn = self.__search_for_value(key='bsn',val=bsn,retval='psn')
-            # return 'PSN' + self.__search_for_value(key='bsn',val=bsn,retval='psn')
         else:
             sys.stderr.write('ERROR: No MSN or BSN entered!\n')
             return None
@@ -576,12 +543,18 @@ class MatchboxData(object):
         MSN44180
 
         """
+        result = []
         if psn:
-            return self.__search_for_value(key='psn',val=psn,retval='msn')
+            result = self.__search_for_value(key='psn',val=psn,retval='msn')
         elif bsn:
-            return self.__search_for_value(key='bsn',val=bsn,retval='msn')
+            result = self.__search_for_value(key='bsn',val=bsn,retval='msn')
         else:
             sys.stderr.write('ERROR: No PSN or BSN entered!\n')
+            return None
+
+        if result:
+            return ','.join(result)
+        else:
             return None
 
     def get_bsn(self,psn=None,msn=None):
@@ -609,58 +582,139 @@ class MatchboxData(object):
             sys.stderr.write('ERROR: No PSN or MSN entered!\n')
             return None
 
-    def get_disease_summary(self):
-        """Return a summary of registered diseases and counts."""
+    def get_disease_summary(self,query_disease=None):
+        """
+        Return a summary of registered diseases and counts. Despite a MEDRA Code and other bits
+        of disease related data, we'll rely on output from CTEP Term value only.
+
+        Args:
+            query_disease (str): Disease or comma separated list of diseases to filter on.
+
+        Returns:
+            Dictionary of disease(s) and counts.
+
+        """
         total_patients = 0
         diseases = defaultdict(int)
         for psn in self.data:
             # Skip the registered but not yet biopsied patients.
-            if self.data[psn]['medra_code'] == '-': continue
-            total_patients += 1
-            diseases[self.data[psn]['ctep_term']] += 1
-        return total_patients, diseases
+            if self.data[psn]['medra_code'] == '-': 
+                continue
 
-    def get_patients_and_disease(self,outside=None,query_psn=None):
+            diseases[self.data[psn]['ctep_term']] += 1
+
+        if query_disease:
+            if query_disease in diseases:
+                return {query_disease : diseases[query_disease]}
+            else:
+                return None
+        else:
+            return dict(diseases)
+
+    def get_patients_and_disease(self,psn=None,msn=None,bsn=None,outside=None):
         """
-        #TODO: strip PSN string from input. 
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
         are defined as being only Passed and can not be Failed, No Biopsy or
         outside assay biopsies at this time.
 
         .. py:function:: get_patients_and_disease([outside=None],[query_psn=None])
 
-        Return PSN and Disease for valid biopsies.
-
         :param name: get_patients_and_disease
         :param str outside: Return outside assay results or filter them out.
-        :param str query_psn: Optional PSN to filter data on.  
+        :param str psn: Optional PSN (or comma separated list) on which to filter data.
+        :param str bsn: Optional BSN on which to filter data.
+        :param str msn: Optional MSN on which to filter data.
         :return: Dict of PSN : Disease mappings
         :rtype: dict
-        
+
+        >>> print(get_disease(psn='11352'))
+        'Serous endometrial adenocarcinoma'
         """
-        psn_list = []
-        if query_psn:
-            psn_list.append(query_psn)
+        id_list = []
+        # Don't want to allow for mixed query types. So, number of None args must be > 2, 
+        # or else user entered more than one arg type and that's not good.
+        count_none = sum((x is None for x in (psn,msn,bsn)))
+        if count_none < 2:
+            sys.stderr.write('ERROR: Mixed query types detected. Please only use one type of ID to query in this function.\n')
+            sys.exit(1)
+        # print('count_none: %s' % count_none)
+        # sys.exit()
+
+        if psn:
+            id_list = [x.lstrip('PSN') for x in str(psn).split(',')]
+        elif msn:
+            id_list = ['MSN'+x.lstrip('MSN') for x in str(msn).split(',')]
+        elif bsn:
+            id_list = bsn.split(',')
         else:
-            psn_list = self.data.keys()
+            id_list = self.data.keys()
+
+        # print('ids to test:')
+        # pp(id_list)
 
         output_data = {}
-        for psn in psn_list:
-            try:
-                biopsy = self.data[psn]['biopsy']
-            except KeyError:
-                sys.stderr.write("WARN: Can not find data for PSN%s in dataset! Skipping.\n" % psn)
-                continue
+        for i in id_list:
+            if psn:
+                output_data[i] = self.__search_for_value(key='psn',val=i,retval='ctep_term')
+            elif msn:
+                output_data[i] = self.__search_for_value(key='msn',val=i,retval='ctep_term')
+            elif bsn:
+                output_data[i] = self.__search_for_value(key='bsn',val=i,retval='ctep_term')
 
-            if self.data[psn]['bsn'] == '---':
-                continue
+
+            # try:
+                # biopsy = self.data[psn]['biopsy']
+            # except KeyError:
+                # sys.stderr.write("WARN: Can not find data for PSN%s in dataset! Skipping.\n" % psn)
+                # continue
+
+            # if self.data[psn]['bsn'] == '---':
+                # continue
             # Capture and remove "No Biopsy" and "Failed Biopsy" entries
-            elif 'Biopsy' in biopsy: 
-                continue
-            elif biopsy == 'Outside' and not outside:
-                continue
-            output_data[psn] = self.data[psn]['ctep_term']
+            # elif 'Biopsy' in biopsy: 
+                # continue
+            # elif biopsy == 'Outside' and not outside:
+                # continue
+            # output_data[psn] = self.data[psn]['ctep_term']
+            """
+
+        if msn:
+            if not msn.startswith('MSN'):
+                msn = 'MSN'+msn
+            return self.__search_for_value(key='msn',val=msn,retval='bsn')
+        elif psn:
+            return self.__search_for_value(key='psn',val=psn,retval='bsn')
+        else:
+            sys.stderr.write('ERROR: No PSN or MSN entered!\n')
+            return None
+        """
         return output_data
+
+    def __get_patient_table(self,psn):
+        # Output the filtered data table for a PSN so that we have a quick way to figure out 
+        # key : value structure for the dataset.
+        for key,val in self.data[str(psn)].items():
+            print('\t{} => {}'.format(key,val))
+
+    def __search_for_value(self,key,val,retval):
+        # Input a key and return a value or None
+        # Example: __search_for_value(key=psn,val=14420,retval=msn)
+        #   => search for PSN14420 in dataset and return MSN<whatever>
+        # Example: __search_for_value(key=psn,val=14420,retval=bsn)
+        #   => serach for PSN14420 in datasert and return BSN<whatever>
+
+        val = str(val)
+        for p in self.data:
+            if key == 'msn' and val in self.data[p]['msn']:
+                return self.data[p][retval]
+            if key == 'psn' and p == val:
+                return self.data[p][retval]
+            if key == 'bsn' and self.data[p]['bsn'] == val:
+                return self.data[p][retval]
+
+        # If we made it here, then we didn't find a result.
+        sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
+        return None
 
     def find_variant_frequency(self,query,query_patients=None):
         """
