@@ -74,3 +74,4 @@ class FunctionTests(TestCase):
             {'T-17-000550': u'Carcinosarcoma of the uterus'}
         )
         self.assertRaises(SystemExit,self.data.get_patients_and_disease,psn='11352',msn=3060)
+
