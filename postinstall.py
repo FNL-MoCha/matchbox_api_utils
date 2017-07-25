@@ -25,7 +25,8 @@ def write_json(user,passwd,root_dir):
             'password' : passwd,
         },
         'url' : 'https://matchbox.nci.nih.gov/match/common/rs/getPatients',
-        'manifest_url' : 'https://matchbox.nci.nih.gov/reportapi/patientSpecimenTrackingSummary'
+        'manifest_url' : 'https://matchbox.nci.nih.gov/reportapi/patientSpecimenTrackingSummary',
+        'arms_url' : 'https://matchbox.nci.nih.gov/match/common/rs/getTreatmentArms'
     }
     with open(config_file, 'w') as fh:
         json.dump(config_data, fh, indent=4)
