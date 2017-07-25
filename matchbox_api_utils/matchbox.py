@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# TODO:
-#    - get_disease(psn,bsn,msn): Return disease type.
 import os
 import sys
 import requests
@@ -266,7 +264,8 @@ class Matchbox(object):
 
 class MatchboxData(object):
 
-    """MatchboxData class
+    """
+    MatchboxData class
 
     Parsed MATCHBox Data from the API as collected from the Matchbox class above. This 
     class has methods to generate queries, further filtering, and heuristics on the 
@@ -275,13 +274,17 @@ class MatchboxData(object):
     """
 
     def __init__(self,config_file=None,url=None,creds=None,patient=None,dumped_data='sys_default',load_raw=None,make_raw=None):
-        """Generate a MATCHBox data object that can be parsed and queried 
-        downstream with some methods. 
+        """
+        Generate a MATCHBox data object that can be parsed and queried downstream with some methods. 
         
-         Can instantiate with either a config JSON file (generated from the 
-         package configuration) or by loading required args below. Can do a 
-         live query, or load a MATCHBox JSON file (derived from 
-         matchbox_json_dump.py in the package).
+        Can instantiate with either a config JSON file, which contains the url, username, and password information
+        needed to access the resource, or by supplying the individual arguments to make the connection.  This class
+        will call the Matchbox class in order to make the connection and deploy the data.
+
+        Can do a live query to get data in real time, or load a MATCHBox JSON file derived from the 
+        matchbox_json_dump.py script that is a part of the package. Since data in MATCHBox is relatively static 
+        these days, it's preferred to use an existing JSON DB and only periodically update the DB with a 
+        call to the aforementioned script.
 
          Args:
                config_file (file): Custom config file to use if not using system 
@@ -302,12 +305,7 @@ class MatchboxData(object):
                load_raw (file):    Load a raw API dataset rather than making a fresh
                                    call to the API. This is intended for dev purpose
                                    only and will be disabled.
-               make_raw (bool):    Make a raw API JSON dataset for dev purposes only
-                                   .
-
-          URL and credentials can be manually applied to API or (preferred!) 
-          obtained from the default config file in $HOME/.mb_utils/config.json. 
-          The Config class in matchbox_conf will load up the data.
+               make_raw (bool):    Make a raw API JSON dataset for dev purposes only.
 
         """
         self._url = url
@@ -356,7 +354,6 @@ class MatchboxData(object):
 
     def __iter__(self):
         return self.data.itervalues()
-        # Starting from processed MB JSON obj.
 
     @staticmethod
     def __filter_by_patient(json,patient):
@@ -371,7 +368,7 @@ class MatchboxData(object):
         return config_data[item]
 
 
-    def get_biopsy_numbers(self,category=None):
+    def get_biopsy_summary(self,category=None):
         """Return dict of patients registered in MATCHBox with biopsy and sequencing
         information. 
         
@@ -385,7 +382,8 @@ class MatchboxData(object):
         variable
 
         Args:
-            catetory (str): biopsy category to return
+            catetory (str): biopsy category to return. Valid categories are 'psn','passed_biopsy',
+                            'failed_biopsy','no_biopsy','msn','sequenced','outside'.
 
         Returns:
             dict: whole set of category:count or single category:count data.
@@ -424,7 +422,8 @@ class MatchboxData(object):
             return count
     
     def _matchbox_dump(self,filename=None):
-        """Dump a parsed MATCHBox dataset.
+        """
+        Dump a parsed MATCHBox dataset.
         
         Call to the API and make a JSON file that can later be loaded in, rather 
         than making an API call and reprocessing. Useful for quicker look ups as 
@@ -447,7 +446,8 @@ class MatchboxData(object):
             json.dump(self.data,outfile,sort_keys=True,indent=4)
 
     def map_msn_psn(self,pt_id,id_type):
-        """Map a MSN to PSN or PSN to MSN
+        """
+        Map a MSN to PSN or PSN to MSN
 
         Note: This function is going to be deprecated in favor of individual calls.
 
@@ -479,22 +479,12 @@ class MatchboxData(object):
             for p in self.data:
                 if pt_id in self.data[p]['msn']:
                     result = p
-            result = self.__return_key_by_val(pt_id)
+            # result = self.__return_key_by_val(pt_id)
 
         if not result:
             print('No result found for id %s' % pt_id)
             return None
         return result
-
-    def __return_key_by_val(self):
-        """
-        TODO: remove this function '''
-
-        """
-        msn_id = 'MSN'+msn_id
-        for p in self.data:
-            if msn_id in self.data[p]['msn']:
-                return p
 
     def get_psn(self,msn=None,bsn=None):
         """
@@ -582,7 +572,7 @@ class MatchboxData(object):
             sys.stderr.write('ERROR: No PSN or MSN entered!\n')
             return None
 
-    def get_disease_summary(self,query_disease=None):
+    def get_disease_summary(self,disease=None):
         """
         Return a summary of registered diseases and counts. Despite a MEDRA Code and other bits
         of disease related data, we'll rely on output from CTEP Term value only.
@@ -594,7 +584,6 @@ class MatchboxData(object):
             Dictionary of disease(s) and counts.
 
         """
-        total_patients = 0
         diseases = defaultdict(int)
         for psn in self.data:
             # Skip the registered but not yet biopsied patients.
@@ -603,91 +592,57 @@ class MatchboxData(object):
 
             diseases[self.data[psn]['ctep_term']] += 1
 
-        if query_disease:
-            if query_disease in diseases:
-                return {query_disease : diseases[query_disease]}
+        if disease:
+            if disease in diseases:
+                return {disease : diseases[disease]}
             else:
+                sys.stderr.write('Disease "%s" was not found in the database.\n' % disease)
                 return None
         else:
             return dict(diseases)
 
-    def get_patients_and_disease(self,psn=None,msn=None,bsn=None,outside=None):
+    def get_patients_and_disease(self,psn=None,msn=None,bsn=None,outside=False):
         """
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
         are defined as being only Passed and can not be Failed, No Biopsy or
         outside assay biopsies at this time.
 
-        .. py:function:: get_patients_and_disease([outside=None],[query_psn=None])
+        Args:
+            psn (str): Optional PSN or comma separated list of PSNs on which to filter data.
+            bsn (str): Optional BSN or comma separated list of BSNs on which to filter data.
+            msn (str): Optional MSN or comma separated list of MSNs on which to filter data.
+            outside (bool) : Also include outside assay data. False by default.
 
-        :param name: get_patients_and_disease
-        :param str outside: Return outside assay results or filter them out.
-        :param str psn: Optional PSN (or comma separated list) on which to filter data.
-        :param str bsn: Optional BSN on which to filter data.
-        :param str msn: Optional MSN on which to filter data.
-        :return: Dict of PSN : Disease mappings
-        :rtype: dict
+        Returns:
+            Dict of PSN : Disease mappings. If no match for input ID, returns None.
 
         >>> print(get_disease(psn='11352'))
         'Serous endometrial adenocarcinoma'
+
         """
-        id_list = []
         # Don't want to allow for mixed query types. So, number of None args must be > 2, 
         # or else user entered more than one arg type and that's not good.
         count_none = sum((x is None for x in (psn,msn,bsn)))
         if count_none < 2:
-            sys.stderr.write('ERROR: Mixed query types detected. Please only use one type of ID to query in this function.\n')
+            sys.stderr.write('Error: Mixed query types detected. Please only use one type of query '
+                'ID in this function.\n')
             sys.exit(1)
-        # print('count_none: %s' % count_none)
-        # sys.exit()
 
+        # Prepare an ID list dict if one is provided. Need some special mapping and whatnot before we can pass it.
+        id_list = {}
         if psn:
-            id_list = [x.lstrip('PSN') for x in str(psn).split(',')]
+            id_list['psn'] = [x.lstrip('PSN') for x in str(psn).split(',')]
         elif msn:
-            id_list = ['MSN'+x.lstrip('MSN') for x in str(msn).split(',')]
+            id_list['msn'] = ['MSN'+x.lstrip('MSN') for x in str(msn).split(',')]
         elif bsn:
-            id_list = bsn.split(',')
+            id_list['bsn'] = bsn.split(',')
         else:
-            id_list = self.data.keys()
-
-        # print('ids to test:')
-        # pp(id_list)
+            id_list['psn'] = self.data.keys()
 
         output_data = {}
-        for i in id_list:
-            if psn:
-                output_data[i] = self.__search_for_value(key='psn',val=i,retval='ctep_term')
-            elif msn:
-                output_data[i] = self.__search_for_value(key='msn',val=i,retval='ctep_term')
-            elif bsn:
-                output_data[i] = self.__search_for_value(key='bsn',val=i,retval='ctep_term')
-
-
-            # try:
-                # biopsy = self.data[psn]['biopsy']
-            # except KeyError:
-                # sys.stderr.write("WARN: Can not find data for PSN%s in dataset! Skipping.\n" % psn)
-                # continue
-
-            # if self.data[psn]['bsn'] == '---':
-                # continue
-            # Capture and remove "No Biopsy" and "Failed Biopsy" entries
-            # elif 'Biopsy' in biopsy: 
-                # continue
-            # elif biopsy == 'Outside' and not outside:
-                # continue
-            # output_data[psn] = self.data[psn]['ctep_term']
-            """
-
-        if msn:
-            if not msn.startswith('MSN'):
-                msn = 'MSN'+msn
-            return self.__search_for_value(key='msn',val=msn,retval='bsn')
-        elif psn:
-            return self.__search_for_value(key='psn',val=psn,retval='bsn')
-        else:
-            sys.stderr.write('ERROR: No PSN or MSN entered!\n')
-            return None
-        """
+        for id_type in id_list:
+            for i in id_list[id_type]:
+                output_data[i] = self.__search_for_value(key=id_type,val=i,retval='ctep_term')
         return output_data
 
     def __get_patient_table(self,psn):
@@ -724,12 +679,10 @@ class MatchboxData(object):
         further filtered.  Input required is a dict query data in the form:
             {'snvs' : ['GENE1','GENE2',etc.],
              'indels' : ['GENE1', 'GENE2', etc.],
-                     .
-                     .
-                     .
             }
         and so on
         Will return a dict of matching data with disease and MOI information
+
         """
         results = {} 
         count = 0
