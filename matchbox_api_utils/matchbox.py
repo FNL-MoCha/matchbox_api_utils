@@ -67,14 +67,13 @@ class Matchbox(object):
 
     @staticmethod
     def __ascii_encode_dict(data):
-        """Encode return JSON as ASCII rather than unicode."""
+        # Encode return JSON as ASCII rather than unicode.
         ascii_encode = lambda x: x.encode('ascii') if isinstance(x,bytes) else x
         return dict(map(ascii_encode,pair) for pair in data.items())
 
     def __api_call(self):
-        """Call to API to retrienve data. Using cURL rather than requests since requests
-        takes bloody forever!
-        """
+        # Call to API to retrienve data. Using cURL rather than requests since requests
+        # takes bloody forever!
         curl_cmd = 'curl -u {}:{} -s {}'.format(
             self.creds['username'],self.creds['password'],self.url
         )
@@ -83,7 +82,7 @@ class Matchbox(object):
         
     @staticmethod
     def __raw_dump(data,filename=None):
-        """Dump a raw, unprocessed matchbox for dev purposes."""
+        # Dump a raw, unprocessed matchbox for dev purposes.
         if not filename:
             filename = 'raw_mb_dump.json'
         with open(filename,'w') as fh:
@@ -183,7 +182,7 @@ class Matchbox(object):
 
     @staticmethod
     def __get_ihc_results(ihc_data):
-        """Get and load IHC results from dataset."""
+        # Get and load IHC results from dataset.
         ihc_results = {result['biomarker'].rstrip('s').lstrip('ICC') : result['result'] for result in ihc_data}
         # Won't always get RB IHC; depends on if we have other qualifying genomic event.  Fill in data anyway.
         if 'RB' not in ihc_results:
@@ -191,7 +190,7 @@ class Matchbox(object):
         return ihc_results
 
     def __proc_ngs_data(self,ngs_results):
-        """Create and return a dict of variant call data that can be stored in the patient's obj."""
+       # Create and return a dict of variant call data that can be stored in the patient's obj.
         variant_call_data = defaultdict(list)
         variant_list = ['singleNucleotideVariants', 'indels', 'copyNumberVariants', 'unifiedGeneFusions']
 
@@ -208,7 +207,7 @@ class Matchbox(object):
 
     @staticmethod
     def __gen_variant_dict(vardata,vartype):
-        """Based on input variant call data, return a dict of variant type and wanted fields"""
+        # Based on input variant call data, return a dict of variant type and wanted fields
         if vartype == 'singleNucleotideVariants' or vartype == 'indels':
             meta_key = 'snvs_indels'
         elif vartype == 'copyNumberVariants':
@@ -367,6 +366,38 @@ class MatchboxData(object):
         config_data = matchbox_conf.Config(self._config_file)
         return config_data[item]
 
+    def __get_patient_table(self,psn,next_key=None):
+        # Output the filtered data table for a PSN so that we have a quick way to figure out 
+        # key : value structure for the dataset.
+        for key,val in self.data[str(psn)].items():
+            if next_key:
+                if key==next_key:
+                    for k2,v2 in self.data[str(psn)][key].items():
+                        # print('\t{} => {}'.format(k2,v2))
+                        return json.dumps(self.data[str(psn)][key],indent=4,sort_keys=True)
+            else:
+                # print('\t{} => {}'.format(key,val))
+                return json.dumps(self.data[str(psn)],indent=4,sort_keys=True)
+
+    def __search_for_value(self,key,val,retval):
+        # Input a key and return a value or None
+        # Example: __search_for_value(key=psn,val=14420,retval=msn)
+        #   => search for PSN14420 in dataset and return MSN<whatever>
+        # Example: __search_for_value(key=psn,val=14420,retval=bsn)
+        #   => serach for PSN14420 in datasert and return BSN<whatever>
+
+        val = str(val)
+        for p in self.data:
+            if key == 'msn' and val in self.data[p]['msn']:
+                return self.data[p][retval]
+            if key == 'psn' and p == val:
+                return self.data[p][retval]
+            if key == 'bsn' and self.data[p]['bsn'] == val:
+                return self.data[p][retval]
+
+        # If we made it here, then we didn't find a result.
+        sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
+        return None
 
     def get_biopsy_summary(self,category=None):
         """Return dict of patients registered in MATCHBox with biopsy and sequencing
@@ -645,43 +676,27 @@ class MatchboxData(object):
                 output_data[i] = self.__search_for_value(key=id_type,val=i,retval='ctep_term')
         return output_data
 
-    def __get_patient_table(self,psn):
-        # Output the filtered data table for a PSN so that we have a quick way to figure out 
-        # key : value structure for the dataset.
-        for key,val in self.data[str(psn)].items():
-            print('\t{} => {}'.format(key,val))
-
-    def __search_for_value(self,key,val,retval):
-        # Input a key and return a value or None
-        # Example: __search_for_value(key=psn,val=14420,retval=msn)
-        #   => search for PSN14420 in dataset and return MSN<whatever>
-        # Example: __search_for_value(key=psn,val=14420,retval=bsn)
-        #   => serach for PSN14420 in datasert and return BSN<whatever>
-
-        val = str(val)
-        for p in self.data:
-            if key == 'msn' and val in self.data[p]['msn']:
-                return self.data[p][retval]
-            if key == 'psn' and p == val:
-                return self.data[p][retval]
-            if key == 'bsn' and self.data[p]['bsn'] == val:
-                return self.data[p][retval]
-
-        # If we made it here, then we didn't find a result.
-        sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
-        return None
-
     def find_variant_frequency(self,query,query_patients=None):
         """
-        TODO: Update docs
-              Add aMOI designator (also arm?)
-        Based on an input query, generate a dict of patient data that can be 
-        further filtered.  Input required is a dict query data in the form:
-            {'snvs' : ['GENE1','GENE2',etc.],
-             'indels' : ['GENE1', 'GENE2', etc.],
-            }
-        and so on
-        Will return a dict of matching data with disease and MOI information
+        Find and return variant hit rates.
+
+        Based on an input query in the form of a variant_type : gene dict, where the gene value
+        can be a list of genes, output a list of patients that had hits in those gene with some 
+        disease and variant information. 
+
+        Args:
+            query (dict): Dictionary of variant_type: gene mappings where:
+                -  variant type is one or more of 'snvs','indels','fusions','cnvs'
+                -  gene is a list of genes to query.
+            query_patients (list): List of patients for which we want to obtain data. 
+
+        Returns:
+            Will return a dict of matching data with disease and MOI information
+        
+        Example:
+        >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
+        find_variant_frequency(query)
+
 
         """
         results = {} 
