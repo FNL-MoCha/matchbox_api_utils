@@ -1,9 +1,9 @@
 import sys,os
 from unittest import TestCase
-from matchbox_api_utils import MatchboxData
+from matchbox_api_utils import MatchData
 
 class FunctionTests(TestCase):
-    data = MatchboxData(dumped_data = os.path.join(os.path.dirname(__file__),'mb_obj.json'))
+    data = MatchData(dumped_data = os.path.join(os.path.dirname(__file__),'mb_obj.json'))
 
     def test_get_biopsy_summary(self):
         self.assertNotEqual(self.data.get_biopsy_summary(category='failed'),0)
