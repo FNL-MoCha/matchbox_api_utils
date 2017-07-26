@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-# TODO:
-#    - tweak Matchbox class connector to ensure that we only get and input API data. No proc'ing the data with Matchbox.
-#    - tweak funs so taht we can make API raw or proc'd raw
 import os
 import sys
 import json
@@ -75,26 +72,24 @@ class MatchData(object):
         if self._patient:
             self._url += '?patientId=%s' % patient
 
-        #TODO: check this.  I can't quite make heads or tails of this strategy.
+        # If dumped_data is 'sys_default', get json file from matchbox_conf.Config, which is from 
+        # matchbox_api_util.__init__.mb_json_data.  Otherwise use the passed arg; if it's None, do
+        # a live call below, and if it's a custom file, load that.
         if self._dumped_data == 'sys_default':
             self._dumped_data = self.__get_config_data('mb_json_data')
 
-        # Starting from raw MB JSON obj.
         if self._load_raw:
-            print('\n  ->  Starting from a raw MB JSON Obj')
+            # print('\n  ->  Starting from a raw MB JSON Obj')
             self.matchbox_data = self.__load_dumped_json(self._load_raw)
             self.data = self.gen_patients_list()
-        # Starting from a proc'd MB JSON Obj.
         elif self._dumped_data:
-            print('\n  ->  Starting from a processed MB JSON Obj')
+            # print('\n  ->  Starting from a processed MB JSON Obj')
             self.data = self.__load_dumped_json(self._dumped_data)
-            # TODO: Fix this....no worky!
             if self._patient:
                 print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
-        # Starting from a live instance, and possibly making a raw dump
         else:
-            print('\n  ->  Starting from a live MB instance')
+            # print('\n  ->  Starting from a live MB instance')
             self.matchbox_data = Matchbox(self._url,self._creds,make_raw=self._make_raw).api_data
             self.data = self.gen_patients_list()
 
