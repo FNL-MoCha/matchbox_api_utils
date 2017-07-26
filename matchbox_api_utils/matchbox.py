@@ -3,9 +3,8 @@ import os
 import sys
 import json
 import datetime
-from collections import defaultdict
-from pprint import pprint as pp
 
+# TODO: have a look at this and use this to load config vars.  We can then call a dump raw matchbox command on the fly from the API.
 import matchbox_conf
 
 class Matchbox(object):
@@ -60,6 +59,15 @@ class Matchbox(object):
             self.__raw_dump(self.api_data,'raw_mb_dump_'+today+'.json')
             sys.exit()
             return
+
+    def __str__(self):
+        return json.dumps(self.api_data,sort_keys=True,indent=4)
+
+    # def __getitem__(self,key):
+        # return self.api_data[key]
+
+    #def __iter__(self):
+        #return self.api_data.itervalues()
 
     def __api_call(self):
         # Call to API to retrienve data. Using cURL rather than requests since requests
