@@ -15,7 +15,7 @@ from pprint import pprint as pp
 import matchbox_conf
 from matchbox import Matchbox
 
-class MatchTreatments(object):
+class TreatmentArms(object):
     """
 
     NCI-MATCH Treatment Arms and aMOIs Class
