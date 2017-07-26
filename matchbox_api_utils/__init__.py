@@ -5,9 +5,10 @@ import re
 import datetime
 
 import matchbox_api_utils
-from matchbox import MatchboxData, Matchbox
+from matchbox import Matchbox
+from match_data import MatchData
 
-__all__ = ['matchbox','matchbox_conf']
+__all__ = ['matchbox','match_data','matchbox_conf']
 
 mb_utils_root = os.path.join(os.environ['HOME'], '.mb_utils/')
 
