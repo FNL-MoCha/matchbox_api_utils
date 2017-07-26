@@ -7,8 +7,9 @@ import datetime
 import matchbox_api_utils
 from matchbox import Matchbox
 from match_data import MatchData
+from match_arms import TreatmentArms
 
-__all__ = ['matchbox','match_data','matchbox_conf']
+__all__ = ['Matchbox','MatchData','TreatmentArms','matchbox_conf']
 
 mb_utils_root = os.path.join(os.environ['HOME'], '.mb_utils/')
 
