@@ -79,21 +79,23 @@ class MatchData(object):
         if self._dumped_data == 'sys_default':
             self._dumped_data = self.__get_config_data('mb_json_data')
 
-        if self._dumped_data:
+        # Starting from raw MB JSON obj.
+        if self._load_raw:
+            print('\n  ->  Starting from a raw MB JSON Obj')
+            self.matchbox_data = self.__load_dumped_json(self._load_raw)
+            self.data = self.gen_patients_list()
+        # Starting from a proc'd MB JSON Obj.
+        elif self._dumped_data:
             print('\n  ->  Starting from a processed MB JSON Obj')
             self.data = self.__load_dumped_json(self._dumped_data)
+            # TODO: Fix this....no worky!
             if self._patient:
                 print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
-        # Starting from raw MB JSON obj.
-        elif self._load_raw:
-            print('\n  ->  Starting from a raw MB JSON Obj')
-            mb_raw_data = self.__load_dumped_json(self._load_raw)
-            self.data = self.matchbox.gen_patients_list()
         # Starting from a live instance, and possibly making a raw dump
         else:
             print('\n  ->  Starting from a live MB instance')
-            self.matchbox_api_data = Matchbox(self._url,self._creds,make_raw=self._make_raw)
+            self.matchbox_data = Matchbox(self._url,self._creds,make_raw=self._make_raw).api_data
             self.data = self.gen_patients_list()
 
     def __str__(self):
@@ -172,9 +174,10 @@ class MatchData(object):
             patients (dict): Dict of parsed MATCHBox API data.
 
         """
+        # TODO: What if we parallelized this?
         patients = defaultdict(dict)
 
-        for record in self.api_data:
+        for record in self.matchbox_data:
             psn = record['patientSequenceNumber']       
 
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
