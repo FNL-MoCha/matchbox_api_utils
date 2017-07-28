@@ -2,12 +2,12 @@
 import os
 import sys
 import json
-import datetime
 from collections import defaultdict
 from pprint import pprint as pp
 
 import matchbox_conf
 from matchbox import Matchbox
+from utils import *
 
 class MatchData(object):
 
@@ -60,8 +60,10 @@ class MatchData(object):
         self._patient = patient
         self._dumped_data = dumped_data
         self._load_raw = load_raw
-        self._make_raw = make_raw
         self._config_file = config_file
+
+        if make_raw:
+            raw_flag = 'mb'
 
         if not self._url:
             self._url = self.__get_config_data('url')
@@ -80,18 +82,18 @@ class MatchData(object):
 
         if self._load_raw:
             # print('\n  ->  Starting from a raw MB JSON Obj')
-            self.matchbox_data = self.__load_dumped_json(self._load_raw)
-            self.data = self.gen_patients_list()
+            matchbox_data = self.load_dumped_json(self._load_raw)
+            self.data = self.gen_patients_list(matchbox_data)
         elif self._dumped_data:
             # print('\n  ->  Starting from a processed MB JSON Obj')
-            self.data = self.__load_dumped_json(self._dumped_data)
+            self.data = self.load_dumped_json(self._dumped_data)
             if self._patient:
                 print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
         else:
             # print('\n  ->  Starting from a live MB instance')
-            self.matchbox_data = Matchbox(self._url,self._creds,make_raw=self._make_raw).api_data
-            self.data = self.gen_patients_list()
+            matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
+            self.data = self.gen_patients_list(matchbox_data)
 
     def __str__(self):
         return json.dumps(self.data,sort_keys=True,indent=4)
@@ -110,18 +112,7 @@ class MatchData(object):
     def __get_var_data_by_gene(data,gene_list):
         return [elem for elem in data if elem['gene'] in gene_list ]
 
-    @staticmethod
-    def __load_dumped_json(json_file):
-        date_string = os.path.basename(json_file).lstrip('mb_obj_').rstrip('.json')
-        try:
-            formatted_date=datetime.datetime.strptime(date_string,'%m%d%y').strftime('%m/%d/%Y')
-        except ValueError:
-            creation_date = os.path.getctime(json_file)
-            formatted_date=datetime.datetime.fromtimestamp(creation_date).strftime('%m/%d/%Y')
-        sys.stderr.write('Loading MATCHBox JSON file created on: %s\n' % formatted_date)
-        with open(json_file) as fh:
-            return json.load(fh)
-
+    # TODO: Move to utils?
     def __get_config_data(self,item):
         config_data = matchbox_conf.Config(self._config_file)
         return config_data[item]
@@ -157,7 +148,7 @@ class MatchData(object):
         sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
         return None
 
-    def gen_patients_list(self):
+    def gen_patients_list(self,matchbox_data):
         """Process the MATCHBox API data.
 
         Process the MATCHBox API data (usually in JSON format from MongoDB) into 
@@ -172,7 +163,8 @@ class MatchData(object):
         # TODO: What if we parallelized this?
         patients = defaultdict(dict)
 
-        for record in self.matchbox_data:
+        # for record in self.matchbox_data:
+        for record in matchbox_data:
             psn = record['patientSequenceNumber']       
 
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
@@ -374,7 +366,7 @@ class MatchData(object):
         else:
             return count
     
-    def _matchbox_dump(self,filename=None):
+    def matchbox_dump(self,filename=None):
         """
         Dump a parsed MATCHBox dataset.
         
@@ -392,7 +384,9 @@ class MatchData(object):
             file: MATCHBox API JSON file.
 
         """
-        formatted_date = datetime.date.today().strftime('%m%d%y')
+        # XXX
+        # formatted_date = datetime.date.today().strftime('%m%d%y')
+        formatted_date = get_today('short')
         if not filename:
             filename = 'mb_obj_' + formatted_date + '.json'
         with open(filename, 'w') as outfile:
