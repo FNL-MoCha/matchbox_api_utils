@@ -4,9 +4,6 @@ import sys
 import json
 import datetime
 
-# TODO: have a look at this and use this to load config vars.  We can then call a dump raw matchbox command on the fly from the API.
-import matchbox_conf
-
 class Matchbox(object):
 
     """
@@ -18,7 +15,7 @@ class Matchbox(object):
 
     """
 
-    def __init__(self,url,creds,make_raw=False):
+    def __init__(self,url,creds,make_raw=None):
         """
         MATCHBox API class. 
         
@@ -36,11 +33,10 @@ class Matchbox(object):
                               'username' : <username>,
                               'password' : <password>
 
-            load_raw (str): Raw, unprocessed MATCHBox API JSON file (generally obtained
-                            from the "make_raw" option. For dev purposes only, and useful
-                            when we can not get a live connection to MATCHbox for some 
-                            reason.
-            make_raw (bool): Make a raw, unprocessed MATCHBox API JSON file.
+            make_raw (str): Make a raw, unprocessed MATCHBox API JSON file. Default
+                filename will be raw_mb_obj (raw MB patient dataset) or raw_ta_obj (
+                raw treatment arm dataset) followed by a datestring. Inputting a
+                a string will save the file with the requested filename.
 
         Returns:
             MATCHBox API dataset, used in MatchData or TreatmentArm classes.
@@ -50,24 +46,21 @@ class Matchbox(object):
         self.creds = creds
         self.api_data = self.__api_call()
 
-        # For debugging purposes, we may want to dump the whole raw dataset out 
-        # to see what keys / vals are availble.  
-        if make_raw: 
+        # For debugging purposes, we may want to dump the whole raw dataset out to see what keys / vals are availble.  
+        today = datetime.date.today().strftime('%m%d%y')
+        if make_raw:
+            if make_raw == 'mb': 
+                filename = 'raw_mb_dump_' + today + '.json'
+            elif make_raw == 'ta':
+                filename = 'raw_ta_dump_' + today + '.json'
+
             sys.stdout.write('Making a raw MATCHBox API dump that can be loaded for development '
-                'purposes rather than a live call to MATCHBox prior to parsing and filtering.\n')
-            today = datetime.date.today().strftime('%m%d%y')
-            self.__raw_dump(self.api_data,'raw_mb_dump_'+today+'.json')
+                    'purposes rather than a live call to MATCHBox prior to parsing and filtering.\n')
+            self.__raw_dump(self.api_data,filename)
             sys.exit()
-            return
 
     def __str__(self):
         return json.dumps(self.api_data,sort_keys=True,indent=4)
-
-    # def __getitem__(self,key):
-        # return self.api_data[key]
-
-    #def __iter__(self):
-        #return self.api_data.itervalues()
 
     def __api_call(self):
         # Call to API to retrienve data. Using cURL rather than requests since requests
@@ -83,5 +76,6 @@ class Matchbox(object):
         # Dump a raw, unprocessed matchbox for dev purposes.
         if not filename:
             filename = 'raw_mb_dump.json'
+        print('got here, and going to write out: %s' % filename)
         with open(filename,'w') as fh:
             json.dump(data,fh)
