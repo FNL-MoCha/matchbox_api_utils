@@ -40,7 +40,7 @@ class TestImport(unittest.TestCase):
         data = MatchData(dumped_data=proc_api_data)
         self.assertListEqual(self.keys,self.get_keys(data))
 
-    # @unittest.skip('Skip load proc obj test')
+    # @unittest.skip('Skip load system proc obj test')
     def test_can_load_sys_json(self):
         """
         Test that we can load the system default dataset. In other words, run as the default condition would require.
