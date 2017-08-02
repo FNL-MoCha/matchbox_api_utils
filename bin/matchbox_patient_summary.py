@@ -90,7 +90,7 @@ if __name__=='__main__':
                          'be sped up by loading a JSON obj from `matchbox_json_dump.py` first.\n')
         sys.stdout.flush()
 
-    data = MatchboxData(dumped_data=args.json)
+    data = MatchData(dumped_data=args.json)
 
     if args.result_type == 'patient':
         patient_summary(data,patients,outside=args.Outside)

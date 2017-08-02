@@ -85,7 +85,7 @@ def main():
     sys.stdout.write('Retrieving a JSON of MATCH specimen tracking info...')
     sys.stdout.flush()
 
-    match_data = MatchboxData(config_data['manifest_url'],config_data['creds'])
+    match_data = MatchData(config_data['manifest_url'],config_data['creds'])
     sys.stdout.write('Done!\n')
     parsed_data = parse_json(match_data)
     print_results(parsed_data)

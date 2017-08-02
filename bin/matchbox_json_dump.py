@@ -47,7 +47,7 @@ if __name__=='__main__':
         sys.stdout.write('\n*** Making a raw dump of MATCHBox for dev / testing '
             'purposes ***\n')
         sys.stdout.flush()
-        MatchboxData(make_raw=True)
+        MatchData(make_raw=True)
         sys.stdout.write('Done!\n')
         sys.exit()
 
@@ -55,7 +55,7 @@ if __name__=='__main__':
         "testing...")
     sys.stdout.flush()
 
-    data = MatchboxData(dumped_data=None,load_raw=args.data, patient=args.patient)
+    data = MatchData(dumped_data=None,load_raw=args.data, patient=args.patient)
 
     outfile = args.outfile
     main(data,outfile)
