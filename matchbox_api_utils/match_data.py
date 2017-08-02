@@ -218,7 +218,7 @@ class MatchData(object):
                 # Skip outside assays as the data is not useful yet.
                 if 'OUTSIDE_ASSAY' in patients[psn]['source']: 
                     patients[psn]['biopsy'] = 'Outside'
-                    continue
+                    # continue
 
                 msns = []
                 for message in biopsy_data['mdAndersonMessages']:
@@ -230,13 +230,19 @@ class MatchData(object):
                     # Skip all Failed and Pending reports.
                     if result['status'] != 'CONFIRMED':  
                         continue 
-                    patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
-                    patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
-                    patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
-                    patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
-                    patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+                    # Now patients are getting an MSN directly from outside assay and put into data like normal, but 
+                    # of course no IR stuff. So, we have to filter this.
+                    try:
+                        patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
+                        patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
+                        patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
+                        patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
+                        patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+                    except:
+                        continue
+                        # print('offending psn: %s' % psn)
 
-                    # Get and add MOI data to patient record
+                    # Get and add MOI data to patient record; might be from outside.
                     variant_report                = result['ionReporterResults']['variantReport']
                     patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
 
@@ -482,7 +488,6 @@ class MatchData(object):
         MSN44180
 
         """
-        print('Data born on date: %s' % self.db_date)
         result = []
         if psn:
             result = self.__search_for_value(key='psn',val=psn,retval='msn')
