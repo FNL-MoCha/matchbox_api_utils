@@ -37,7 +37,7 @@ def get_args():
     return args
 
 def main(data,outfile=None):
-    data._matchbox_dump(outfile)
+    data.matchbox_dump(outfile)
     sys.stdout.write("Done!\n")
 
 if __name__=='__main__':
