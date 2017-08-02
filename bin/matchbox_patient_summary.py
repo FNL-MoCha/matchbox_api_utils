@@ -6,7 +6,7 @@ import argparse
 import datetime
 from pprint import pprint as pp
 
-from matchbox_api_utils import MatchboxData
+from matchbox_api_utils import MatchData
 
 version = '1.0.071717'
 

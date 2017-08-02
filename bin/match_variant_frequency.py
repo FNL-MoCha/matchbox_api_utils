@@ -7,7 +7,7 @@ import csv
 import argparse
 from pprint import pprint as pp
 
-from matchbox_api_utils import MatchboxData
+from matchbox_api_utils import MatchData
 
 version = '0.10.1_071317'
 
