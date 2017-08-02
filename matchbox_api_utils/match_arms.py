@@ -24,7 +24,10 @@ class TreatmentArms(object):
     """
 
     def __init__(self,config_file=None,url=None,creds=None,json_db=None,make_db=False,load_raw=None,make_raw=False):
-
+        """
+        <Description>
+        
+        """
         self._config_file = config_file
         self._url = url
         self._creds = creds
@@ -41,8 +44,6 @@ class TreatmentArms(object):
         
         if not self._creds:
             self._creds = self.__get_config_data('creds')
-
-        pp(vars(self))
         
         if self._load_raw:
             self.db_date,matchbox_data = load_dumped_json(self._load_raw)
@@ -53,6 +54,8 @@ class TreatmentArms(object):
             # make api call to get json data; load and present to self.data.
             matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
             self.data = self.make_match_arms_db(matchbox_data)
+        
+        # pp(vars(self))
 
     def __str__(self):
         return json.dumps(self.data, sort_keys=True, indent=4)
@@ -63,6 +66,7 @@ class TreatmentArms(object):
     def __iter__(self):
         return self.data.itervalues()
 
+    # FIXME: Move to utils module?
     def __get_config_data(self,item):
         config_data = matchbox_conf.Config(self._config_file)
         return config_data[item]
@@ -75,19 +79,11 @@ class TreatmentArms(object):
             json.dump(filename, indent=4)
         sys.exit()
 
-    def __parse_diseases(self,disease_list):
+    # TODO: See if we can make more generic and usable to MatchData()
+    def __retrive_data_with_keys(self,data,k1,k2):
         results = {}
-        for d in disease_list:
-            results[d['shortName']] = d['medraCode']
-        if results:
-            return results
-        else:
-            return None
-
-    def __parse_ihc(self,ihc_assays):
-        results = {}
-        for assay in ihc_assays:
-            results[assay['gene']] = assay['assayResultStatus']
+        for elem in data:
+            results[elem[k1]] = elem[k2]
         if results:
             return results
         else:
@@ -110,13 +106,9 @@ class TreatmentArms(object):
         #       or something to deal with this?
 
         """
-        parsed_amois = {
-            'cnv'    : None,
-            'snv'    : None,
-            'indel'  : None,
-            'fusion' : None,
-            'non_hs' : None,
-        }
+        # NOTE: What if we set the vals to the keys in the data such that 'cnv' : 'copyNumberVariants'. Then we can
+        #       iterate through those key / val combos rather than needing two different dicts.  
+        parsed_amois = {'cnv': None,'snv': None,'indel': None,'fusion': None,'non_hs': None}
 
         #wanted = {
             #'singleNucleotideVariants' : 'snv',
@@ -125,15 +117,20 @@ class TreatmentArms(object):
             #'geneFusions'              : 'fusion',
             #'nonHotspotRules'          : 'non_hs'
         #}
+
         wanted = {'nonHotspotRules':'non_hs'}
 
         for var in wanted:
-            if amoi_data[var]:
+            # Have to handle non-hs vars a bit differently.
+            if var == 'nonHotspotRules':
                 pp(amoi_data[var])
+                continue
+            elif amoi_data[var]:
                 parsed_amois[wanted[var]] = self.__proc_var_table(amoi_data[var])
             else:
                 parsed_amois[wanted[var]] = None
-        pp(parsed_amois)
+        # pp(parsed_amois)
+        return parsed_amois
 
     @staticmethod
     def __proc_var_table(var_list):
@@ -148,21 +145,8 @@ class TreatmentArms(object):
         make an Arm class and use that instead?
 
         """
-        # print('{}: len({})'.format(type(api_data),len(api_data)))
-        # pp(api_data[0]['treatmentArmDrugs']) # list of dicts of treatment data with keys: 'description', 'drugClass','drugId','name','pathway','target'.  Probably just want name. Also no combos, so all lists are 1 elem.
-        # pp(api_data[0]['exclusionDiseases']) # list of dicts of disease with keys 'ctepSubCategory','ctepTerm','medraCode','shortName'. probably want short name.
-        # pp(api_data[i]['assayResults']) # list of dicts of IHC requirements. Capture 'gene' and 'assayResultStatus'
-
-        # self.__parse_amois(api_data[0]['variantReport'])
-       
         arm_data = defaultdict(dict)
         """
-        #num = 1
-        for num in xrange(0,38):
-            print('\n->processing arm: %s' % api_data[num]['id'])
-            self.__parse_amois(api_data[num]['variantReport'])
-        sys.exit()
-
         for arm in api_data:
             print(arm['id'] + ':')
             wanted = arm['variantReport']['singleNucleotideVariants']
@@ -170,23 +154,15 @@ class TreatmentArms(object):
                 for var in wanted:
                     print('\t{} -> {}'.format(var['matchingId'],var['inclusion']))
                 # pp(wanted)
-
-        # amoi_report = api_data[29]['variantReport']
-        # pp(amoi_report)
-        # self.__parse_amois()
-
-        # for i in api_data:
-            # print(i['id'])
-            # disdict = self.__parse_diseases(i['exclusionDiseases'])
-            # if not disdict:
-                # disdict = {None:None}
-            # pp(disdict)
-            # print('\n')
-        sys.exit()
-
         """
         for arm in api_data:
             arm_id = arm['id']
+            if "X2" in arm_id:
+            # if arm_id == 'EAY131-Z':
+                print('\n->processing arm: %s' % arm_id)
+                amoi_tmp = self.__parse_amois(arm['variantReport'])
+            else:
+                continue
             # print(arm.keys())
             arm_data[arm_id]['name']          = arm['name']
             arm_data[arm_id]['arm_id']        = arm['id']
@@ -194,9 +170,13 @@ class TreatmentArms(object):
             arm_data[arm_id]['drug_name']     = arm['targetName']
             arm_data[arm_id]['drug_id']       = arm['treatmentArmDrugs'][0]['drugId']
             arm_data[arm_id]['assigned']      = arm['numPatientsAssigned']
-            arm_data[arm_id]['excl_diseases'] = self.__parse_diseases(arm['exclusionDiseases'])
-            arm_data[arm_id]['ihc']           = self.__parse_ihc(arm['assayResults'])
+            arm_data[arm_id]['excl_diseases'] = self.__retrive_data_with_keys(arm['exclusionDiseases'],'shortName','medraCode')
+            arm_data[arm_id]['ihc']           = self.__retrive_data_with_keys(arm['assayResults'],'gene','assayResultStatus')
 
-        # pp(api_data[0]['variantReport']) # list of aMOIs....need a lot of parsing!
+        # pp(api_data[0]['treatmentArmDrugs']) # list of dicts of treatment data with keys: 'description', 'drugClass','drugId','name','pathway','target'.  Probably just want name. Also no combos, so all lists are 1 elem.
+        # pp(api_data[0]['exclusionDiseases']) # list of dicts of disease with keys 'ctepSubCategory','ctepTerm','medraCode','shortName'. probably want short name.
+        # pp(api_data[i]['assayResults']) # list of dicts of IHC requirements. Capture 'gene' and 'assayResultStatus'
+
         # pp(dict(arm_data))
-        return
+        # sys.exit()
+        return arm_data
