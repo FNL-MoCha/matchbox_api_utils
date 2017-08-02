@@ -62,10 +62,6 @@ class MatchData(object):
         self._load_raw = load_raw
         self._config_file = config_file
         self.db_date = get_today('long')
-        raw_flag = None
-
-        if make_raw:
-            raw_flag = 'mb'
 
         if not self._url:
             self._url = self.__get_config_data('url')
@@ -82,19 +78,23 @@ class MatchData(object):
         if self._dumped_data == 'sys_default':
             self._dumped_data = self.__get_config_data('mb_json_data')
 
-        if self._load_raw:
+        if make_raw:
+            Matchbox(self._url,self._creds,make_raw='mb')
+        elif self._load_raw:
             print('\n  ->  Starting from a raw MB JSON Obj')
             self.db_date, matchbox_data = load_dumped_json(self._load_raw)
             self.data = self.gen_patients_list(matchbox_data)
         elif self._dumped_data:
             print('\n  ->  Starting from a processed MB JSON Obj')
             self.db_date, self.data = load_dumped_json(self._dumped_data)
+            print('Data born on date: %s' % self.db_date)
             if self._patient:
                 print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
         else:
             print('\n  ->  Starting from a live MB instance')
-            matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
+            # matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
+            matchbox_data = Matchbox(self._url,self._creds).api_data
             self.data = self.gen_patients_list(matchbox_data)
 
     def __str__(self):
@@ -482,6 +482,7 @@ class MatchData(object):
         MSN44180
 
         """
+        print('Data born on date: %s' % self.db_date)
         result = []
         if psn:
             result = self.__search_for_value(key='psn',val=psn,retval='msn')
