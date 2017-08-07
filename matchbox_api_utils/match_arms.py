@@ -55,6 +55,7 @@ class TreatmentArms(object):
             matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
             self.data = self.make_match_arms_db(matchbox_data)
         
+        self.__gen_rules_table()
         # pp(vars(self))
 
     def __str__(self):
@@ -89,6 +90,72 @@ class TreatmentArms(object):
         else:
             return None
 
+    def __gen_rules_table(self,arm_id = None):
+        """
+        wanted data struct:
+            'hotspots' : [
+                'hs_id' : [arm1, arm2, arm3],
+                'hs_id' : [arma, armb, armc],
+            ],
+            'cnvs' : [
+                'gene1' : [arm1, arm2],
+                'gene2' : [arma, armb],
+            ],
+            'fusions' : [
+                'fusion_id' : [arm1, arm2, arm3],
+            ],
+            'non_hs' : {
+                'positional' : [
+                    'gene' : [ 'exon|function' : [arms]],
+                    'EGFR' : [ '19|nonframeshiftDeletion' : [ArmA]],
+                    'ERBB2' : [ '20|nonframeshiftInsertion' : [ArmB, ArmBX1]],
+                ]
+                'deleterious' : [
+                     'gene' : [arms],
+                ]
+            }
+
+        """
+        rules_table = {
+            'hotspots' : defaultdict(list),
+            'cnvs' : defaultdict(list), 
+            'fusions' : defaultdict(list),
+            'non_hs' : {'positional' : [], 'deleterious' : []}
+        }
+        ie_flag = {'True' : 'i', 'False' : 'e'}
+
+        for arm in self.data:
+            amoi_data = self.data[arm]['amois']
+            if amoi_data['cnv']:
+                # cnvs = [self.__get_varid(x) for x in amoi_data['cnv']]
+                for v in amoi_data['cnv']:
+                    rules_table['cnvs'][v].append('{}{}'.format(arm,ie_flag[str(amoi_data['cnv'][v])]))
+                pass
+            elif amoi_data['fusion']:
+                for v in amoi_data['fusion']:
+                    rules_table['fusions'][v].append('{}{}'.format(arm,ie_flag[str(amoi_data['fusion'][v])]))
+                # fusions = [self.__get_varid(x) for x in amoi_data['fusion']]
+                pass
+            elif amoi_data['hotspot']:
+                for v in amoi_data['hotspot']:
+                    rules_table['hotspots'][v].append('{}{}'.format(arm,ie_flag[str(amoi_data['hotspot'][v])]))
+                # snvs = [self.__get_varid(x) for x in amoi_data['snv']]
+            elif amoi_data['non_hs']:
+                pass
+        # pp(dict(rules_table))
+        for var_type in rules_table:
+            print('type: {} => total: {}'.format(var_type,len(rules_table[var_type].keys())))
+            pp(dict(rules_table[var_type]))
+
+
+
+    @staticmethod
+    def __get_varid(var):
+        ie_flag = {'True' : 'i', 'False' : 'e'}
+        v,f = var.items()
+        return '{}{}'.format(v,ie_flag[str(f)])
+
+
     def __parse_amois(self,amoi_data):
         """
         Getting a dict of amois with keys:
@@ -98,45 +165,39 @@ class TreatmentArms(object):
             nonHotspotRules
             singleNucleotideVariants
 
-        Each has variant params that we'll filter on.
-            - Create functions to process each type.
-            - Out dict of {variant_type: [{variant : (inclusion|exclusion)}]}
-        # NOTE: how to handle non-hotspot rules.  Can't just input a gene and inclusion / exclusion. 
-        #       Need to know the rest of the matching criteria.  Do we need a separate matching function
-        #       or something to deal with this?
-
         """
-        # NOTE: What if we set the vals to the keys in the data such that 'cnv' : 'copyNumberVariants'. Then we can
-        #       iterate through those key / val combos rather than needing two different dicts.  
-        parsed_amois = {'cnv': None,'snv': None,'indel': None,'fusion': None,'non_hs': None}
+        parsed_amois = defaultdict(dict)
 
-        #wanted = {
-            #'singleNucleotideVariants' : 'snv',
-            #'indels'                   : 'indel',
-            #'copyNumberVariants'       : 'cnv',
-            #'geneFusions'              : 'fusion',
-            #'nonHotspotRules'          : 'non_hs'
-        #}
+        wanted = {
+            'singleNucleotideVariants' : 'hotspot',
+            'indels'                   : 'hotspot',
+            'copyNumberVariants'       : 'cnv',
+            'geneFusions'              : 'fusion',
+            'nonHotspotRules'          : 'non_hs'
+        }
 
-        wanted = {'nonHotspotRules':'non_hs'}
-
+        # test = defaultdict(dict)
         for var in wanted:
             # Have to handle non-hs vars a bit differently.
             if var == 'nonHotspotRules':
-                pp(amoi_data[var])
-                continue
+                nhr_vars = {'deleterious' : [], 'positional' : []}
+                for elem in amoi_data[var]:
+                    if elem['oncominevariantclass'] == 'Deleterious':
+                        nhr_vars['deleterious'].append({elem['gene'] : elem['inclusion']})
+                    else:
+                        var_id = '|'.join([elem['gene'],elem['exon'],elem['function']])
+                        nhr_vars['positional'].append({var_id : elem['inclusion']})
+                parsed_amois[wanted[var]] = nhr_vars
             elif amoi_data[var]:
-                parsed_amois[wanted[var]] = self.__proc_var_table(amoi_data[var])
-            else:
-                parsed_amois[wanted[var]] = None
-        # pp(parsed_amois)
+                results = { i['matchingId'] : i['inclusion'] for i in amoi_data[var]} 
+                parsed_amois[wanted[var]].update(results)
+
+        # Pad out data
+        for i in wanted.values():
+            if i not in parsed_amois:
+                parsed_amois[i] = None
         return parsed_amois
 
-    @staticmethod
-    def __proc_var_table(var_list):
-        results = { i['matchingId'] : i['inclusion'] for i in var_list } 
-        return results
-    
     def make_match_arms_db(self,api_data):
         """
         Make a database of MATCH Treatment Arms.
@@ -157,10 +218,13 @@ class TreatmentArms(object):
         """
         for arm in api_data:
             arm_id = arm['id']
-            if "X2" in arm_id:
-            # if arm_id == 'EAY131-Z':
+            #TODO: remove this.
+            # if arm_id.endswith('V'):
+            # if arm_id.startswith('EAY'):
+            if arm_id == 'EAY131-A':
                 print('\n->processing arm: %s' % arm_id)
-                amoi_tmp = self.__parse_amois(arm['variantReport'])
+                # amoi_tmp = self.__parse_amois(arm['variantReport'])
+                # print('\n')
             else:
                 continue
             # print(arm.keys())
@@ -172,10 +236,7 @@ class TreatmentArms(object):
             arm_data[arm_id]['assigned']      = arm['numPatientsAssigned']
             arm_data[arm_id]['excl_diseases'] = self.__retrive_data_with_keys(arm['exclusionDiseases'],'shortName','medraCode')
             arm_data[arm_id]['ihc']           = self.__retrive_data_with_keys(arm['assayResults'],'gene','assayResultStatus')
-
-        # pp(api_data[0]['treatmentArmDrugs']) # list of dicts of treatment data with keys: 'description', 'drugClass','drugId','name','pathway','target'.  Probably just want name. Also no combos, so all lists are 1 elem.
-        # pp(api_data[0]['exclusionDiseases']) # list of dicts of disease with keys 'ctepSubCategory','ctepTerm','medraCode','shortName'. probably want short name.
-        # pp(api_data[i]['assayResults']) # list of dicts of IHC requirements. Capture 'gene' and 'assayResultStatus'
+            arm_data[arm_id]['amois']         = self.__parse_amois(arm['variantReport'])
 
         # pp(dict(arm_data))
         # sys.exit()
