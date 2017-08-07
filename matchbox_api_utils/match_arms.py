@@ -117,45 +117,26 @@ class TreatmentArms(object):
 
         """
         rules_table = {
-            'hotspots' : defaultdict(list),
-            'cnvs' : defaultdict(list), 
-            'fusions' : defaultdict(list),
+            'hotspot' : defaultdict(list),
+            'cnv' : defaultdict(list), 
+            'fusion' : defaultdict(list),
             'non_hs' : {'positional' : [], 'deleterious' : []}
         }
         ie_flag = {'True' : 'i', 'False' : 'e'}
 
-        # TODO: Can we streamline this code?
+        # TODO: all but non-hs rule vars working!  Work on code fo non-hs rule variants.
         for arm in self.data:
             amoi_data = self.data[arm]['amois']
-            if amoi_data['cnv']:
-                # cnvs = [self.__get_varid(x) for x in amoi_data['cnv']]
-                for v in amoi_data['cnv']:
-                    rules_table['cnvs'][v].append('{}{}'.format(arm,ie_flag[str(amoi_data['cnv'][v])]))
-                pass
-            elif amoi_data['fusion']:
-                for v in amoi_data['fusion']:
-                    rules_table['fusions'][v].append('{}{}'.format(arm,ie_flag[str(amoi_data['fusion'][v])]))
-                # fusions = [self.__get_varid(x) for x in amoi_data['fusion']]
-                pass
-            elif amoi_data['hotspot']:
-                for v in amoi_data['hotspot']:
-                    rules_table['hotspots'][v].append('{}{}'.format(arm,ie_flag[str(amoi_data['hotspot'][v])]))
-                # snvs = [self.__get_varid(x) for x in amoi_data['snv']]
-            elif amoi_data['non_hs']:
-                pass
-        # pp(dict(rules_table))
+            for var_type in rules_table:
+                if var_type == 'non_hs':
+                    continue
+                elif amoi_data[var_type]:
+                    for var,flag in amoi_data[var_type].items():
+                        rules_table[var_type][var].append('{}{}'.format(arm,ie_flag[str(flag)]))
+
         for var_type in rules_table:
             print('type: {} => total: {}'.format(var_type,len(rules_table[var_type].keys())))
             pp(dict(rules_table[var_type]))
-
-
-
-    @staticmethod
-    def __get_varid(var):
-        ie_flag = {'True' : 'i', 'False' : 'e'}
-        v,f = var.items()
-        return '{}{}'.format(v,ie_flag[str(f)])
-
 
     def __parse_amois(self,amoi_data):
         """
@@ -220,14 +201,14 @@ class TreatmentArms(object):
         for arm in api_data:
             arm_id = arm['id']
             #TODO: remove this.
-            if arm_id.endswith('V') or arm_id.endswith('A') or arm_id.endswith('Q'):
+            # if arm_id.endswith('V') or arm_id.endswith('A') or arm_id.endswith('Q'):
             # if arm_id.startswith('EAY'):
             # if arm_id == 'EAY131-A':
-                print('\n->processing arm: %s' % arm_id)
+                # print('\n->processing arm: %s' % arm_id)
                 # amoi_tmp = self.__parse_amois(arm['variantReport'])
                 # print('\n')
-            else:
-                continue
+            # else:
+                # continue
             # print(arm.keys())
             arm_data[arm_id]['name']          = arm['name']
             arm_data[arm_id]['arm_id']        = arm['id']
