@@ -124,6 +124,7 @@ class TreatmentArms(object):
         }
         ie_flag = {'True' : 'i', 'False' : 'e'}
 
+        # TODO: Can we streamline this code?
         for arm in self.data:
             amoi_data = self.data[arm]['amois']
             if amoi_data['cnv']:
@@ -219,9 +220,9 @@ class TreatmentArms(object):
         for arm in api_data:
             arm_id = arm['id']
             #TODO: remove this.
-            # if arm_id.endswith('V'):
+            if arm_id.endswith('V') or arm_id.endswith('A') or arm_id.endswith('Q'):
             # if arm_id.startswith('EAY'):
-            if arm_id == 'EAY131-A':
+            # if arm_id == 'EAY131-A':
                 print('\n->processing arm: %s' % arm_id)
                 # amoi_tmp = self.__parse_amois(arm['variantReport'])
                 # print('\n')
