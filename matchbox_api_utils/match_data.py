@@ -7,6 +7,7 @@ from pprint import pprint as pp
 
 import matchbox_conf
 from matchbox import Matchbox
+from match_arms import TreatmentArms
 from utils import *
 
 class MatchData(object):
@@ -83,7 +84,7 @@ class MatchData(object):
         elif self._load_raw:
             print('\n  ->  Starting from a raw MB JSON Obj')
             self.db_date, matchbox_data = load_dumped_json(self._load_raw)
-            self.data = self.gen_patients_list(matchbox_data)
+            self.data = self.gen_patients_list(matchbox_data,self._patient)
         elif self._dumped_data:
             print('\n  ->  Starting from a processed MB JSON Obj')
             self.db_date, self.data = load_dumped_json(self._dumped_data)
@@ -95,7 +96,7 @@ class MatchData(object):
             print('\n  ->  Starting from a live MB instance')
             # matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
             matchbox_data = Matchbox(self._url,self._creds).api_data
-            self.data = self.gen_patients_list(matchbox_data)
+            self.data = self.gen_patients_list(matchbox_data,self._patient)
 
     def __str__(self):
         return json.dumps(self.data,sort_keys=True,indent=4)
@@ -150,7 +151,7 @@ class MatchData(object):
         sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
         return None
 
-    def gen_patients_list(self,matchbox_data):
+    def gen_patients_list(self,matchbox_data,patient):
         """Process the MATCHBox API data.
 
         Process the MATCHBox API data (usually in JSON format from MongoDB) into 
@@ -167,8 +168,10 @@ class MatchData(object):
 
         # for record in self.matchbox_data:
         for record in matchbox_data:
+            
             psn = record['patientSequenceNumber']       
-
+            if patient and psn != patient:
+                continue
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
@@ -246,8 +249,8 @@ class MatchData(object):
                     variant_report                = result['ionReporterResults']['variantReport']
                     patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
 
-        # pp(dict(patients))
-        # sys.exit()
+        pp(dict(patients))
+        sys.exit()
         return patients
 
     @staticmethod
@@ -263,6 +266,9 @@ class MatchData(object):
        # Create and return a dict of variant call data that can be stored in the patient's obj.
         variant_call_data = defaultdict(list)
         variant_list = ['singleNucleotideVariants', 'indels', 'copyNumberVariants', 'unifiedGeneFusions']
+        # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
+        raw_data = os.path.join(os.path.dirname(__file__), '../raw_ta_dump_072717.json')
+        arm_data = TreatmentArms(load_raw = raw_data)
 
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
@@ -273,6 +279,10 @@ class MatchData(object):
         # Remap the driver / partner genes so that we know they're correct, and add a 'gene' field to use later on.
         if 'unifiedGeneFusions' in variant_call_data:
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
+
+        # Add aMOI information to MOIs.
+        for var in variant_call_data:
+            print(var)
         return variant_call_data
 
     @staticmethod
