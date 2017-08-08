@@ -120,20 +120,30 @@ class TreatmentArms(object):
             'hotspot' : defaultdict(list),
             'cnv' : defaultdict(list), 
             'fusion' : defaultdict(list),
-            'non_hs' : {'positional' : [], 'deleterious' : []}
+            'non_hs' : {'positional' : defaultdict(list), 'deleterious' : defaultdict(list)}
         }
         ie_flag = {'True' : 'i', 'False' : 'e'}
 
-        # TODO: all but non-hs rule vars working!  Work on code fo non-hs rule variants.
         for arm in self.data:
             amoi_data = self.data[arm]['amois']
             for var_type in rules_table:
                 if var_type == 'non_hs':
-                    continue
+                    if amoi_data[var_type]['deleterious']:
+                        #pp(dict(amoi_data))
+                        #continue
+                        for var,flag in amoi_data[var_type]['deleterious'].items():
+                            #print('%s: %s' % (var,str(flag)))
+                            rules_table[var_type]['deleterious'][var].append('{}{}'.format(arm,ie_flag[str(flag)]))
+                    elif amoi_data[var_type]['positional']:
+                        for var,flag in amoi_data[var_type]['positional'].items():
+                            rules_table[var_type]['positional'][var].append('{}{}'.format(arm,ie_flag[str(flag)]))
+
+
                 elif amoi_data[var_type]:
                     for var,flag in amoi_data[var_type].items():
                         rules_table[var_type][var].append('{}{}'.format(arm,ie_flag[str(flag)]))
 
+        #sys.exit()
         for var_type in rules_table:
             print('type: {} => total: {}'.format(var_type,len(rules_table[var_type].keys())))
             pp(dict(rules_table[var_type]))
@@ -162,13 +172,16 @@ class TreatmentArms(object):
         for var in wanted:
             # Have to handle non-hs vars a bit differently.
             if var == 'nonHotspotRules':
-                nhr_vars = {'deleterious' : [], 'positional' : []}
+                #nhr_vars = {'deleterious' : [], 'positional' : []}
+                nhr_vars = {'deleterious' : defaultdict(dict), 'positional' : defaultdict(dict) } 
                 for elem in amoi_data[var]:
                     if elem['oncominevariantclass'] == 'Deleterious':
-                        nhr_vars['deleterious'].append({elem['gene'] : elem['inclusion']})
+                        #nhr_vars['deleterious'].append({elem['gene'] : elem['inclusion']})
+                        nhr_vars['deleterious'].update({elem['gene'] : elem['inclusion']})
                     else:
                         var_id = '|'.join([elem['gene'],elem['exon'],elem['function']])
-                        nhr_vars['positional'].append({var_id : elem['inclusion']})
+                        #nhr_vars['positional'].append({var_id : elem['inclusion']})
+                        nhr_vars['positional'].update({var_id : elem['inclusion']})
                 parsed_amois[wanted[var]] = nhr_vars
             elif amoi_data[var]:
                 results = { i['matchingId'] : i['inclusion'] for i in amoi_data[var]} 
