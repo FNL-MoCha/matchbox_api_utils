@@ -278,23 +278,31 @@ class MatchData(object):
 
         # Remap the driver / partner genes so that we know they're correct, and add a 'gene' field to use later on.
         if 'unifiedGeneFusions' in variant_call_data:
+            print('got here')
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
 
         # Add aMOI information to MOIs.
-        for var in variant_call_data:
-            print(var)
-            pp(dict(variant_call_data))
+        pp(variant_call_data)
+        sys.exit()
+        for var_type in variant_call_data:
+            try:
+                for var in variant_call_data[var_type]:
+                    results = arm_data.map_amoi(var)
+                    var['amoi'] = results
+            except TypeError:
+                continue
         return variant_call_data
 
     @staticmethod
     def __gen_variant_dict(vardata,vartype):
         # Based on input variant call data, return a dict of variant type and wanted fields
-        if vartype == 'singleNucleotideVariants' or vartype == 'indels':
-            meta_key = 'snvs_indels'
-        elif vartype == 'copyNumberVariants':
-            meta_key = 'cnvs'
-        elif vartype == 'unifiedGeneFusions':
-            meta_key = 'fusions'
+        meta_key = {
+            'singleNucleotideVariants' : 'snvs_indels',
+            'indels'                   : 'snvs_indels',
+            'copyNumberVariants'       : 'cnvs',
+            'unifiedGeneFusions'       : 'fusions',
+        }
+
         include_fields = { 
                 'snvs_indels' :  ['alleleFrequency', 'alternative', 'alternativeAlleleObservationCount', 'chromosome', 
                     'exon', 'flowAlternativeAlleleObservationCount', 'flowReferenceAlleleObservations', 'function', 
@@ -304,8 +312,8 @@ class MatchData(object):
                     'copyNumber','confirmed'],
                 'fusions'     : ['annotation', 'identifier', 'driverReadCount', 'driverGene', 'partnerGene','confirmed']
         }
-        data = dict((key, vardata[key]) for key in include_fields[meta_key])
-        data['type'] = meta_key
+        data = dict((key, vardata[key]) for key in include_fields[meta_key[vartype]])
+        data['type'] = meta_key[vartype]
         return data
 
     @staticmethod
@@ -331,6 +339,9 @@ class MatchData(object):
                 (driver,partner) = (gene1,gene2)
             elif gene2 in drivers:
                 (driver,partner) = (gene2,gene1)
+            fusion['driverGene'] = driver
+            fusion['partnerGene'] = partner
+        return fusion_data
 
     def get_biopsy_summary(self,category=None):
         """Return dict of patients registered in MATCHBox with biopsy and sequencing
