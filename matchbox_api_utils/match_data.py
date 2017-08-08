@@ -64,6 +64,10 @@ class MatchData(object):
         self._config_file = config_file
         self.db_date = get_today('long')
 
+        # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
+        raw_arm_data = os.path.join(os.path.dirname(__file__), '../raw_ta_dump_072717.json')
+        self.arm_data = TreatmentArms(load_raw = raw_arm_data)
+
         if not self._url:
             self._url = self.__get_config_data('url')
 
@@ -249,8 +253,8 @@ class MatchData(object):
                     variant_report                = result['ionReporterResults']['variantReport']
                     patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
 
-        pp(dict(patients))
-        sys.exit()
+        #pp(dict(patients))
+        #sys.exit()
         return patients
 
     @staticmethod
@@ -266,9 +270,6 @@ class MatchData(object):
        # Create and return a dict of variant call data that can be stored in the patient's obj.
         variant_call_data = defaultdict(list)
         variant_list = ['singleNucleotideVariants', 'indels', 'copyNumberVariants', 'unifiedGeneFusions']
-        # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
-        raw_data = os.path.join(os.path.dirname(__file__), '../raw_ta_dump_072717.json')
-        arm_data = TreatmentArms(load_raw = raw_data)
 
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
@@ -278,13 +279,12 @@ class MatchData(object):
 
         # Remap the driver / partner genes so that we know they're correct, and add a 'gene' field to use later on.
         if 'unifiedGeneFusions' in variant_call_data:
-            print('got here')
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
 
         # Add aMOI information to MOIs.
         for var_type in variant_call_data:
             for var in variant_call_data[var_type]:
-                results = arm_data.map_amoi(var)
+                results = self.arm_data.map_amoi(var)
                 var['amoi'] = results
         return variant_call_data
 
@@ -334,8 +334,17 @@ class MatchData(object):
                 (driver,partner) = (gene1,gene2)
             elif gene2 in drivers:
                 (driver,partner) = (gene2,gene1)
-            fusion['driverGene'] = driver
-            fusion['partnerGene'] = partner
+            elif gene1 in drivers and gene2 in drivers:
+                driver = partner = 'NA'
+            elif gene1 not in drivers and gene2 not in drivers:
+                driver = partner = 'NA'
+
+            try:
+                fusion['driverGene'] = driver
+                fusion['partnerGene'] = partner
+            except:
+                pp(fusion_data)
+                sys.exit()
         return fusion_data
 
     def get_biopsy_summary(self,category=None):
@@ -688,6 +697,14 @@ class MatchData(object):
                     'mois'    : matches
                 }
         return results,count
+
+    def get_variant_report(self,psn=None,msn=None):
+        """
+        Input a PSN or MSN and return a tab delimited set of variant data for the patient
+        """
+        if self.data[psn]['mois']:
+            pp(self.data[psn]['mois'])
+        return
 
     def get_vcf(self,msn=None):
         # TODO: Change this to get datafile and try to get BAM, VCF, etc. based on args.
