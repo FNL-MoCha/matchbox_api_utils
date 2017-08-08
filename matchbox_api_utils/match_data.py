@@ -283,6 +283,7 @@ class MatchData(object):
         # Add aMOI information to MOIs.
         for var in variant_call_data:
             print(var)
+            pp(dict(variant_call_data))
         return variant_call_data
 
     @staticmethod
