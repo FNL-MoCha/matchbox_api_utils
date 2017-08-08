@@ -55,7 +55,7 @@ class TreatmentArms(object):
             matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
             self.data = self.make_match_arms_db(matchbox_data)
         
-        self.__gen_rules_table()
+        self.amoi_lookup_table = self.__gen_rules_table()
         # pp(vars(self))
 
     def __str__(self):
@@ -93,60 +93,53 @@ class TreatmentArms(object):
     def __gen_rules_table(self,arm_id = None):
         """
         wanted data struct:
-            'hotspots' : [
+            'hotspots' : {
                 'hs_id' : [arm1, arm2, arm3],
                 'hs_id' : [arma, armb, armc],
-            ],
-            'cnvs' : [
+            },
+            'cnvs' : {
                 'gene1' : [arm1, arm2],
                 'gene2' : [arma, armb],
-            ],
-            'fusions' : [
+            },
+            'fusions' : {
                 'fusion_id' : [arm1, arm2, arm3],
-            ],
-            'non_hs' : {
-                'positional' : [
-                    'gene' : [ 'exon|function' : [arms]],
-                    'EGFR' : [ '19|nonframeshiftDeletion' : [ArmA]],
-                    'ERBB2' : [ '20|nonframeshiftInsertion' : [ArmB, ArmBX1]],
-                ]
-                'deleterious' : [
-                     'gene' : [arms],
-                ]
+            },
+            'positional' : {
+                'gene' : [ 'exon|function' : [arms]],
+                'EGFR' : [ '19|nonframeshiftDeletion' : [ArmA]],
+                'ERBB2' : [ '20|nonframeshiftInsertion' : [ArmB, ArmBX1]],
             }
-
+            'deleterious' : {
+                 'gene' : [arms],
+            }
         """
         rules_table = {
-            'hotspot' : defaultdict(list),
-            'cnv' : defaultdict(list), 
-            'fusion' : defaultdict(list),
-            'non_hs' : {'positional' : defaultdict(list), 'deleterious' : defaultdict(list)}
+            'hotspot'     : defaultdict(list),
+            'cnv'         : defaultdict(list), 
+            'fusion'      : defaultdict(list),
+            'deleterious' : defaultdict(list),
+            'positional'  : defaultdict(list)
         }
         ie_flag = {'True' : 'i', 'False' : 'e'}
 
         for arm in self.data:
             amoi_data = self.data[arm]['amois']
             for var_type in rules_table:
-                if var_type == 'non_hs':
-                    if amoi_data[var_type]['deleterious']:
-                        #pp(dict(amoi_data))
-                        #continue
-                        for var,flag in amoi_data[var_type]['deleterious'].items():
-                            #print('%s: %s' % (var,str(flag)))
-                            rules_table[var_type]['deleterious'][var].append('{}{}'.format(arm,ie_flag[str(flag)]))
-                    elif amoi_data[var_type]['positional']:
-                        for var,flag in amoi_data[var_type]['positional'].items():
-                            rules_table[var_type]['positional'][var].append('{}{}'.format(arm,ie_flag[str(flag)]))
-
-
+                # non_hs mois
+                if var_type in ('deleterious','positional') and amoi_data['non_hs'][var_type]:
+                    for var,flag in amoi_data['non_hs'][var_type].items():
+                        rules_table[var_type][var].append('{}({})'.format(arm,ie_flag[str(flag)]))
+                # All other mois
                 elif amoi_data[var_type]:
                     for var,flag in amoi_data[var_type].items():
-                        rules_table[var_type][var].append('{}{}'.format(arm,ie_flag[str(flag)]))
+                        rules_table[var_type][var].append('{}({})'.format(arm,ie_flag[str(flag)]))
 
+        # DEBUG: 
+        #for var_type in rules_table:
+            #if var_type in ('deleterious','positional'):
+                #pp(dict(rules_table[var_type]))
         #sys.exit()
-        for var_type in rules_table:
-            print('type: {} => total: {}'.format(var_type,len(rules_table[var_type].keys())))
-            pp(dict(rules_table[var_type]))
+        return rules_table
 
     def __parse_amois(self,amoi_data):
         """
@@ -169,6 +162,7 @@ class TreatmentArms(object):
         }
 
         # test = defaultdict(dict)
+        # TODO: maybe simplify this struct like we did above?  Need to separate the two non-hs categories?
         for var in wanted:
             # Have to handle non-hs vars a bit differently.
             if var == 'nonHotspotRules':
@@ -191,6 +185,8 @@ class TreatmentArms(object):
         for i in wanted.values():
             if i not in parsed_amois:
                 parsed_amois[i] = None
+        #pp(parsed_amois)
+        #sys.exit()
         return parsed_amois
 
     def make_match_arms_db(self,api_data):
@@ -236,3 +232,49 @@ class TreatmentArms(object):
         # pp(dict(arm_data))
         # sys.exit()
         return arm_data
+    
+    def map_amoi(self,variant):
+        """
+        Input a variant dict derived from some kind and return either an aMOI id in the form of Arm(i|e).
+        """
+        #pp(variant)
+        #pp(dict(self.amoi_lookup_table['positional']))
+        #pp(dict(self.amoi_lookup_table['deleterious']))
+        #sys.exit()
+
+        result = []
+        #if variant['variant_type'] == 'snv_indel':
+        if variant['type'] == 'snvs_indels':
+            if variant['oncominevariantclass'] == 'Hotspot' and variant['identifier'] in self.amoi_lookup_table['hotspot']:
+                #print('this is a hotspot')
+                result = self.amoi_lookup_table['hotspot'][variant['identifier']]
+
+            elif variant['oncominevariantclass'] == 'Deleterious' and variant['gene'] in self.amoi_lookup_table['deleterious']:
+                #print('this is a non-hs deleterious variant')
+                result = self.amoi_lookup_table['deleterious'][variant['gene']]
+
+            else:
+            #elif variant['gene'] in self.amoi_lookup_table['positional']:
+                for v in self.amoi_lookup_table['positional']:
+                    if v.startswith(variant['gene']):
+                        gene,exon,func = v.split('|')
+                        if variant['exon'] == exon and variant['function'] == func:
+                            #print('this is a non-hs positional variant')
+                            result = self.amoi_lookup_table['positional'][v]
+
+        elif variant['type'] == 'cnvs':
+            if variant['gene'] in self.amoi_lookup_table['cnv']:
+                #print('this is a cnv')
+                result = self.amoi_lookup_table['cnv'][variant['gene']]
+
+        elif variant['type'] == 'fusions':
+            if variant['identifier'] in self.amoi_lookup_table['fusion']:
+                #print('this is a fusion')
+                result = self.amoi_lookup_table['fusion'][variant['identifier']]
+
+        if result:
+            #print(','.join(result))
+            return result
+        else:
+            #print('***  Failed to find var!  ***')
+            return None
