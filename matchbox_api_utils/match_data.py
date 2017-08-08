@@ -282,15 +282,10 @@ class MatchData(object):
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
 
         # Add aMOI information to MOIs.
-        pp(variant_call_data)
-        sys.exit()
         for var_type in variant_call_data:
-            try:
-                for var in variant_call_data[var_type]:
-                    results = arm_data.map_amoi(var)
-                    var['amoi'] = results
-            except TypeError:
-                continue
+            for var in variant_call_data[var_type]:
+                results = arm_data.map_amoi(var)
+                var['amoi'] = results
         return variant_call_data
 
     @staticmethod
