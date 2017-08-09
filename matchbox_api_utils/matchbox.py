@@ -2,7 +2,9 @@
 import os
 import sys
 import json
-import datetime
+# import datetime
+
+import utils
 
 class Matchbox(object):
 
@@ -47,7 +49,8 @@ class Matchbox(object):
         self.api_data = self.__api_call()
 
         # For debugging purposes, we may want to dump the whole raw dataset out to see what keys / vals are availble.  
-        today = datetime.date.today().strftime('%m%d%y')
+        # today = datetime.date.today().strftime('%m%d%y')
+        today = utils.get_today('short')
         if make_raw:
             if make_raw == 'mb': 
                 filename = 'raw_mb_dump_' + today + '.json'
@@ -76,6 +79,5 @@ class Matchbox(object):
         # Dump a raw, unprocessed matchbox for dev purposes.
         if not filename:
             filename = 'raw_mb_dump.json'
-        print('got here, and going to write out: %s' % filename)
         with open(filename,'w') as fh:
             json.dump(data,fh)
