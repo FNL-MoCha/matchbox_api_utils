@@ -12,9 +12,10 @@ import json
 from collections import defaultdict
 from pprint import pprint as pp
 
+import utils
 import matchbox_conf
+import matchbox_api_utils
 from matchbox import Matchbox
-from utils import *
 
 class TreatmentArms(object):
     """
@@ -23,40 +24,41 @@ class TreatmentArms(object):
 
     """
 
-    def __init__(self,config_file=None,url=None,creds=None,json_db=None,make_db=False,load_raw=None,make_raw=False):
+    def __init__(self,config_file=None,url=None,creds=None,json_db='sys_default',load_raw=None,make_raw=False):
         """
         <Description>
         
         """
-        self._config_file = config_file
         self._url = url
         self._creds = creds
         self._json_db = json_db
         self._load_raw = load_raw
-        self.db_date = get_today('long')
-        raw_flag = None
-
-        if make_raw:
-            raw_flag = 'ta'
-
+        self.db_date = utils.get_today('long')
+        self._config_file = config_file
+        
         if not self._url:
-            self._url = self.__get_config_data('arms_url')
+            self._url = utils.get_config_data(self._config_file,'arms_url')
         
         if not self._creds:
-            self._creds = self.__get_config_data('creds')
+            self._creds = utils.get_config_data(self._config_file,'creds')
         
-        if self._load_raw:
-            self.db_date,matchbox_data = load_dumped_json(self._load_raw)
+        if self._json_db == 'sys_default':
+            self._json_db = utils.get_config_data('ta_json_data')
+
+        if make_raw:
+            Matchbox(self._url,self._creds,make_raw='ta')
+        elif self._load_raw:
+            self.db_date,matchbox_data = utils.load_dumped_json(self._load_raw)
             self.data = self.make_match_arms_db(matchbox_data)
         elif self._json_db:
-            self.db_date,self.data = self.load_dumped_json(self._json_db)
+            self.db_date,self.data = utils.load_dumped_json(self._json_db)
         else:
             # make api call to get json data; load and present to self.data.
-            matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
+            matchbox_data = Matchbox(self._url,self._creds).api_data
             self.data = self.make_match_arms_db(matchbox_data)
         
+        # Make a condensed aMOI lookup table too for running aMOIs rules.
         self.amoi_lookup_table = self.__gen_rules_table()
-        # pp(vars(self))
 
     def __str__(self):
         return json.dumps(self.data, sort_keys=True, indent=4)
@@ -67,20 +69,29 @@ class TreatmentArms(object):
     def __iter__(self):
         return self.data.itervalues()
 
-    # FIXME: Move to utils module?
-    def __get_config_data(self,item):
-        config_data = matchbox_conf.Config(self._config_file)
-        return config_data[item]
+    def ta_json_dump(self,amois_filename=None,ta_filename=None):
+        """
+        Dump the TreatmentArms data to a JSON file that can be easily loaded downstream. We will make both the 
+        treatment arms object, as well as the amois lookup table object.
 
-    def __make_json_dump(data,filename=None):
-        sys.stdout.write('Writing MATCH aMOIs and Arms to JSON file.\n')
-        if not filename:
-            filename = 'match_amois_arms_' + get_today('short') + '.json'
-        with open(filename, 'w') as fh:
-            json.dump(filename, indent=4)
-        sys.exit()
+        Args:
+            amois_filename (str): Name of aMOI lookup JSON file. Default: amoi_lookup_<datestring>.json
+            ta_filename (str): Name of TA object JSON file Default: ta_obj_<datestring>.json
 
-    # TODO: See if we can make more generic and usable to MatchData()
+        Returns:
+            ta_obj_<date>.json
+            amois_lookup_<date>.json
+
+        """
+        # sys.stdout.write('Writing MATCH aMOIs and Arms to JSON file.\n')
+        if not amois_filename:
+            amois_filename = 'amoi_lookup_' + utils.get_today('short') + '.json'
+        if not ta_filename:
+            ta_filename = 'ta_obj_' + utils.get_today('short') + '.json'
+
+        utils.make_json(amois_filename,self.amoi_lookup_table)
+        utils.make_json(ta_filename,self.data)
+
     def __retrive_data_with_keys(self,data,k1,k2):
         results = {}
         for elem in data:
