@@ -83,13 +83,9 @@ class MatchData(object):
         # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
         # Need to load treatment arm data in order to define aMOIs. Try to load package default, but if not 
         # found, then generate a new amois_lookup_table.
-        amoi_file = utils.get_config_data(self._config_file,'amois_lookup')
-        try:
-            self.amoi_lookup = utils.load_dumped_json(amoi_file)
-        except:
-            sys.stderr.write('Can not load aMOI lookup table. For now, please run matchbox_json_dump.py to generate '
-                'necessary package files.\n')
-            sys.exit(1)
+
+        ta_data = utils.get_config_data(self._config_file,'ta_json_data')
+        self.arm_data = TreatmentArms(json_db=ta_data)
             
         if make_raw:
             Matchbox(self._url,self._creds,make_raw='mb')
