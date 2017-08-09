@@ -11,7 +11,7 @@ import requests
 from pprint import pprint as pp
 from collections import defaultdict
 
-from matchbox_api_utils import MatchboxData
+from matchbox_api_utils import MatchData
 
 version = '1.1.0_071317'
 
@@ -85,7 +85,7 @@ def main():
     sys.stdout.write('Retrieving a JSON of MATCH specimen tracking info...')
     sys.stdout.flush()
 
-    match_data = MatchboxData(config_data['manifest_url'],config_data['creds'])
+    match_data = MatchData(config_data['manifest_url'],config_data['creds'])
     sys.stdout.write('Done!\n')
     parsed_data = parse_json(match_data)
     print_results(parsed_data)

@@ -6,7 +6,7 @@ import argparse
 import datetime
 from pprint import pprint as pp
 
-from matchbox_api_utils import MatchboxData
+from matchbox_api_utils import MatchData
 
 version = '1.0.071717'
 
@@ -90,7 +90,7 @@ if __name__=='__main__':
                          'be sped up by loading a JSON obj from `matchbox_json_dump.py` first.\n')
         sys.stdout.flush()
 
-    data = MatchboxData(dumped_data=args.json)
+    data = MatchData(dumped_data=args.json)
 
     if args.result_type == 'patient':
         patient_summary(data,patients,outside=args.Outside)

@@ -41,12 +41,17 @@ def make_config_file(root_dir):
     passwd = raw_input('\tEnter the password for %s: '% user)
     write_json(user,passwd,root_dir)
 
+def fix_perms(input_file):
+    os.system('chown {} {}'.format(system_user, input_file))
+
 def pre_build_mb_obj(root_dir):
     '''First time launch, build a matchbox json dump file and put it into 
        $HOME/.mb_utils.
     '''
     datestring=datetime.date.today().strftime('%m%d%y')
     mb_obj_file = os.path.join(root_dir,'mb_obj_' + datestring + '.json')
+    ta_obj_file = os.path.join(root_dir,'ta_obj_' + datestring + '.json')
+    amoi_lookup_file = os.path.join(root_dir, 'amoi_lookup_' + datestring + '.json')
     sys.stdout.write('Creating a MATCHBox data dump for quicker lookups.\n')
     sys.stdout.write(
         '''(NOTE: can do live queries at any time, but this can take quite a while and the use
@@ -55,8 +60,13 @@ def pre_build_mb_obj(root_dir):
         '''
     )
 
-    call(['bin/matchbox_json_dump.py','-o', mb_obj_file])
-    os.system('chown {} {}'.format(system_user,mb_obj_file))
+    call(['bin/matchbox_json_dump.py','-m', mb_obj_file, '-t', ta_obj_file, '-a', amoi_lookup_file])
+
+    # Need to make sure that non-root user is owner of these files rather than root (since probably need
+    # sudo to install). 
+    # os.system('chown {} {}'.format(system_user,mb_obj_file))
+    for f in (mb_obj_file, ta_obj_file, amoi_lookup_file):
+        fix_perms(f)
     
     sys.stdout.write("\n" + '@'*75 + "\n")
     sys.stdout.write('\tWe recommend you run the matchbox_data_dump.py program\n\troutintely '

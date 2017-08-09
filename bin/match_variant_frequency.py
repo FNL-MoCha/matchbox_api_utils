@@ -7,7 +7,7 @@ import csv
 import argparse
 from pprint import pprint as pp
 
-from matchbox_api_utils import MatchboxData
+from matchbox_api_utils import MatchData
 
 version = '0.10.1_071317'
 
@@ -154,7 +154,7 @@ if __name__=='__main__':
     if not args.json:
         sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
         sys.stdout.flush()
-    data = MatchboxData(config_data['url'],config_data['creds'],dumped_data=args.json)
+    data = MatchData(config_data['url'],config_data['creds'],dumped_data=args.json)
     sys.stdout.write('\n')
 
     # Gen a query result

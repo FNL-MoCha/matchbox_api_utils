@@ -8,7 +8,7 @@ import argparse
 import re
 from pprint import pprint as pp
 
-from matchbox_api_utils import MatchboxData 
+from matchbox_api_utils import MatchData 
 
 version = '3.0.0_072417'
 
@@ -113,7 +113,7 @@ if __name__=='__main__':
         sys.stdout.write('Retrieving a live MATCHBox data object. This may take a few minutes...\n')
         sys.stdout.flush()
 
-    data = MatchboxData(dumped_data=args['json'])
+    data = MatchData(dumped_data=args['json'])
     sys.stdout.write('\n')
 
     print('Getting MSN / PSN mapping data...')

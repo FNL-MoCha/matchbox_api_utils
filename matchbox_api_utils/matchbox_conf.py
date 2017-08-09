@@ -5,7 +5,7 @@ import json
 import matchbox_api_utils
 
 class Config(object):
-    def __init__(self,mb_config_file=None,mb_json_data=None):
+    def __init__(self,mb_config_file=None,mb_json_data=None,ta_json_data=None,amois_lookup=None):
         """MATCHBox Configuration Class
 
         Allow for import of custon configuration and mb.json data, or else just
@@ -22,6 +22,17 @@ class Config(object):
             self.config_data['mb_json_data'] = mb_json_data
         else:
             self.config_data['mb_json_data'] = matchbox_api_utils.mb_json_data
+
+        if ta_json_data:
+            self.config_data['ta_json_data'] = ta_json_data
+        else:
+            self.config_data['ta_json_data'] = matchbox_api_utils.ta_json_data
+
+        if amois_lookup:
+            self.config_data['amois_lookup'] = amois_lookup
+        else:
+            self.config_data['amois_lookup'] = matchbox_api_utils.amoi_json_data
+
 
     def __repr__(self):
         return '%s:%s' % (self.__class__,self.__dict__)
