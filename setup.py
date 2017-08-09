@@ -3,7 +3,7 @@ from setuptools import setup
 from setuptools.command.install import install as _install
 from subprocess import call
 
-version = '0.13.5'
+version = '0.14.0'
 
 def _post_install(dir):
     call([sys.executable, 'postinstall.py'])
