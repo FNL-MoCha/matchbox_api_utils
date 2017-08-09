@@ -5,10 +5,11 @@ import json
 from collections import defaultdict
 from pprint import pprint as pp
 
+import utils
 import matchbox_conf
 from matchbox import Matchbox
 from match_arms import TreatmentArms
-from utils import *
+
 
 class MatchData(object):
 
@@ -62,17 +63,17 @@ class MatchData(object):
         self._dumped_data = dumped_data
         self._load_raw = load_raw
         self._config_file = config_file
-        self.db_date = get_today('long')
+        self.db_date = utils.get_today('long')
 
         # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
         raw_arm_data = os.path.join(os.path.dirname(__file__), '../raw_ta_dump_072717.json')
         self.arm_data = TreatmentArms(load_raw = raw_arm_data)
 
         if not self._url:
-            self._url = self.__get_config_data('url')
+            self._url = utils.get_config_data(self._config_file,'url')
 
         if not self._creds:
-            self._creds = self.__get_config_data('creds')
+            self._creds = utils.get_config_data(self._config_file,'creds')
 
         if self._patient:
             self._url += '?patientId=%s' % patient
@@ -86,18 +87,17 @@ class MatchData(object):
         if make_raw:
             Matchbox(self._url,self._creds,make_raw='mb')
         elif self._load_raw:
-            print('\n  ->  Starting from a raw MB JSON Obj')
-            self.db_date, matchbox_data = load_dumped_json(self._load_raw)
+            # print('\n  ->  Starting from a raw MB JSON Obj')
+            self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
             self.data = self.gen_patients_list(matchbox_data,self._patient)
         elif self._dumped_data:
-            print('\n  ->  Starting from a processed MB JSON Obj')
-            self.db_date, self.data = load_dumped_json(self._dumped_data)
-            print('Data born on date: %s' % self.db_date)
+            # print('\n  ->  Starting from a processed MB JSON Obj')
+            self.db_date, self.data = utils.load_dumped_json(self._dumped_data)
             if self._patient:
                 print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
         else:
-            print('\n  ->  Starting from a live MB instance')
+            # print('\n  ->  Starting from a live MB instance')
             # matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
             matchbox_data = Matchbox(self._url,self._creds).api_data
             self.data = self.gen_patients_list(matchbox_data,self._patient)
@@ -118,11 +118,6 @@ class MatchData(object):
     @staticmethod
     def __get_var_data_by_gene(data,gene_list):
         return [elem for elem in data if elem['gene'] in gene_list ]
-
-    # TODO: Move to utils?
-    def __get_config_data(self,item):
-        config_data = matchbox_conf.Config(self._config_file)
-        return config_data[item]
 
     def __get_patient_table(self,psn,next_key=None):
         # Output the filtered data table for a PSN so that we have a quick way to figure out 
@@ -419,12 +414,15 @@ class MatchData(object):
 
         """
         # XXX
+        # Need a warning here if we load the sys default JSON file *and* make a JSON file; they 
+        # will be the same dataset!  Need to ensure a live query in that case.
         # formatted_date = datetime.date.today().strftime('%m%d%y')
-        formatted_date = get_today('short')
+        formatted_date = utils.get_today('short')
         if not filename:
             filename = 'mb_obj_' + formatted_date + '.json'
-        with open(filename, 'w') as outfile:
-            json.dump(self.data,outfile,sort_keys=True,indent=4)
+        # with open(filename, 'w') as outfile:
+            # json.dump(self.data,outfile,sort_keys=True,indent=4)
+        utils.make_json(filename,self.data)
 
     def map_msn_psn(self,pt_id,id_type):
         """
