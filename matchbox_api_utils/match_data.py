@@ -65,10 +65,6 @@ class MatchData(object):
         self._config_file = config_file
         self.db_date = utils.get_today('long')
 
-        # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
-        raw_arm_data = os.path.join(os.path.dirname(__file__), '../raw_ta_dump_072717.json')
-        self.arm_data = TreatmentArms(load_raw = raw_arm_data)
-
         if not self._url:
             self._url = utils.get_config_data(self._config_file,'url')
 
@@ -82,8 +78,19 @@ class MatchData(object):
         # matchbox_api_util.__init__.mb_json_data.  Otherwise use the passed arg; if it's None, do
         # a live call below, and if it's a custom file, load that.
         if self._dumped_data == 'sys_default':
-            self._dumped_data = self.__get_config_data('mb_json_data')
+            self._dumped_data = utils.get_config_data(self._config_file,'mb_json_data')
 
+        # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
+        # Need to load treatment arm data in order to define aMOIs. Try to load package default, but if not 
+        # found, then generate a new amois_lookup_table.
+        amoi_file = utils.get_config_data(self._config_file,'amois_lookup')
+        try:
+            self.amoi_lookup = utils.load_dumped_json(amoi_file)
+        except:
+            sys.stderr.write('Can not load aMOI lookup table. For now, please run matchbox_json_dump.py to generate '
+                'necessary package files.\n')
+            sys.exit(1)
+            
         if make_raw:
             Matchbox(self._url,self._creds,make_raw='mb')
         elif self._load_raw:
