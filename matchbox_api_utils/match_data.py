@@ -83,7 +83,6 @@ class MatchData(object):
         # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
         # Need to load treatment arm data in order to define aMOIs. Try to load package default, but if not 
         # found, then generate a new amois_lookup_table.
-
         ta_data = utils.get_config_data(self._config_file,'ta_json_data')
         self.arm_data = TreatmentArms(json_db=ta_data)
             
@@ -583,7 +582,7 @@ class MatchData(object):
         else:
             return dict(diseases)
 
-    def get_patients_and_disease(self,psn=None,msn=None,bsn=None,outside=False):
+    def get_patients_and_disease(self,psn=None,msn=None,bsn=None,outside=False,no_disease=False):
         """
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
         are defined as being only Passed and can not be Failed, No Biopsy or
@@ -593,7 +592,9 @@ class MatchData(object):
             psn (str): Optional PSN or comma separated list of PSNs on which to filter data.
             bsn (str): Optional BSN or comma separated list of BSNs on which to filter data.
             msn (str): Optional MSN or comma separated list of MSNs on which to filter data.
-            outside (bool) : Also include outside assay data. False by default.
+            outside (bool): Also include outside assay data. False by default.
+            no_disease (bool): Return all data, even if there is no disease indicated for the 
+                               patient specimen. Default: False
 
         Returns:
             Dict of PSN : Disease mappings. If no match for input ID, returns None.
@@ -624,6 +625,11 @@ class MatchData(object):
         output_data = {}
         for id_type in id_list:
             for i in id_list[id_type]:
+                biopsy = self.__search_for_value(key=id_type,val=i,retval='biopsy')
+                if not outside and biopsy == 'Outside':
+                    continue
+                if not no_disease and biopsy == '-':
+                    continue
                 output_data[i] = self.__search_for_value(key=id_type,val=i,retval='ctep_term')
         return output_data
 
@@ -702,9 +708,23 @@ class MatchData(object):
     def get_variant_report(self,psn=None,msn=None):
         """
         Input a PSN or MSN and return a tab delimited set of variant data for the patient
+        return var dict
+        psn, msn, bsn
+        disease
+
         """
-        if self.data[psn]['mois']:
-            pp(self.data[psn]['mois'])
+        if psn:
+            psn = str(psn) # allow flexibility if we do not explictly input string.
+            if self.data[psn]['mois']:
+                return dict(self.data[psn]['mois'])
+        # TODO: Not sure I want to look up by MSN. Better to work wiht a PSN since there can be multiple MSNs in my dataset.
+        #       Actually might be good to restructure this and get rid of multiple MSNs altogether.
+        elif msn:
+            msn = 'MSN' + str(msn).lstrip('MSN') 
+            return dict(self.__search_for_value(key='msn',val=msn,retval='mois'))
+        else:
+            sys.stderr.write('ERROR: you must input either a PSN or MSN to this function!\n')
+            return None
         return
 
     def get_vcf(self,msn=None):
