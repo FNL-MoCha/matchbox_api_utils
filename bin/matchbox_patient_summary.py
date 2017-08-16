@@ -8,7 +8,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData
 
-version = '1.0.071717'
+version = '1.1.081617'
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -54,9 +54,10 @@ def disease_summary(data):
 def print_line(x,y,z):
     print(','.join([x,y,z]))
 
-def patient_summary(data,patients=None,outside=False):
+def patient_summary(data,outfh,patients=None,outside=False,):
     '''Print out a summary for each patient and their disease, excluding any that do not have disease data indicated'''
-    num_collected_biopsies = data.get_biopsy_numbers(category='passed_biopsy')
+
+    num_collected_biopsies = data.get_biopsy_summary(category='passed_biopsy')
 
     results = {}
     if patients:
@@ -65,14 +66,17 @@ def patient_summary(data,patients=None,outside=False):
             if return_data:
                 results[patient] = return_data[patient]
     else:
-        results = data.get_patients_and_disease(outside=outside)
+        results = data.get_patients_and_disease(outside=outside,no_disease=False)
 
     if results:
         gen_header('Patient', len(results), num_collected_biopsies)
-        print('PSN,BSN,Disease')
+        #print('PSN,BSN,Disease')
+        outfh.write('PSN,BSN,Disease\n')
         for res in sorted(results):
             bsn = data.get_bsn(psn=res)
-            print_line(res,bsn,results[res])
+            #print_line(res,bsn,results[res])
+            outfh.write(','.join([res,bsn,results[res]]))
+            outfh.write('\n')
     else:
         sys.stderr.write("ERROR: No data for input patient list!\n")
         sys.exit(1)
@@ -80,6 +84,12 @@ def patient_summary(data,patients=None,outside=False):
 
 if __name__=='__main__':
     args = get_args()
+
+    if args.outfile:
+        sys.stdout.write('Writing results to %s.\n' % args.outfile)
+        outfh = open(args.outfile,'w')
+    else:
+        outfh = sys.stdout
 
     patients = []
     if args.psn:
@@ -93,7 +103,7 @@ if __name__=='__main__':
     data = MatchData(dumped_data=args.json)
 
     if args.result_type == 'patient':
-        patient_summary(data,patients,outside=args.Outside)
+        patient_summary(data,outfh,patients,outside=args.Outside)
     elif args.result_type == 'disease':
         # TODO: Would be cool to add a filter here to, say, filter on only Breast Cancer or something
         disease_summary(data)
