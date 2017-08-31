@@ -3,7 +3,7 @@ from setuptools import setup
 from setuptools.command.install import install as _install
 from subprocess import call
 
-version = '0.14.1'
+version = '0.15.0'
 
 def _post_install(dir):
     call([sys.executable, 'postinstall.py'])
@@ -36,6 +36,7 @@ config = {
                                 'bin/match_specimen_tracking.py',
                                 'bin/match_variant_frequency.py',
                                 'bin/matchbox_patient_summary.py',
+                                'bin/match_amoi_summary.py',
                                ],
     'include_package_data'   : True,
     'zip_safe'               : False,
