@@ -59,7 +59,7 @@ class MatchData(object):
         """
         self._url = url
         self._creds = creds
-        self._patient = str(patient)
+        self._patient = patient
         self._dumped_data = dumped_data
         self._load_raw = load_raw
         self._config_file = config_file
@@ -72,7 +72,8 @@ class MatchData(object):
             self._creds = utils.get_config_data(self._config_file,'creds')
 
         if self._patient:
-            self._url += '?patientId=%s' % patient
+            self._patient = str(self._patient)
+            self._url += '?patientId=%s' % self._patient 
 
         # If dumped_data is 'sys_default', get json file from matchbox_conf.Config, which is from 
         # matchbox_api_util.__init__.mb_json_data.  Otherwise use the passed arg; if it's None, do
@@ -269,17 +270,15 @@ class MatchData(object):
 
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
-                if variant['confirmed'] == 'false':
-                    continue
-                variant_call_data[var_type].append(self.__gen_variant_dict(variant,var_type))
+                # if variant['confirmed'] == False:
+                    # continue
+                if variant['confirmed']:
+                    variant_call_data[var_type].append(self.__gen_variant_dict(variant,var_type))
 
         # Remap the driver / partner genes so that we know they're correct, and add a 'gene' field to use later on.
         if 'unifiedGeneFusions' in variant_call_data:
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
 
-        # XXX
-        pp(variant_call_data)
-        sys.exit()
         # Add aMOI information to MOIs.
         for var_type in variant_call_data:
             for var in variant_call_data[var_type]:
@@ -724,22 +723,15 @@ class MatchData(object):
         disease
 
         """
-        if psn: 
-            print('this is psn: %s' % psn)
-            pp(self.data[psn])
-
         if psn:
             psn = str(psn) # allow flexibility if we do not explictly input string.
             if self.data[psn]['mois'] and self.data[psn]['mois'] != '---':
-                print('got here!')
                 try:
                     ret_data = dict(self.data[psn]['mois'])
-                # TODO: Needed?
                 except:
                     print('error: cant make dict for patient: %s' % psn)
                     pp(self.data[psn]['mois'])
                     sys.exit()
-                pp(self.data[psn]['mois'])
                 return dict(self.data[psn]['mois'])
         # TODO: Not sure I want to look up by MSN. Better to work wiht a PSN since there can be multiple MSNs in my dataset.
         #       Actually might be good to restructure this and get rid of multiple MSNs altogether.
