@@ -59,7 +59,7 @@ class MatchData(object):
         """
         self._url = url
         self._creds = creds
-        self._patient = patient
+        self._patient = str(patient)
         self._dumped_data = dumped_data
         self._load_raw = load_raw
         self._config_file = config_file
@@ -169,7 +169,6 @@ class MatchData(object):
 
         # for record in self.matchbox_data:
         for record in matchbox_data:
-            
             psn = record['patientSequenceNumber']       
             if patient and psn != patient:
                 continue
@@ -278,6 +277,9 @@ class MatchData(object):
         if 'unifiedGeneFusions' in variant_call_data:
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
 
+        # XXX
+        pp(variant_call_data)
+        sys.exit()
         # Add aMOI information to MOIs.
         for var_type in variant_call_data:
             for var in variant_call_data[var_type]:
@@ -722,16 +724,22 @@ class MatchData(object):
         disease
 
         """
+        if psn: 
+            print('this is psn: %s' % psn)
+            pp(self.data[psn])
+
         if psn:
             psn = str(psn) # allow flexibility if we do not explictly input string.
             if self.data[psn]['mois'] and self.data[psn]['mois'] != '---':
+                print('got here!')
                 try:
                     ret_data = dict(self.data[psn]['mois'])
+                # TODO: Needed?
                 except:
                     print('error: cant make dict for patient: %s' % psn)
                     pp(self.data[psn]['mois'])
                     sys.exit()
-
+                pp(self.data[psn]['mois'])
                 return dict(self.data[psn]['mois'])
         # TODO: Not sure I want to look up by MSN. Better to work wiht a PSN since there can be multiple MSNs in my dataset.
         #       Actually might be good to restructure this and get rid of multiple MSNs altogether.
@@ -741,9 +749,7 @@ class MatchData(object):
         else:
             sys.stderr.write('ERROR: you must input either a PSN or MSN to this function!\n')
             # Bail out here instead of returning None?
-
             return None
-        return None
 
     def get_vcf(self,msn=None):
         # TODO: Change this to get datafile and try to get BAM, VCF, etc. based on args.
