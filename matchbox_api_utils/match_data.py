@@ -599,8 +599,9 @@ class MatchData(object):
         Returns:
             Dict of PSN : Disease mappings. If no match for input ID, returns None.
 
-        >>> print(get_disease(psn='11352'))
-        'Serous endometrial adenocarcinoma'
+        Example: 
+            >>> print(get_disease(psn='11352'))
+            'Serous endometrial adenocarcinoma'
 
         """
         # Don't want to allow for mixed query types. So, number of None args must be > 2, 
@@ -626,11 +627,19 @@ class MatchData(object):
         for id_type in id_list:
             for i in id_list[id_type]:
                 biopsy = self.__search_for_value(key=id_type,val=i,retval='biopsy')
-                if not outside and biopsy == 'Outside':
+                # print(biopsy)
+
+                # TODO: For now we're going to just remove patients based on these criteria. Eventually we may want to output them,
+                #       but with the reason for filtering (i.e. output Failed Biopsy, No Biopsy, etc.).
+                if outside is False and biopsy == 'Outside':
+                    # output_data[i] = None
                     continue
-                if not no_disease and biopsy == '-':
+                # Most Passed are OK, though there are a few cases where no fail flag applied yet.
+                if no_disease is False and biopsy != 'Pass':
+                    # output_data[i] = None
                     continue
-                output_data[i] = self.__search_for_value(key=id_type,val=i,retval='ctep_term')
+                else:
+                    output_data[i] = self.__search_for_value(key=id_type,val=i,retval='ctep_term')
         return output_data
 
     def find_variant_frequency(self,query,query_patients=None):
@@ -715,7 +724,14 @@ class MatchData(object):
         """
         if psn:
             psn = str(psn) # allow flexibility if we do not explictly input string.
-            if self.data[psn]['mois']:
+            if self.data[psn]['mois'] and self.data[psn]['mois'] != '---':
+                try:
+                    ret_data = dict(self.data[psn]['mois'])
+                except:
+                    print('error: cant make dict for patient: %s' % psn)
+                    pp(self.data[psn]['mois'])
+                    sys.exit()
+
                 return dict(self.data[psn]['mois'])
         # TODO: Not sure I want to look up by MSN. Better to work wiht a PSN since there can be multiple MSNs in my dataset.
         #       Actually might be good to restructure this and get rid of multiple MSNs altogether.
@@ -724,8 +740,10 @@ class MatchData(object):
             return dict(self.__search_for_value(key='msn',val=msn,retval='mois'))
         else:
             sys.stderr.write('ERROR: you must input either a PSN or MSN to this function!\n')
+            # Bail out here instead of returning None?
+
             return None
-        return
+        return None
 
     def get_vcf(self,msn=None):
         # TODO: Change this to get datafile and try to get BAM, VCF, etc. based on args.
