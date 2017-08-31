@@ -43,7 +43,7 @@ class TreatmentArms(object):
             self._creds = utils.get_config_data(self._config_file,'creds')
         
         if self._json_db == 'sys_default':
-            self._json_db = utils.get_config_data('ta_json_data')
+            self._json_db = utils.get_config_data(self._config_file,'ta_json_data')
 
         if make_raw:
             Matchbox(self._url,self._creds,make_raw='ta')
