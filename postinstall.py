@@ -80,7 +80,7 @@ if __name__=='__main__':
 
     root_dir = os.path.join(os.environ['HOME'], '.mb_utils/')
     if not os.path.isdir(root_dir):
-        mkdir(root_dir)
+        os.mkdir(root_dir)
     sys.stdout.write('\n' + '-'*25 +'  MATCHBox API Utils Setup  '+ '-'*25 + '\n')
 
     make_config_file(root_dir)
