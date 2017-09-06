@@ -623,16 +623,17 @@ class MatchData(object):
         for id_type in id_list:
             for i in id_list[id_type]:
                 biopsy = self.__search_for_value(key=id_type,val=i,retval='biopsy')
-                # print(biopsy)
 
                 # TODO: For now we're going to just remove patients based on these criteria. Eventually we may want to output them,
                 #       but with the reason for filtering (i.e. output Failed Biopsy, No Biopsy, etc.).
                 if outside is False and biopsy == 'Outside':
                     # output_data[i] = None
+                    output_data[i] = biopsy
                     continue
                 # Most Passed are OK, though there are a few cases where no fail flag applied yet.
                 if no_disease is False and biopsy != 'Pass':
                     # output_data[i] = None
+                    output_data[i] = biopsy
                     continue
                 else:
                     output_data[i] = self.__search_for_value(key=id_type,val=i,retval='ctep_term')
