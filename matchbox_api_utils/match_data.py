@@ -90,17 +90,17 @@ class MatchData(object):
         if make_raw:
             Matchbox(self._url,self._creds,make_raw='mb')
         elif self._load_raw:
-            # print('\n  ->  Starting from a raw MB JSON Obj')
+            print('\n  ->  Starting from a raw MB JSON Obj')
             self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
             self.data = self.gen_patients_list(matchbox_data,self._patient)
         elif self._dumped_data:
-            # print('\n  ->  Starting from a processed MB JSON Obj')
+            print('\n  ->  Starting from a processed MB JSON Obj')
             self.db_date, self.data = utils.load_dumped_json(self._dumped_data)
             if self._patient:
                 print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
         else:
-            # print('\n  ->  Starting from a live MB instance')
+            print('\n  ->  Starting from a live MB instance')
             # matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
             matchbox_data = Matchbox(self._url,self._creds).api_data
             self.data = self.gen_patients_list(matchbox_data,self._patient)
@@ -270,20 +270,15 @@ class MatchData(object):
 
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
-                # if variant['confirmed'] == False:
-                    # continue
                 if variant['confirmed']:
-                    variant_call_data[var_type].append(self.__gen_variant_dict(variant,var_type))
+                    var_data = self.__gen_variant_dict(variant,var_type)
+                    var_data.update({'amoi' : self.arm_data.map_amoi(var_data)})
+                    variant_call_data[var_type].append(var_data)
 
         # Remap the driver / partner genes so that we know they're correct, and add a 'gene' field to use later on.
         if 'unifiedGeneFusions' in variant_call_data:
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
 
-        # Add aMOI information to MOIs.
-        for var_type in variant_call_data:
-            for var in variant_call_data[var_type]:
-                results = self.arm_data.map_amoi(var)
-                var['amoi'] = results
         return variant_call_data
 
     @staticmethod
