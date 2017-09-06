@@ -11,7 +11,7 @@ class TestImport(unittest.TestCase):
         print ret 
         return ret.keys()
 
-    # @unittest.skip('Skip create live conn test')
+    @unittest.skip('Skip create live conn test')
     def test_can_create_live_connection(self):
         """
         Test that we can make a connection to the live MATCHBox instance and get the API data.
@@ -26,7 +26,7 @@ class TestImport(unittest.TestCase):
         Test that we can load the raw API dataset rather than making a live MB call and proc that.
 
         """
-        raw_api_data = os.path.join(os.path.dirname(__file__),'../raw_mb_dump_072617.json')
+        raw_api_data = os.path.join(os.path.dirname(__file__),'../raw_mb_dump_090617.json')
         data = MatchData(load_raw=raw_api_data)
         self.assertListEqual(self.keys,self.get_keys(data))
         
