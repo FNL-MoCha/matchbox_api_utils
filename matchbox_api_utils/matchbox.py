@@ -2,7 +2,6 @@
 import os
 import sys
 import json
-# import datetime
 
 import utils
 
@@ -68,7 +67,7 @@ class Matchbox(object):
     def __api_call(self):
         # Call to API to retrienve data. Using cURL rather than requests since requests
         # takes bloody forever!
-        curl_cmd = 'curl -u {}:{} -s {}'.format(
+        curl_cmd = 'curl -u {}:{} -s "{}"'.format(
             self.creds['username'],self.creds['password'],self.url
         )
         request = os.popen(curl_cmd).read()
