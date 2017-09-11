@@ -113,7 +113,7 @@ if __name__=='__main__':
         sys.stdout.write('Retrieving a live MATCHBox data object. This may take a few minutes...\n')
         sys.stdout.flush()
 
-    data = MatchData(dumped_data=args['json'])
+    data = MatchData(json_db=args['json'])
     sys.stdout.write('\n')
 
     print('Getting MSN / PSN mapping data...')
