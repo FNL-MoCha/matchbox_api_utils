@@ -22,7 +22,7 @@ class MatchData(object):
 
     """
 
-    def __init__(self,config_file=None,url=None,creds=None,patient=None,dumped_data='sys_default',load_raw=None,make_raw=None):
+    def __init__(self,config_file=None,url=None,creds=None,patient=None,json_db='sys_default',load_raw=None,make_raw=None):
         """
         Generate a MATCHBox data object that can be parsed and queried downstream with some methods. 
         
@@ -45,7 +45,7 @@ class MatchData(object):
                             {'username':<username>,'password':<password>}
 
                patient (str):      Limit data to a specific PSN.
-               dumped_data (file): MATCHbox processed JSON file containing the 
+               json_db (file): MATCHbox processed JSON file containing the 
                                    whole dataset. This is usually generated from 
                                    'matchbox_json_dump.py'. The default value is 
                                    'sys_default' which loads the default package 
@@ -60,7 +60,7 @@ class MatchData(object):
         self._url = url
         self._creds = creds
         self._patient = patient
-        self._dumped_data = dumped_data
+        self._json_db = json_db
         self._load_raw = load_raw
         self._config_file = config_file
         self.db_date = utils.get_today('long')
@@ -75,15 +75,12 @@ class MatchData(object):
             self._patient = str(self._patient)
             self._url += '?patientId=%s' % self._patient 
 
-        # If dumped_data is 'sys_default', get json file from matchbox_conf.Config, which is from 
+        # If json_db is 'sys_default', get json file from matchbox_conf.Config, which is from 
         # matchbox_api_util.__init__.mb_json_data.  Otherwise use the passed arg; if it's None, do
         # a live call below, and if it's a custom file, load that.
-        if self._dumped_data == 'sys_default':
-            self._dumped_data = utils.get_config_data(self._config_file,'mb_json_data')
+        if self._json_db == 'sys_default':
+            self._json_db = utils.get_config_data(self._config_file,'mb_json_data')
 
-        # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
-        # Need to load treatment arm data in order to define aMOIs. Try to load package default, but if not 
-        # found, then generate a new amois_lookup_table.
         ta_data = utils.get_config_data(self._config_file,'ta_json_data')
         self.arm_data = TreatmentArms(json_db=ta_data)
             
@@ -93,15 +90,14 @@ class MatchData(object):
             print('\n  ->  Starting from a raw MB JSON Obj')
             self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
             self.data = self.gen_patients_list(matchbox_data,self._patient)
-        elif self._dumped_data:
+        elif self._json_db:
             print('\n  ->  Starting from a processed MB JSON Obj')
-            self.db_date, self.data = utils.load_dumped_json(self._dumped_data)
+            self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._patient:
                 print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
         else:
             print('\n  ->  Starting from a live MB instance')
-            # matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
             matchbox_data = Matchbox(self._url,self._creds).api_data
             self.data = self.gen_patients_list(matchbox_data,self._patient)
 
@@ -173,6 +169,7 @@ class MatchData(object):
             psn = record['patientSequenceNumber']       
             if patient and psn != patient:
                 continue
+
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
@@ -189,6 +186,14 @@ class MatchData(object):
             patients[psn]['bsn']          = '---'
             patients[psn]['ihc']          = '---'
             patients[psn]['msn']          = '---'
+
+            patients[psn]['ta_status']    = record['currentPatientStatus']
+            patients[psn]['ta_arm']       = '---'
+            patients[psn]['drug_name']    = '---'
+
+            if record['currentPatientAssignmentLogic'] and record['currentPatientAssignmentLogic']['reasonCategory'] == 'SELECTED':
+                    patients[psn]['ta_arm'] = record['currentPatientAssignmentLogic']['treatmentArmId']
+                    patients[psn]['drug_name'] = self.arm_data.map_drug_arm(armid=patients[psn]['ta_arm'])[1]
 
             try:
                 race = record['races'][0]
@@ -250,8 +255,8 @@ class MatchData(object):
                     variant_report                = result['ionReporterResults']['variantReport']
                     patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
 
-        #pp(dict(patients))
-        #sys.exit()
+        # pp(dict(patients))
+        # sys.exit()
         return patients
 
     @staticmethod
@@ -739,7 +744,41 @@ class MatchData(object):
             # Bail out here instead of returning None?
             return None
 
-    def get_vcf(self,msn=None):
+    def get_patient_ta_status(self,psn=None):
+        """
+        Input a list of PSNs and return information about the treatment arm(s) to which they were
+        assigned, if they were assigned to any arms. If no PSN list is passed to the function, return
+        results for every PSN in the study.
+
+        Args:
+            psn (list):  Optional list of PSNs to query.
+
+        Returns:
+            Dict of tuple of Status, Arm ID, and drug name.
+
+        Example:
+            >>> get_patient_ta_status(psn='10005')
+            {'10005' : (u'OFF_TRIAL_NO_TA_AVAILABLE', '---', '---')}
+
+            >>> get_patient_ta_status(psn='10837')
+            {'10837': (u'ON_TREATMENT_ARM', u'EAY131-Z1A', u'Binimetinib')}
+
+
+        """
+        results = {}
+        if psn:
+            psn_list = [str(x) for x in psn]
+            for p in psn_list:
+                if p in self.data:
+                    results[p] = (self.data[p]['ta_status'],self.data[p]['ta_arm'],self.data[p]['drug_name'])
+                else:
+                    results[p] = None
+        else:
+            for p in self.data:
+                results[p] = (self.data[p]['ta_status'],self.data[p]['ta_arm'],self.data[p]['drug_name'])
+        return results 
+    
+    def get_seq_datafile(self,dtype=None,msn=None,psn=None):
         # TODO: Change this to get datafile and try to get BAM, VCF, etc. based on args.
         """
         .. note: 
@@ -747,4 +786,18 @@ class MatchData(object):
 
         Get path of VCF file from MB Obj and return the VCF file from either the MB mirror or the source.
         """
+        valid_types = ('vcf','dna','rna','all')
+        if dtype and dtype not in valid_types:
+            sys.stderr.write('ERROR: %s is not a valid data type. You must choose from "vcf", "rna", or "dna".\n')
+            sys.exit(1)
+
+        if msn:
+            msn = 'MSN' + str(msn).strip('MSN')
+            psn = self.__search_for_value(key='msn',val=msn, retval='psn')
+        elif psn:
+            psn = str(psn).lstrip('PSN')
+
+        print('psn: %s' % psn)
+        pp(dict(self.data[psn]))
+
         return
