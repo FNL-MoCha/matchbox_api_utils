@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 # TODO:
-#    - make Matchbox class connector and retrieve the ta api data.
-#    - make option to:
-#         - return raw api data
-#         - return proc api data (JSON file)
-#         - normal set of processing functions.
+#    - get arm by gene lookup.
 import os
 import sys
 import re
@@ -132,28 +128,26 @@ class TreatmentArms(object):
             return None
 
     def __gen_rules_table(self,arm_id = None):
-        '''
-        wanted data struct:
-            'hotspots' : {
-                'hs_id' : [arm1, arm2, arm3],
-                'hs_id' : [arma, armb, armc],
-            },
-            'cnvs' : {
-                'gene1' : [arm1, arm2],
-                'gene2' : [arma, armb],
-            },
-            'fusions' : {
-                'fusion_id' : [arm1, arm2, arm3],
-            },
-            'positional' : {
-                'gene' : [ 'exon|function' : [arms]],
-                'EGFR' : [ '19|nonframeshiftDeletion' : [ArmA]],
-                'ERBB2' : [ '20|nonframeshiftInsertion' : [ArmB, ArmBX1]],
-            }
-            'deleterious' : {
-                 'gene' : [arms],
-            }
-        '''
+        # wanted data struct:
+            # 'hotspots' : {
+                # 'hs_id' : [arm1, arm2, arm3],
+                # 'hs_id' : [arma, armb, armc],
+            # },
+            # 'cnvs' : {
+                # 'gene1' : [arm1, arm2],
+                # 'gene2' : [arma, armb],
+            # },
+            # 'fusions' : {
+                # 'fusion_id' : [arm1, arm2, arm3],
+            # },
+            # 'positional' : {
+                # 'gene' : [ 'exon|function' : [arms]],
+                # 'EGFR' : [ '19|nonframeshiftDeletion' : [ArmA]],
+                # 'ERBB2' : [ '20|nonframeshiftInsertion' : [ArmB, ArmBX1]],
+            # }
+            # 'deleterious' : {
+                 # 'gene' : [arms],
+            # }
         rules_table = {
             'hotspot'     : defaultdict(list),
             'cnv'         : defaultdict(list), 
@@ -225,6 +219,8 @@ class TreatmentArms(object):
         arm_data = defaultdict(dict)
         for arm in api_data:
             arm_id = arm['id']
+            # if arm_id != 'EAY131-Z1A':
+                # continue
 
             arm_data[arm_id]['name']          = arm['name']
             arm_data[arm_id]['arm_id']        = arm['id']
@@ -312,4 +308,63 @@ class TreatmentArms(object):
         if result:
             return result
         else:
+            return None
+
+    def map_drug_arm(self,armid=None,drugname=None):
+        """
+        Input an Arm ID or a drug name, and retun a tuple of arm, drugname, and ID. If no arm ID or 
+        drug name is input, will return a whole table of all arm data.
+
+        Args:
+            armid (str): Offcial NCI-MATCH Arm ID in the form of EAY131-xxx (e.g. EAY131-Z1A).
+            drugname (str): Drug name as registered in the NCI-MATCH subprotocols.  Right now, 
+                            required to have the full string (e.g. 'MLN0128(TAK-228)' or, unfortunately,
+                            'Sunitinib malate (SU011248 L-malate)'), but will work on a regex to 
+                            help later on.
+
+        Returns:
+            List of tuples or None.
+
+        Example:
+            >>> map_drug_arm(armid='EAY131-Z1A')
+            (u'EAY131-Z1A', 'Binimetinib', u'788187')
+
+        """
+        if all(x is None for x in [armid,drugname]):
+            return [(arm,self.data[arm]['drug_name'],self.data[arm]['drug_id']) for arm in sorted(self.data)]
+        elif armid:
+            if armid in self.data:     
+                return (armid,self.data[armid]['drug_name'],self.data[armid]['drug_id'])
+        elif drugname: 
+            for arm in self.data:
+                if self.data[arm]['drug_name'] == drugname:
+                    return (self.data[arm]['arm_id'],drugname, self.data[arm]['drug_id'])
+        return None
+    
+    def get_exclusion_disease(self,armid):
+        """
+        Input an arm ID and return a list of exclusionary diseases for the arm, if there are any. Otherwise
+        return None.
+
+        Args:
+            armid (str): Full identifier of the arm to be queried.
+
+        Returns:
+            List of exclusionary diseases for the arm, or None if there aren't any.
+
+        Example:
+            >>> get_exclusion_disease('EAY131-Z1A')
+            [u'Melanoma', u'Colorectal Cancer']
+
+            >>> get_exclusion_disease('EAY131-Y')
+            None
+
+        """
+        if armid in self.data:
+            if self.data[armid]['excl_diseases']:
+                return self.data[armid]['excl_diseases'].keys()
+            else:
+                return None
+        else:
+            print('ERROR: No arm with ID: "%s" found in study!' % armid)
             return None
