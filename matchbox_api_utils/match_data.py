@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+# TODO:
+#    - get_ihc_results() -> a method to print out patient IHC data based on gene name or psn.
 import os
 import sys
 import json
+import itertools
 from collections import defaultdict
 from pprint import pprint as pp
 
@@ -149,6 +152,74 @@ class MatchData(object):
         sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
         return None
 
+    @staticmethod
+    def __get_pt_hist(triggers,assignments):
+        # Read the trigger messages to determine the patient treatment and study arm history.
+        last_status = ''
+        last_msg = ''
+        arms = []
+        arm_hist = {}
+        progressed = False
+        tot_msgs = len(triggers)
+
+        counter = 0
+        for i,msg in enumerate(triggers):
+            #DEBUG:
+            print('{}  Current Message: ({}/{})  {}'.format('-'*25, i+1, tot_msgs, '-'*25))
+            pp(msg)
+            print('-'*76)
+
+            pp(assignments)
+
+            if msg['patientStatus'] == 'PENDING_APPROVAL':
+                # curr_arm = assignments[counter]['patientAssignmentMessage'][0]['treatmentArmId']
+                # Bad(!) abuse of list comprehension to grab the "SELECTED" arm.  More reliable than any other message!
+                curr_arm = [x['treatmentArmId'] for x in assignments[counter]['patientAssignmentLogic'] if x['reasonCategory'] == 'SELECTED'][0]
+                arms.append(curr_arm)
+
+                try:
+                    arm_hist[curr_arm] = assignments[counter]['patientAssignmentMessage'][0]['status']
+                except IndexError:
+                    # We don't have a message because no actual assignment ever made (i.e. OFF_TRIAL before assignment)
+                    arm_hist[curr_arm] = '.'
+                counter += 1
+
+            if msg['patientStatus'] == 'ON_TREATMENT_ARM':
+                curr_arm = msg['message'].split(' ')[-1]
+                arms.append(curr_arm)
+                arm_hist[curr_arm] = 'ON_TREATMENT_ARM'
+
+            elif msg['patientStatus'].startswith("PROG"):
+                progressed = True
+                arm_hist[curr_arm] = 'FORMERLY_ON_ARM_PROGRESSED'
+
+            # When we hit the last message, return what we've collected.
+            if i+1 == tot_msgs:
+                last_status = msg['patientStatus']
+                last_msg = msg['message']
+
+                # Possible last status messages are:
+                #  NOT_ELIGIBLE
+                #  
+                pp(arm_hist)
+                # TODO:
+                # arms will get any number of statuses, and we would like to get the correct one that is more than 
+                # just the ON_ARM or OFF_STUDY kind of message.  Keep refining this so that the actual last status
+                # message for the arm is correct.
+
+                # What about compassionate care messages?  Do we see the assignment?  We shoudl probably add this 
+                # to the data since the patient qualified.  the only problem is that the arm is full.
+
+                # What about multiple rounds trhough the TA engine?  Are we caputring the correct round's data?
+
+                if last_status.startswith('OFF_TRIAL') and arms:
+                    if arm_hist[arms[-1]] == '.':
+                        arm_hist[arms[-1]] = last_status
+                    elif arm_hist[arms[-1]] != 'FORMERLY_ON_ARM_PROGRESSED':
+                        arm_hist[arms[-1]] = 'FORMERLY_ON_ARM_OFF_TRIAL'
+
+                return last_status,last_msg,arm_hist,progressed
+
     def gen_patients_list(self,matchbox_data,patient):
         """Process the MATCHBox API data.
 
@@ -161,15 +232,68 @@ class MatchData(object):
             patients (dict): Dict of parsed MATCHBox API data.
 
         """
-        # TODO: What if we parallelized this?
         patients = defaultdict(dict)
-
-        # for record in self.matchbox_data:
         for record in matchbox_data:
+            # pp(dict(record))
+            # sys.exit()
             psn = record['patientSequenceNumber']       
             if patient and psn != patient:
                 continue
+            
+            """
+            print('currentPatientStatus: %s' % record['currentPatientStatus'])
+            print('currentTreatmentArm: %s' % record['currentTreatmentArm'])
+            return record['patientTriggers']
+            """
 
+            print(record.keys())
+            # pp(record['patientTriggers'])
+            # Trim dict for now..too damned long and confusing!
+            for r in record['patientAssignments']:
+                del r['treatmentArm']
+            # pp(record['patientAssignments'])
+            # print('total: %s' % len(record['patientAssignments']))
+
+            # Get treatment arm history. 
+            # TODO: Move to bottom after MOIs.  If we don't have MOI data, maybe don't even want to add record?
+            last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'])
+
+            patients[psn]['current_status']    = last_status
+            patients[psn]['last_msg']          = last_msg
+            patients[psn]['ta_arms']           = arm_hist
+            patients[psn]['progressed']        = progressed
+
+            pp(dict(patients))
+            sys.exit()
+
+
+        
+            for i in record['patientAssignments']:
+                try:
+                    print('-'*50)
+                    pp(dict(i['patientAssignmentMessage'][0]))
+                    print('-'*50)
+                except:
+                    pp(record['patientTriggers'])
+                    pp(i['patientAssignmentMessage'])
+            sys.exit()
+
+            """
+            print('\n:::  Data for PSN%s  :::' % psn)
+            print('currentPatientStatus: %s' % record['currentPatientStatus'])
+            if record['currentTreatmentArm']:
+                arm = record['currentTreatmentArm']['id']
+            else:
+                arm = '---'
+            print('currentTreatmentArm: %s' % arm)
+            print('currentStepNumber: %s' % record['currentStepNumber'])
+            # pp(record['patientTriggers'])
+            # pp(record['patientAssignments'][0].keys())
+            # print(record['patientAssignments'][0]['patientAssignmentLogic'])
+
+            sys.exit()
+
+            """
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
@@ -187,13 +311,7 @@ class MatchData(object):
             patients[psn]['ihc']          = '---'
             patients[psn]['msn']          = '---'
 
-            patients[psn]['ta_status']    = record['currentPatientStatus']
-            patients[psn]['ta_arm']       = '---'
-            patients[psn]['drug_name']    = '---'
 
-            if record['currentPatientAssignmentLogic'] and record['currentPatientAssignmentLogic']['reasonCategory'] == 'SELECTED':
-                    patients[psn]['ta_arm'] = record['currentPatientAssignmentLogic']['treatmentArmId']
-                    patients[psn]['drug_name'] = self.arm_data.map_drug_arm(armid=patients[psn]['ta_arm'])[1]
 
             try:
                 race = record['races'][0]
@@ -255,8 +373,8 @@ class MatchData(object):
                     variant_report                = result['ionReporterResults']['variantReport']
                     patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
 
-        # pp(dict(patients))
-        # sys.exit()
+        pp(dict(patients))
+        sys.exit()
         return patients
 
     @staticmethod
@@ -595,7 +713,7 @@ class MatchData(object):
             msn (str): Optional MSN or comma separated list of MSNs on which to filter data.
             outside (bool): Also include outside assay data. False by default.
             no_disease (bool): Return all data, even if there is no disease indicated for the 
-                               patient specimen. Default: False
+                patient specimen. Default: False
 
         Returns:
             Dict of PSN : Disease mappings. If no match for input ID, returns None.
@@ -656,6 +774,7 @@ class MatchData(object):
             query (dict): Dictionary of variant_type: gene mappings where:
                 -  variant type is one or more of 'snvs','indels','fusions','cnvs'
                 -  gene is a list of genes to query.
+
             query_patients (list): List of patients for which we want to obtain data. 
 
         Returns:
@@ -763,7 +882,6 @@ class MatchData(object):
             >>> get_patient_ta_status(psn='10837')
             {'10837': (u'ON_TREATMENT_ARM', u'EAY131-Z1A', u'Binimetinib')}
 
-
         """
         results = {}
         if psn:
@@ -778,6 +896,15 @@ class MatchData(object):
                 results[p] = (self.data[p]['ta_status'],self.data[p]['ta_arm'],self.data[p]['drug_name'])
         return results 
     
+    def get_patients_by_arm(self,armid):
+        """
+        Input an arm ID and return a list of patients that are on the treatment arm
+        """
+        # TODO:
+            # figure out what fields to use and what to capture here as a part of the output. If we want to 
+            # include both current arm members as well as former arm members, how to do it?  Shoudl we do it?
+        return [psn for psn in self.data if self.data[psn]['ta_arm'] == armid]
+
     def get_seq_datafile(self,dtype=None,msn=None,psn=None):
         # TODO: Change this to get datafile and try to get BAM, VCF, etc. based on args.
         """
