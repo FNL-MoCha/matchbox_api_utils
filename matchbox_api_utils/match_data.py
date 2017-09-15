@@ -155,14 +155,18 @@ class MatchData(object):
     @staticmethod
     def __get_curr_arm(assignment_logic_list,flag):
         # Bad(!) abuse of list comprehension to grab the "SELECTED" arm.  More reliable than any other message!
+        # TODO: Just have to fix this and I think we're golden.
         # FIXME: We have cases where a patient was rejoin'd and the original arm was indicated, but not as "selected".
         #        Now it comes up as being "NOT_ELIGILBLE', but I don't know yet if this is a reliable flag.  Logic 
         #        here is a bit cryptic.
+
+        # Limit scope to to just these cases and try to figure out if NOT_ELIGIBLE is a frequent enough flag to use for
+        # filtering.
         try:
             return [x['treatmentArmId'] for x in assignment_logic_list if x['reasonCategory'] == flag][0]
         except:
             print('can not get flag from logic list!')
-            pp(assignment_logic_list)
+            # pp(assignment_logic_list)
             return 'UNK'
 
     @staticmethod
@@ -173,15 +177,26 @@ class MatchData(object):
         progressed = False
         tot_msgs = len(triggers)
 
+        # If we only ever got to registration and not further (so there's only 1 message), let's bail out
+        if tot_msgs == 1:
+            return (triggers[0]['patientStatus'], triggers[0]['message'], {}, False)
+
         counter = 0
         for i,msg in enumerate(triggers):
+            """
             #DEBUG:
             print('{}  Current Message: ({}/{})  {}'.format('-'*25, i+1, tot_msgs, '-'*25))
             pp(msg)
             print('-'*76)
+            """
+
+            # On a rare occassion, we get two of the same messages in a row.  Just skip the redundant message?
+            if triggers[i-1]['patientStatus'] == msg['patientStatus']:
+                continue
 
             if msg['patientStatus'] == 'PENDING_APPROVAL':
-                pp(assignments[counter])
+                # XXX
+                # pp(assignments[counter])
                 curr_arm = MatchData.__get_curr_arm(assignments[counter]['patientAssignmentLogic'], 'SELECTED')
                 arms.append(curr_arm)
 
@@ -190,22 +205,17 @@ class MatchData(object):
                 except IndexError:
                     # We don't have a message because no actual assignment ever made (i.e. OFF_TRIAL before assignment)
                     arm_hist[curr_arm] = '.'
-                pp(arm_hist)
-                pp(arms)
+                # XXX
+                # pp(arm_hist)
+                # pp(arms)
+
                 counter += 1
 
-            # if msg['patientStatus'] == 'ON_TREATMENT_ARM':
-                # curr_arm = msg['message'].split(' ')[-1]
-                # arms.append(curr_arm)
-                # arm_hist[curr_arm] = 'ON_TREATMENT_ARM'
-
-            # elif msg['patientStatus'].startswith("PROG"):
             if msg['patientStatus'].startswith("PROG"):
                 progressed = True
                 arm_hist[curr_arm] = 'FORMERLY_ON_ARM_PROGRESSED'
 
             elif msg['patientStatus'] == 'COMPASSIONATE_CARE':
-                pp(assignments[counter])
                 curr_arm = MatchData.__get_curr_arm(assignments[counter]['patientAssignmentLogic'], 'ARM_FULL')
                 arm_hist[curr_arm] = 'COMPASSIONATE_CARE'
 
@@ -214,34 +224,11 @@ class MatchData(object):
                 last_status = msg['patientStatus']
                 last_msg = msg['message']
 
-                pp(arm_hist)
-                # TODO:
-                # arms will get any number of statuses, and we would like to get the correct one that is more than 
-                # just the ON_ARM or OFF_STUDY kind of message.  Keep refining this so that the actual last status
-                # message for the arm is correct.
-
-                # What about compassionate care messages?  Do we see the assignment?  We shoudl probably add this 
-                # to the data since the patient qualified.  the only problem is that the arm is full.
-
-                # What about multiple rounds trhough the TA engine?  Are we caputring the correct round's data?
-
-                # If we got an off trial status, but the last status for an arm was "on treatment arm", then we
-                # want to indicate that they were formerly on the arm, but off trial. Otherwise, we should update 
-                # the last arm in the history with the last (and presumably) current status message.
                 if last_status.startswith('OFF_TRIAL') and arms:
                     if arm_hist[arms[-1]] == 'ON_TREATMENT_ARM':
                         arm_hist[arms[-1]] = 'FORMERLY_ON_ARM_OFF_TRIAL'
                     elif arm_hist[arms[-1]] == '.':
                         arm_hist[arms[-1]] = last_status
-
-                    # else:
-                        # arm_hist[arms[-1]] = last_status
-
-                # if last_status.startswith('OFF_TRIAL') and arms:
-                    # if arm_hist[arms[-1]] == '.':
-                        # arm_hist[arms[-1]] = last_status
-                    # elif arm_hist[arms[-1]] not in ('FORMERLY_ON_ARM_PROGRESSED', 'NOT_ELIGIBLE'):
-                        # arm_hist[arms[-1]] = 'FORMERLY_ON_ARM_OFF_TRIAL'
 
                 return last_status,last_msg,arm_hist,progressed
 
@@ -259,66 +246,17 @@ class MatchData(object):
         """
         patients = defaultdict(dict)
         for record in matchbox_data:
-            # pp(dict(record))
-            # sys.exit()
             psn = record['patientSequenceNumber']       
             if patient and psn != patient:
                 continue
             
             """
-            print('currentPatientStatus: %s' % record['currentPatientStatus'])
-            print('currentTreatmentArm: %s' % record['currentTreatmentArm'])
-            return record['patientTriggers']
-            """
-
-            print(record.keys())
-            # pp(record['patientTriggers'])
             # Trim dict for now..too damned long and confusing!
+            # TODO: can remove this once we've finished.
             for r in record['patientAssignments']:
                 del r['treatmentArm']
-            # pp(record['patientAssignments'])
-            # print('total: %s' % len(record['patientAssignments']))
-
-            # Get treatment arm history. 
-            # TODO: Move to bottom after MOIs.  If we don't have MOI data, maybe don't even want to add record?
-            last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'])
-
-            patients[psn]['current_status']    = last_status
-            patients[psn]['last_msg']          = last_msg
-            patients[psn]['ta_arms']           = arm_hist
-            patients[psn]['progressed']        = progressed
-
-            pp(dict(patients))
-            sys.exit()
-
-
-        
-            for i in record['patientAssignments']:
-                try:
-                    print('-'*50)
-                    pp(dict(i['patientAssignmentMessage'][0]))
-                    print('-'*50)
-                except:
-                    pp(record['patientTriggers'])
-                    pp(i['patientAssignmentMessage'])
-            sys.exit()
-
             """
-            print('\n:::  Data for PSN%s  :::' % psn)
-            print('currentPatientStatus: %s' % record['currentPatientStatus'])
-            if record['currentTreatmentArm']:
-                arm = record['currentTreatmentArm']['id']
-            else:
-                arm = '---'
-            print('currentTreatmentArm: %s' % arm)
-            print('currentStepNumber: %s' % record['currentStepNumber'])
-            # pp(record['patientTriggers'])
-            # pp(record['patientAssignments'][0].keys())
-            # print(record['patientAssignments'][0]['patientAssignmentLogic'])
 
-            sys.exit()
-
-            """
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
@@ -336,7 +274,15 @@ class MatchData(object):
             patients[psn]['ihc']          = '---'
             patients[psn]['msn']          = '---'
 
+            # Get treatment arm history. 
+            last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'])
 
+            patients[psn]['current_status']    = last_status
+            patients[psn]['last_msg']          = last_msg
+            patients[psn]['ta_arms']           = arm_hist
+            patients[psn]['progressed']        = progressed
+            # pp(dict(patients))
+            # sys.exit()
 
             try:
                 race = record['races'][0]
@@ -398,8 +344,8 @@ class MatchData(object):
                     variant_report                = result['ionReporterResults']['variantReport']
                     patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
 
-        pp(dict(patients))
-        sys.exit()
+        # pp(dict(patients))
+        # sys.exit()
         return patients
 
     @staticmethod
@@ -950,6 +896,6 @@ class MatchData(object):
             psn = str(psn).lstrip('PSN')
 
         print('psn: %s' % psn)
-        pp(dict(self.data[psn]))
+        # pp(dict(self.data[psn]))
 
         return
