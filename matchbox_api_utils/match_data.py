@@ -153,10 +153,21 @@ class MatchData(object):
         return None
 
     @staticmethod
+    def __get_curr_arm(assignment_logic_list,flag):
+        # Bad(!) abuse of list comprehension to grab the "SELECTED" arm.  More reliable than any other message!
+        # FIXME: We have cases where a patient was rejoin'd and the original arm was indicated, but not as "selected".
+        #        Now it comes up as being "NOT_ELIGILBLE', but I don't know yet if this is a reliable flag.  Logic 
+        #        here is a bit cryptic.
+        try:
+            return [x['treatmentArmId'] for x in assignment_logic_list if x['reasonCategory'] == flag][0]
+        except:
+            print('can not get flag from logic list!')
+            pp(assignment_logic_list)
+            return 'UNK'
+
+    @staticmethod
     def __get_pt_hist(triggers,assignments):
         # Read the trigger messages to determine the patient treatment and study arm history.
-        last_status = ''
-        last_msg = ''
         arms = []
         arm_hist = {}
         progressed = False
@@ -169,12 +180,9 @@ class MatchData(object):
             pp(msg)
             print('-'*76)
 
-            pp(assignments)
-
             if msg['patientStatus'] == 'PENDING_APPROVAL':
-                # curr_arm = assignments[counter]['patientAssignmentMessage'][0]['treatmentArmId']
-                # Bad(!) abuse of list comprehension to grab the "SELECTED" arm.  More reliable than any other message!
-                curr_arm = [x['treatmentArmId'] for x in assignments[counter]['patientAssignmentLogic'] if x['reasonCategory'] == 'SELECTED'][0]
+                pp(assignments[counter])
+                curr_arm = MatchData.__get_curr_arm(assignments[counter]['patientAssignmentLogic'], 'SELECTED')
                 arms.append(curr_arm)
 
                 try:
@@ -182,25 +190,30 @@ class MatchData(object):
                 except IndexError:
                     # We don't have a message because no actual assignment ever made (i.e. OFF_TRIAL before assignment)
                     arm_hist[curr_arm] = '.'
+                pp(arm_hist)
+                pp(arms)
                 counter += 1
 
-            if msg['patientStatus'] == 'ON_TREATMENT_ARM':
-                curr_arm = msg['message'].split(' ')[-1]
-                arms.append(curr_arm)
-                arm_hist[curr_arm] = 'ON_TREATMENT_ARM'
+            # if msg['patientStatus'] == 'ON_TREATMENT_ARM':
+                # curr_arm = msg['message'].split(' ')[-1]
+                # arms.append(curr_arm)
+                # arm_hist[curr_arm] = 'ON_TREATMENT_ARM'
 
-            elif msg['patientStatus'].startswith("PROG"):
+            # elif msg['patientStatus'].startswith("PROG"):
+            if msg['patientStatus'].startswith("PROG"):
                 progressed = True
                 arm_hist[curr_arm] = 'FORMERLY_ON_ARM_PROGRESSED'
+
+            elif msg['patientStatus'] == 'COMPASSIONATE_CARE':
+                pp(assignments[counter])
+                curr_arm = MatchData.__get_curr_arm(assignments[counter]['patientAssignmentLogic'], 'ARM_FULL')
+                arm_hist[curr_arm] = 'COMPASSIONATE_CARE'
 
             # When we hit the last message, return what we've collected.
             if i+1 == tot_msgs:
                 last_status = msg['patientStatus']
                 last_msg = msg['message']
 
-                # Possible last status messages are:
-                #  NOT_ELIGIBLE
-                #  
                 pp(arm_hist)
                 # TODO:
                 # arms will get any number of statuses, and we would like to get the correct one that is more than 
@@ -212,11 +225,23 @@ class MatchData(object):
 
                 # What about multiple rounds trhough the TA engine?  Are we caputring the correct round's data?
 
+                # If we got an off trial status, but the last status for an arm was "on treatment arm", then we
+                # want to indicate that they were formerly on the arm, but off trial. Otherwise, we should update 
+                # the last arm in the history with the last (and presumably) current status message.
                 if last_status.startswith('OFF_TRIAL') and arms:
-                    if arm_hist[arms[-1]] == '.':
-                        arm_hist[arms[-1]] = last_status
-                    elif arm_hist[arms[-1]] != 'FORMERLY_ON_ARM_PROGRESSED':
+                    if arm_hist[arms[-1]] == 'ON_TREATMENT_ARM':
                         arm_hist[arms[-1]] = 'FORMERLY_ON_ARM_OFF_TRIAL'
+                    elif arm_hist[arms[-1]] == '.':
+                        arm_hist[arms[-1]] = last_status
+
+                    # else:
+                        # arm_hist[arms[-1]] = last_status
+
+                # if last_status.startswith('OFF_TRIAL') and arms:
+                    # if arm_hist[arms[-1]] == '.':
+                        # arm_hist[arms[-1]] = last_status
+                    # elif arm_hist[arms[-1]] not in ('FORMERLY_ON_ARM_PROGRESSED', 'NOT_ELIGIBLE'):
+                        # arm_hist[arms[-1]] = 'FORMERLY_ON_ARM_OFF_TRIAL'
 
                 return last_status,last_msg,arm_hist,progressed
 
