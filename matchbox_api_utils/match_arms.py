@@ -318,9 +318,9 @@ class TreatmentArms(object):
         Args:
             armid (str): Offcial NCI-MATCH Arm ID in the form of EAY131-xxx (e.g. EAY131-Z1A).
             drugname (str): Drug name as registered in the NCI-MATCH subprotocols.  Right now, 
-                            required to have the full string (e.g. 'MLN0128(TAK-228)' or, unfortunately,
-                            'Sunitinib malate (SU011248 L-malate)'), but will work on a regex to 
-                            help later on.
+                required to have the full string (e.g. 'MLN0128(TAK-228)' or, unfortunately,
+                'Sunitinib malate (SU011248 L-malate)'), but will work on a regex to 
+                help later on.
 
         Returns:
             List of tuples or None.
