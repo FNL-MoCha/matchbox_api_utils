@@ -1,38 +1,106 @@
 #!/usr/bin/env python
-# TODO:
-#    1. Add a argparse function and make more flexible.  
 import sys
 import os
 import csv
+import argparse
 from collections import defaultdict
 from pprint import pprint as pp
 
-from matchbox_api_utils import *
+from matchbox_api_utils import MatchData
 
-version = '1.0'
+version = '1.1.0'
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description = 
+        '''
+        Generate a table indicating the aMOIs for a patient based on a patient list or an arm list.
+        '''
+    )
+    parser.add_argument('-p', '--psn', metavar='<psn(s)>', help='Comma separated string of PSNs to search.')
+    parser.add_argument('-a', '--arm', metavar='<ArmID>', help='Comma separated string of official MATCH '
+        'Arm ID(s) if filtering by arm.')
+    parser.add_argument('-f', '--file', metavar='<batchfile>', help='Get list of PSNs from a batch file with '
+        'one PSN per line rather that inputting list on commandline.')
+    parser.add_argument('-o', '--output', metavar='<outfile>', help='Write output to file instead of STDOUT.')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s - ' + version)
+    args = parser.parse_args()
+
+    psn_list = []
+    arms = []
+
+    if args.psn:
+        psn_list = args.psn.split(',')
+
+    if args.file:
+        psn_list = parse_batchfile(args.file)
+
+    if args.arm:
+        arms = args.arm.split(',')
+        if any(not x.startswith('EAY131') for x in arms):
+            sys.stderr.write('ERROR: not all input arms follow official MATCH naming: "EAY131-???"\n.')
+            sys.stderr.write('Can not filter by arm.\n')
+            arms = []
+
+    if args.output:
+        outfh = open(arg.output,'w')
+    else:
+        outfh = sys.stdout
+    
+    return(psn_list, arms, outfh)
+
+def parse_batchfile(input_file):
+    with open(input_file) as fh:
+        return [line.rstrip('\n') for line in fh]
+
+def get_measurement_and_gene(var_type,var_dict):
+    if var_type == 'copyNumberVariants':
+        return var_dict['copyNumber'],var_dict['gene'],'-'
+    elif var_type == 'unifiedGeneFusions':
+        return var_dict['driverReadCount'],var_dict['driverGene'],'-'
+    else:
+        return var_dict['alleleFrequency'],var_dict['gene'],var_dict['protein']
 
 def make_hgvs(input_type,var_data):
     '''
     coding: tscript(gene):cds:aa
     genomic: g.(locus):ref>alt
     '''
-    if input_type == 'snv_indel':
+    if input_type == 'snvs_indels':
+    # if input_type == 'indels' or input_type == 'singleNucleotideVariants':
         return '{}({}):{}:{}'.format(var_data['transcript'], var_data['gene'], var_data['hgvs'], var_data['protein'])
-    elif input_type == 'fusion':
+    elif input_type == 'fusions':
+    # elif input_type == 'unifiedGeneFusions':
         return var_data['identifier']
-    elif input_type == 'cnv':
+    elif input_type == 'cnvs':
+    # elif input_type == 'copyNumberVariants':
         return var_data['gene'] + ':amp' 
     else:
-        print('ERROR: input type "%s" is not valid.')
+        print('ERROR: input type "%s" is not valid.' % input_type)
         return None
 
+def parse_var_report(var_report,armid):
+    '''
+    primary_amoi,other_amois = parse_var_report(var_report)
+    '''
+    primary_amois = secondary_amois = []
+    # for var_type in ('indels','singleNucleotideVariants','copyNumberVariants','unifiedGeneFusions'):
+        # if var_type in var_report:
+            # for var in var_report[var_type]:
+    for var_type in var_report:
+        for var in var_report[var_type]:
+            hgvs = make_hgvs(var['type'],var)
+            measurement,gene,codon = get_measurement_and_gene(var['type'],var)
+            # Here is good place to store MOIs if we want them.
+            if var['amoi'] is None:
+                continue
+            elif armid in var['amoi']:
+                print('var is amoi')
+            else:
+                pp(var['amoi'])
+    return primary_amois,secondary_amois
+                    
 def get_data(mb_data,psn=None,msn=None):
-    var_types = {
-        'indels' : 'snv_indel', 
-        'singleNucleotideVariants' : 'snv_indel', 
-        'copyNumberVariants' : 'cnv',
-        'unifiedGeneFusions' : 'fusion'
-    }
     results = {}
 
     if msn:
@@ -43,101 +111,26 @@ def get_data(mb_data,psn=None,msn=None):
     results['disease'] = data.get_patients_and_disease(psn=psn)[psn]
     results['msn'] = mb_data.get_msn(psn=psn)
     results['bsn'] = mb_data.get_bsn(psn=psn)
-    results['mois'] = None
+    results['mois'] = []
+    results['arms'] = data.get_patient_ta_status(psn=psn)
 
     variant_data = mb_data.get_variant_report(psn=psn)
-    # pp(variant_data)
-    # sys.exit()
-
     if variant_data:
-        results['mois'] = []
+        for var_type in variant_data:
+            for var in variant_data[var_type]:
+                hgvs = make_hgvs(var['type'],var)
+                if var['amoi'] is None:
+                    amois = None
+                else:
+                    # for amoi in var['amoi']:
 
-        for var_type in ('indels','singleNucleotideVariants','copyNumberVariants','unifiedGeneFusions'):
-            if var_type in variant_data:
-                for var in variant_data[var_type]:
-                    hgvs = make_hgvs(var_types[var_type],var)
-                    if var['amoi'] is None:
-                        amois = None
-                    else:
-                        amois = ','.join(var['amoi'])
-                    measurement,gene,codon = get_measurement_and_gene(var_type,var)
-                    results['mois'].append((gene,codon,measurement,hgvs,amois))
-                    # print('{},{}'.format(make_hgvs('snv_indel',var),var['amoi']))
-    # print(psn) 
-    # pp(results)
-    # sys.exit()
+                    amois = ','.join(var['amoi'])
+
+                measurement,gene,codon = get_measurement_and_gene(var['type'],var)
+                results['mois'].append((gene,codon,measurement,hgvs,amois))
     return results 
 
-def get_measurement_and_gene(var_type,var_dict):
-    if var_type == 'copyNumberVariants':
-        return var_dict['copyNumber'],var_dict['gene'],'-'
-    elif var_type == 'unifiedGeneFusions':
-        return var_dict['driverReadCount'],var_dict['driverGene'],'-'
-    else:
-        return var_dict['alleleFrequency'],var_dict['gene'],var_dict['protein']
-
-def get_variant_report_metrics(data):
-    """
-    Get a count of number of MOIs for each patient, and number of aMOIs for each patient
-    in aggregate and store in a dict. Then we can do some filtering to get a list of 
-    patients with more than 1 aMOI for example.
-
-    We'll either get data[patient]['mois'] == None or a list of tuples with the MOI being 
-    in position one and the arms (i.e. it's an aMOI) being position 2.
-    """
-    # TODO: Fix this summary table.  
-    patient_type_summary =  defaultdict(list)
-    type_summary = {
-        'no_mois' : 0,
-        'one_moi' : 0,
-        'one_amoi' : 0,
-        'multi_mois' : 0,
-        'multi_amois' : 0,
-    }
-    for patient in data:
-        if not data[patient]['mois']:
-            type_summary['no_mois'] += 1
-            patient_type_summary['no_mois'].append(patient)
-        else:
-            amoi_flags = []
-            for var in data[patient]['mois']:
-                amoi_flags.append(amoi_check(var))
-
-            mois = amoi_flags.count('moi')
-            amois = amoi_flags.count('amoi')
-
-            if amois > 1:
-                type_summary['multi_amois'] += 1
-                patient_type_summary['multi_amois'].append(patient)
-            elif amois == 1:
-                patient_type_summary['single_amoi'].append(patient)
-                type_summary['one_amoi'] += 1
-
-            if mois > 1:
-                type_summary['multi_mois'] += 1
-                patient_type_summary['multi_mois'].append(patient)
-            elif mois == 1:
-                type_summary['one_moi'] += 1
-                patient_type_summary['single_moi'].append(patient)
-
-    # pp(type_summary)
-    # pp(patient_type_summary['multi_amois'])
-    # XXX
-    print('total patients with more than one aMOI: {}'.format(len(patient_type_summary['multi_amois'])))
-    # for i,pt in enumerate(patient_type_summary['multi_amois']):
-        # print('{},{}'.format(i+1,pt))
-    return
-                    
-def amoi_check(var):
-    if var[1] is None:
-        return 'moi'
-    else:
-        return 'amoi'
-
 def print_results(data,filename=None):
-    # pp(data)
-    # sys.exit()
-
     if not filename:
         filename='output.csv'
 
@@ -162,39 +155,25 @@ def print_results(data,filename=None):
                 output.insert(4,num_amois)
                 writer.writerow(output)
 
-def read_list(input_file):
-    with open(input_file) as fh:
-        return [x.rstrip('\n') for x in fh]
+if __name__=='__main__':
+    psn_query, arms, outfh = get_args()
+    patients_list = []
+    variant_results = {}
 
-'''
-patients_list = {
-    'pt1' : '15454', # has KRAS hotspot
-    'pt2' : '15596', # has ERBB2 CNV
-    'pt3' : '10461', # has ALK Fusion.
-    'pt4' : '10309', # has EGFR positional non-hs *and* EML4-ALK
-    'pt5' : '13050', # has KIT positional non-hs
-    'pt6' : '10123', # has PTEN Deleterious
-    'pt7' : '15586', # has variants that have been rejected, including fusion isoforms.
+    data = MatchData()
+    # get_data(data,psn=10837)
+    # sys.exit()
 
-}
-'''
+    if not patients_list:
+        print('No input file list passed. Retrieving data for all patients...')
+        patients_list = data.get_patients_and_disease().keys()
 
-data = MatchData()
-patients_list = []
-try:
-    input_file = sys.argv[1]
-    patients_list = read_list(input_file)
-except IndexError:
-    print('No input file list passed. Retrieving data for all patients...')
-    patients_list = data.get_patients_and_disease().keys()
-    # pp(patients_list)
 
-variant_results = {}
+    for pt in patients_list:
+        # variant_results[patients_list[pt]] = get_data(data,psn=patients_list[pt])
+        variant_results[pt] = get_data(data,psn=pt)
+        # print('-'*50)
 
-for pt in patients_list:
-    # variant_results[patients_list[pt]] = get_data(data,psn=patients_list[pt])
-    variant_results[pt] = get_data(data,psn=pt)
-    # print('-'*50)
+    get_variant_report_metrics(variant_results)
+    print_results(variant_results)
 
-get_variant_report_metrics(variant_results)
-print_results(variant_results)
