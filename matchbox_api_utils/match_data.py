@@ -154,27 +154,24 @@ class MatchData(object):
 
     @staticmethod
     def __get_curr_arm(psn,assignment_logic_list,flag):
-        # Bad(!) abuse of list comprehension to grab the "SELECTED" arm.  More reliable than any other message!
-        # TODO: Just have to fix this and I think we're golden.
-        # FIXME: I have found cases where a patient was given compassionate care, but there was no arm eligibility,
-        #        though it seems there should have been. Not sure how to deal with these cases.
-
+        # Figure out the arm to which the patient was assinged based on the flag message found in the TA Logic flow.
         try:
             return [x['treatmentArmId'] for x in assignment_logic_list if x['reasonCategory'] == flag][0]
         except:
-            print('{}: can not get flag from logic list!'.format(psn))
-            # pp(assignment_logic_list)
-            return 'UNK'
+            # There are exactly 4 cases (as of 9/19/2017) where the patient has PTEN IHC-, but was not assigned Arm P
+            # directly for some reason that I can't discern. Instead patient was put on compassionate care for Arm P,
+            # and although I can't comptutationally derive that since there is no obvious messsage, I don't want to lose
+            # those results. So, I'm going to manually enter data for those 4 until I can figure out how to get this 
+            # in better.
+            if psn in ('13629','13899','14007','14057'):
+                return 'EAY131-P'
+            else:
+                print('{}: can not get flag from logic list!'.format(psn))
+                return 'UNK'
 
     @staticmethod
     def __get_pt_hist(triggers,assignments,rejoin_triggers):
         # Read the trigger messages to determine the patient treatment and study arm history.
-
-        # TODO:
-        #    - If we get a rejoin request in the triggers message flow, we'll need to grab the indicated
-        #      arm from the rejoin_triggers, and use taht instead of using ta logic from pending_approval
-        #      signal to add arm to history.  Else, we're getting error trying to figure out what arm the
-        #      patient was eligible for upon rejoin
         arms = []
         arm_hist = {}
         progressed = False
@@ -187,8 +184,8 @@ class MatchData(object):
         counter = 0
         for i,msg in enumerate(triggers):
 
-            # XXX
             '''
+            # XXX
             #DEBUG:
             print('{}  Current Message: ({}/{})  {}'.format('-'*25, i+1, tot_msgs, '-'*25))
             pp(msg)
@@ -213,9 +210,6 @@ class MatchData(object):
                 except IndexError:
                     # We don't have a message because no actual assignment ever made (i.e. OFF_TRIAL before assignment)
                     arm_hist[curr_arm] = '.'
-                # XXX
-                # pp(arm_hist)
-                # pp(arms)
                 counter += 1
 
             if msg['patientStatus'].startswith("PROG"):
@@ -223,6 +217,9 @@ class MatchData(object):
                 arm_hist[curr_arm] = 'FORMERLY_ON_ARM_PROGRESSED'
 
             elif msg['patientStatus'] == 'COMPASSIONATE_CARE':
+                # XXX
+                # pp(assignments)
+                # sys.exit()
                 curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],assignments[counter]['patientAssignmentLogic'], 'ARM_FULL')
                 arm_hist[curr_arm] = 'COMPASSIONATE_CARE'
 
@@ -231,10 +228,17 @@ class MatchData(object):
                 last_status = msg['patientStatus']
                 last_msg = msg['message']
 
-                if last_status.startswith('OFF_TRIAL') and arms:
-                    if arm_hist[arms[-1]] == 'ON_TREATMENT_ARM':
-                        arm_hist[arms[-1]] = 'FORMERLY_ON_ARM_OFF_TRIAL'
-                    elif arm_hist[arms[-1]] == '.':
+                # XXX
+                # print('last status: %s' % last_status)
+                # print('hist: %s' % arm_hist[arms[-1]])
+                # pp(arm_hist)
+                # pp(arms)
+                if arms:
+                    if last_status.startswith('OFF_TRIAL'):
+                        if arm_hist[arms[-1]] == 'ON_TREATMENT_ARM':
+                            arm_hist[arms[-1]] = 'FORMERLY_ON_ARM_OFF_TRIAL'
+
+                    if arm_hist[arms[-1]] == '.':
                         arm_hist[arms[-1]] = last_status
 
                 return last_status,last_msg,arm_hist,progressed
@@ -263,29 +267,6 @@ class MatchData(object):
             for r in record['patientAssignments']:
                 del r['treatmentArm']
 
-            # XXX
-            # pp(record.keys())
-            # pp(record['patientAssignments'])
-
-            # XXX
-            # if any(x['patientStatus'] == 'COMPASSIONATE_CARE' for x in record['patientTriggers']):
-                # print psn
-            # continue
-
-
-            # Get treatment arm history. 
-            last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'],record['patientRejoinTriggers'])
-
-            patients[psn]['current_status']    = last_status
-            patients[psn]['last_msg']          = last_msg
-            patients[psn]['ta_arms']           = arm_hist
-            patients[psn]['progressed']        = progressed
-
-            # XXX
-            # pp(dict(patients))
-            # sys.exit()
-
-
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
@@ -302,6 +283,14 @@ class MatchData(object):
             patients[psn]['bsn']          = '---'
             patients[psn]['ihc']          = '---'
             patients[psn]['msn']          = '---'
+
+            # Get treatment arm history. 
+            last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'],record['patientRejoinTriggers'])
+
+            patients[psn]['current_status']    = last_status
+            patients[psn]['last_msg']          = last_msg
+            patients[psn]['ta_arms']           = arm_hist
+            patients[psn]['progressed']        = progressed
 
             try:
                 race = record['races'][0]
@@ -335,7 +324,6 @@ class MatchData(object):
                 # Skip outside assays as the data is not useful yet.
                 if 'OUTSIDE_ASSAY' in patients[psn]['source']: 
                     patients[psn]['biopsy'] = 'Outside'
-                    # continue
 
                 msns = []
                 for message in biopsy_data['mdAndersonMessages']:
