@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+# TODO:
+#    - get_ihc_results() -> a method to print out patient IHC data based on gene name or psn.
 import os
 import sys
 import json
+import itertools
 from collections import defaultdict
 from pprint import pprint as pp
 
@@ -22,7 +25,7 @@ class MatchData(object):
 
     """
 
-    def __init__(self,config_file=None,url=None,creds=None,patient=None,dumped_data='sys_default',load_raw=None,make_raw=None):
+    def __init__(self,config_file=None,url=None,creds=None,patient=None,json_db='sys_default',load_raw=None,make_raw=None):
         """
         Generate a MATCHBox data object that can be parsed and queried downstream with some methods. 
         
@@ -45,7 +48,7 @@ class MatchData(object):
                             {'username':<username>,'password':<password>}
 
                patient (str):      Limit data to a specific PSN.
-               dumped_data (file): MATCHbox processed JSON file containing the 
+               json_db (file): MATCHbox processed JSON file containing the 
                                    whole dataset. This is usually generated from 
                                    'matchbox_json_dump.py'. The default value is 
                                    'sys_default' which loads the default package 
@@ -60,7 +63,7 @@ class MatchData(object):
         self._url = url
         self._creds = creds
         self._patient = patient
-        self._dumped_data = dumped_data
+        self._json_db = json_db
         self._load_raw = load_raw
         self._config_file = config_file
         self.db_date = utils.get_today('long')
@@ -75,33 +78,29 @@ class MatchData(object):
             self._patient = str(self._patient)
             self._url += '?patientId=%s' % self._patient 
 
-        # If dumped_data is 'sys_default', get json file from matchbox_conf.Config, which is from 
+        # If json_db is 'sys_default', get json file from matchbox_conf.Config, which is from 
         # matchbox_api_util.__init__.mb_json_data.  Otherwise use the passed arg; if it's None, do
         # a live call below, and if it's a custom file, load that.
-        if self._dumped_data == 'sys_default':
-            self._dumped_data = utils.get_config_data(self._config_file,'mb_json_data')
+        if self._json_db == 'sys_default':
+            self._json_db = utils.get_config_data(self._config_file,'mb_json_data')
 
-        # TODO: fix this. Don't want to have to constantly load a raw dataset manually; should be default.
-        # Need to load treatment arm data in order to define aMOIs. Try to load package default, but if not 
-        # found, then generate a new amois_lookup_table.
         ta_data = utils.get_config_data(self._config_file,'ta_json_data')
         self.arm_data = TreatmentArms(json_db=ta_data)
             
         if make_raw:
             Matchbox(self._url,self._creds,make_raw='mb')
         elif self._load_raw:
-            # print('\n  ->  Starting from a raw MB JSON Obj')
+            print('\n  ->  Starting from a raw MB JSON Obj')
             self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
             self.data = self.gen_patients_list(matchbox_data,self._patient)
-        elif self._dumped_data:
-            # print('\n  ->  Starting from a processed MB JSON Obj')
-            self.db_date, self.data = utils.load_dumped_json(self._dumped_data)
+        elif self._json_db:
+            print('\n  ->  Starting from a processed MB JSON Obj')
+            self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._patient:
                 print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
         else:
-            # print('\n  ->  Starting from a live MB instance')
-            # matchbox_data = Matchbox(self._url,self._creds,make_raw=raw_flag).api_data
+            print('\n  ->  Starting from a live MB instance')
             matchbox_data = Matchbox(self._url,self._creds).api_data
             self.data = self.gen_patients_list(matchbox_data,self._patient)
 
@@ -153,6 +152,93 @@ class MatchData(object):
         sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
         return None
 
+    @staticmethod
+    def __get_curr_arm(psn,assignment_logic_list,flag):
+        # Bad(!) abuse of list comprehension to grab the "SELECTED" arm.  More reliable than any other message!
+        # TODO: Just have to fix this and I think we're golden.
+        # FIXME: I have found cases where a patient was given compassionate care, but there was no arm eligibility,
+        #        though it seems there should have been. Not sure how to deal with these cases.
+
+        try:
+            return [x['treatmentArmId'] for x in assignment_logic_list if x['reasonCategory'] == flag][0]
+        except:
+            print('{}: can not get flag from logic list!'.format(psn))
+            # pp(assignment_logic_list)
+            return 'UNK'
+
+    @staticmethod
+    def __get_pt_hist(triggers,assignments,rejoin_triggers):
+        # Read the trigger messages to determine the patient treatment and study arm history.
+
+        # TODO:
+        #    - If we get a rejoin request in the triggers message flow, we'll need to grab the indicated
+        #      arm from the rejoin_triggers, and use taht instead of using ta logic from pending_approval
+        #      signal to add arm to history.  Else, we're getting error trying to figure out what arm the
+        #      patient was eligible for upon rejoin
+        arms = []
+        arm_hist = {}
+        progressed = False
+        tot_msgs = len(triggers)
+
+        # If we only ever got to registration and not further (so there's only 1 message), let's bail out
+        if tot_msgs == 1:
+            return (triggers[0]['patientStatus'], triggers[0]['message'], {}, False)
+
+        counter = 0
+        for i,msg in enumerate(triggers):
+
+            # XXX
+            '''
+            #DEBUG:
+            print('{}  Current Message: ({}/{})  {}'.format('-'*25, i+1, tot_msgs, '-'*25))
+            pp(msg)
+            print('-'*76)
+            '''
+
+            # On a rare occassion, we get two of the same messages in a row.  Just skip the redundant message?
+            if triggers[i-1]['patientStatus'] == msg['patientStatus']:
+                continue
+            
+            if msg['patientStatus'] == 'REJOIN':
+                counter += 1
+
+            if msg['patientStatus'] == 'PENDING_APPROVAL':
+                # XXX
+                # pp(assignments[counter])
+                curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],assignments[counter]['patientAssignmentLogic'], 'SELECTED')
+                arms.append(curr_arm)
+
+                try:
+                    arm_hist[curr_arm] = assignments[counter]['patientAssignmentMessage'][0]['status']
+                except IndexError:
+                    # We don't have a message because no actual assignment ever made (i.e. OFF_TRIAL before assignment)
+                    arm_hist[curr_arm] = '.'
+                # XXX
+                # pp(arm_hist)
+                # pp(arms)
+                counter += 1
+
+            if msg['patientStatus'].startswith("PROG"):
+                progressed = True
+                arm_hist[curr_arm] = 'FORMERLY_ON_ARM_PROGRESSED'
+
+            elif msg['patientStatus'] == 'COMPASSIONATE_CARE':
+                curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],assignments[counter]['patientAssignmentLogic'], 'ARM_FULL')
+                arm_hist[curr_arm] = 'COMPASSIONATE_CARE'
+
+            # When we hit the last message, return what we've collected.
+            if i+1 == tot_msgs:
+                last_status = msg['patientStatus']
+                last_msg = msg['message']
+
+                if last_status.startswith('OFF_TRIAL') and arms:
+                    if arm_hist[arms[-1]] == 'ON_TREATMENT_ARM':
+                        arm_hist[arms[-1]] = 'FORMERLY_ON_ARM_OFF_TRIAL'
+                    elif arm_hist[arms[-1]] == '.':
+                        arm_hist[arms[-1]] = last_status
+
+                return last_status,last_msg,arm_hist,progressed
+
     def gen_patients_list(self,matchbox_data,patient):
         """Process the MATCHBox API data.
 
@@ -165,14 +251,41 @@ class MatchData(object):
             patients (dict): Dict of parsed MATCHBox API data.
 
         """
-        # TODO: What if we parallelized this?
         patients = defaultdict(dict)
-
-        # for record in self.matchbox_data:
         for record in matchbox_data:
             psn = record['patientSequenceNumber']       
             if patient and psn != patient:
                 continue
+            
+            # Trim dict for now..too damned long and confusing!
+            # TODO: can remove this once we've finished.
+            # XXX
+            for r in record['patientAssignments']:
+                del r['treatmentArm']
+
+            # XXX
+            # pp(record.keys())
+            # pp(record['patientAssignments'])
+
+            # XXX
+            # if any(x['patientStatus'] == 'COMPASSIONATE_CARE' for x in record['patientTriggers']):
+                # print psn
+            # continue
+
+
+            # Get treatment arm history. 
+            last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'],record['patientRejoinTriggers'])
+
+            patients[psn]['current_status']    = last_status
+            patients[psn]['last_msg']          = last_msg
+            patients[psn]['ta_arms']           = arm_hist
+            patients[psn]['progressed']        = progressed
+
+            # XXX
+            # pp(dict(patients))
+            # sys.exit()
+
+
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
@@ -250,8 +363,8 @@ class MatchData(object):
                     variant_report                = result['ionReporterResults']['variantReport']
                     patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
 
-        #pp(dict(patients))
-        #sys.exit()
+        # pp(dict(patients))
+        # sys.exit()
         return patients
 
     @staticmethod
@@ -270,20 +383,15 @@ class MatchData(object):
 
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
-                # if variant['confirmed'] == False:
-                    # continue
                 if variant['confirmed']:
-                    variant_call_data[var_type].append(self.__gen_variant_dict(variant,var_type))
+                    var_data = self.__gen_variant_dict(variant,var_type)
+                    var_data.update({'amoi' : self.arm_data.map_amoi(var_data)})
+                    variant_call_data[var_type].append(var_data)
 
         # Remap the driver / partner genes so that we know they're correct, and add a 'gene' field to use later on.
         if 'unifiedGeneFusions' in variant_call_data:
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
 
-        # Add aMOI information to MOIs.
-        for var_type in variant_call_data:
-            for var in variant_call_data[var_type]:
-                results = self.arm_data.map_amoi(var)
-                var['amoi'] = results
         return variant_call_data
 
     @staticmethod
@@ -595,7 +703,7 @@ class MatchData(object):
             msn (str): Optional MSN or comma separated list of MSNs on which to filter data.
             outside (bool): Also include outside assay data. False by default.
             no_disease (bool): Return all data, even if there is no disease indicated for the 
-                               patient specimen. Default: False
+                patient specimen. Default: False
 
         Returns:
             Dict of PSN : Disease mappings. If no match for input ID, returns None.
@@ -628,16 +736,17 @@ class MatchData(object):
         for id_type in id_list:
             for i in id_list[id_type]:
                 biopsy = self.__search_for_value(key=id_type,val=i,retval='biopsy')
-                # print(biopsy)
 
                 # TODO: For now we're going to just remove patients based on these criteria. Eventually we may want to output them,
                 #       but with the reason for filtering (i.e. output Failed Biopsy, No Biopsy, etc.).
                 if outside is False and biopsy == 'Outside':
                     # output_data[i] = None
+                    output_data[i] = biopsy
                     continue
                 # Most Passed are OK, though there are a few cases where no fail flag applied yet.
                 if no_disease is False and biopsy != 'Pass':
                     # output_data[i] = None
+                    output_data[i] = biopsy
                     continue
                 else:
                     output_data[i] = self.__search_for_value(key=id_type,val=i,retval='ctep_term')
@@ -655,6 +764,7 @@ class MatchData(object):
             query (dict): Dictionary of variant_type: gene mappings where:
                 -  variant type is one or more of 'snvs','indels','fusions','cnvs'
                 -  gene is a list of genes to query.
+
             query_patients (list): List of patients for which we want to obtain data. 
 
         Returns:
@@ -743,7 +853,42 @@ class MatchData(object):
             # Bail out here instead of returning None?
             return None
 
-    def get_vcf(self,msn=None):
+    def get_patient_ta_status(self,psn=None):
+        """
+        Input a list of PSNs and return information about the treatment arm(s) to which they were
+        assigned, if they were assigned to any arms. If no PSN list is passed to the function, return
+        results for every PSN in the study.
+
+        Args:
+            psn (str):  PSN string to query.
+
+        Returns:
+            Dict of Arm IDs with last status.
+
+        Example:
+            >>> data.get_patient_ta_status(psn=10837)
+            {u'EAY131-Z1A': u'ON_TREATMENT_ARM'}
+
+            >>> data.get_patient_ta_status(psn=11889)
+            {u'EAY131-IX1': u'FORMERLY_ON_ARM_OFF_TRIAL', u'EAY131-I': u'COMPASSIONATE_CARE'}
+
+            >>> data.get_patient_ta_status(psn=10003)
+            {}
+
+        """
+        results = {}
+        if psn:
+            psn = str(psn)
+            if psn in self.data:
+                return self.data[psn]['ta_arms']
+            else:
+                return None
+        else:
+            for p in self.data:
+                results[p] = self.data[p]['ta_arms']
+        return results 
+    
+    def get_seq_datafile(self,dtype=None,msn=None,psn=None):
         # TODO: Change this to get datafile and try to get BAM, VCF, etc. based on args.
         """
         .. note: 
@@ -751,4 +896,30 @@ class MatchData(object):
 
         Get path of VCF file from MB Obj and return the VCF file from either the MB mirror or the source.
         """
+        valid_types = ('vcf','dna','rna','all')
+        if dtype and dtype not in valid_types:
+            sys.stderr.write('ERROR: %s is not a valid data type. You must choose from "vcf", "rna", or "dna".\n')
+            sys.exit(1)
+
+        if msn:
+            msn = 'MSN' + str(msn).strip('MSN')
+            psn = self.__search_for_value(key='msn',val=msn, retval='psn')
+        elif psn:
+            psn = str(psn).lstrip('PSN')
+
+        print('psn: %s' % psn)
+        # pp(dict(self.data[psn]))
         return
+
+    def get_patients_by_arm(self,arm):
+        results = []
+        
+        if arm not in self.arm_data.data:
+            sys.stderr.write('ERROR: No such arm: {}!\n'.format(arm))
+            return None
+
+        for pt in self.data:
+            if arm in self.data[pt]['ta_arms']:
+                # print(','.join([pt,arm,self.data[pt]['ta_arms'][arm]]))
+                results.append((pt,arm,self.data[pt]['ta_arms'][arm]))
+        return results

@@ -9,6 +9,8 @@ from matchbox import Matchbox
 from match_data import MatchData
 from match_arms import TreatmentArms
 
+__version__ = '0.16.0dev'
+
 __all__ = ['Matchbox','MatchData','TreatmentArms','matchbox_conf']
 
 mb_utils_root = os.path.join(os.environ['HOME'], '.mb_utils/')

@@ -121,7 +121,7 @@ if __name__=='__main__':
     if not args.json:
         sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
         sys.stdout.flush()
-    data = MatchData(dumped_data=args.json)
+    data = MatchData(json_db=args.json)
     sys.stdout.write('\n')
 
     # Gen a query result

@@ -1,43 +1,166 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>matchbox_api_utils package &#8212; matchbox_api_utils  documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Welcome to matchbox_api_utils’s documentation!" href="index.html" />
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>matchbox_api_utils package &mdash; MATCHBox API Utils 0.15.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="MATCHBox API Utils 0.15.3 documentation" href="index.html"/>
+        <link rel="next" title="&lt;no title&gt;" href="readme.html"/>
+        <link rel="prev" title="Welcome to matchbox_api_utils’s documentation!" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
    
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+  <div class="wy-grid-for-nav">
 
-  </head>
-  <body>
-  
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+          
+            <a href="index.html" class="icon icon-home"> MATCHBox API Utils
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.15
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">matchbox_api_utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-matchbox_api_utils.matchbox">matchbox_api_utils.matchbox module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-matchbox_api_utils.matchbox_conf">matchbox_api_utils.matchbox_conf module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-matchbox_api_utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MATCHBox API Utils</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>matchbox_api_utils package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/matchbox_api_utils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="matchbox-api-utils-package">
 <h1>matchbox_api_utils package<a class="headerlink" href="#matchbox-api-utils-package" title="Permalink to this headline">¶</a></h1>
@@ -48,19 +171,83 @@
 <span id="matchbox-api-utils-matchbox-module"></span><h2>matchbox_api_utils.matchbox module<a class="headerlink" href="#module-matchbox_api_utils.matchbox" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="matchbox_api_utils.matchbox.Matchbox">
-<em class="property">class </em><code class="descclassname">matchbox_api_utils.matchbox.</code><code class="descname">Matchbox</code><span class="sig-paren">(</span><em>url</em>, <em>creds</em>, <em>load_raw=None</em>, <em>make_raw=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#Matchbox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.Matchbox" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">matchbox_api_utils.matchbox.</code><code class="descname">Matchbox</code><span class="sig-paren">(</span><em>url</em>, <em>creds</em>, <em>make_raw=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#Matchbox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.Matchbox" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>MATCHBox API Connector Class.</p>
 <p>Basic connector class to make a call to the API and load the raw data. From
-here we can filter and pass data to MatchboxData class, or we can dump the 
-raw API to a file in order to develop and test.</p>
+here we pass data, current MatchData or TreatmentArm data to appropiate calling
+classes.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-matchbox_api_utils.matchbox_conf">
+<span id="matchbox-api-utils-matchbox-conf-module"></span><h2>matchbox_api_utils.matchbox_conf module<a class="headerlink" href="#module-matchbox_api_utils.matchbox_conf" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="matchbox_api_utils.matchbox_conf.Config">
+<em class="property">class </em><code class="descclassname">matchbox_api_utils.matchbox_conf.</code><code class="descname">Config</code><span class="sig-paren">(</span><em>mb_config_file=None</em>, <em>mb_json_data=None</em>, <em>ta_json_data=None</em>, <em>amois_lookup=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox_conf.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox_conf.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="classmethod">
+<dt id="matchbox_api_utils.matchbox_conf.Config.read_config">
+<em class="property">classmethod </em><code class="descname">read_config</code><span class="sig-paren">(</span><em>config_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox_conf.html#Config.read_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox_conf.Config.read_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-matchbox_api_utils">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-matchbox_api_utils" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="matchbox_api_utils.Matchbox">
+<em class="property">class </em><code class="descclassname">matchbox_api_utils.</code><code class="descname">Matchbox</code><span class="sig-paren">(</span><em>url</em>, <em>creds</em>, <em>make_raw=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#Matchbox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.Matchbox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>MATCHBox API Connector Class.</p>
+<p>Basic connector class to make a call to the API and load the raw data. From
+here we pass data, current MatchData or TreatmentArm data to appropiate calling
+classes.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="matchbox_api_utils.MatchData">
+<em class="property">class </em><code class="descclassname">matchbox_api_utils.</code><code class="descname">MatchData</code><span class="sig-paren">(</span><em>config_file=None</em>, <em>url=None</em>, <em>creds=None</em>, <em>patient=None</em>, <em>json_db='sys_default'</em>, <em>load_raw=None</em>, <em>make_raw=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>MatchboxData class</p>
+<p>Parsed MATCHBox Data from the API as collected from the Matchbox class above. This
+class has methods to generate queries, further filtering, and heuristics on the
+dataset.</p>
 <dl class="method">
-<dt id="matchbox_api_utils.matchbox.Matchbox.gen_patients_list">
-<code class="descname">gen_patients_list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#Matchbox.gen_patients_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.Matchbox.gen_patients_list" title="Permalink to this definition">¶</a></dt>
+<dt id="matchbox_api_utils.MatchData.find_variant_frequency">
+<code class="descname">find_variant_frequency</code><span class="sig-paren">(</span><em>query</em>, <em>query_patients=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.find_variant_frequency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.find_variant_frequency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find and return variant hit rates.</p>
+<p>Based on an input query in the form of a variant_type : gene dict, where the gene value
+can be a list of genes, output a list of patients that had hits in those gene with some
+disease and variant information.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first docutils">
+<dt>query (dict): Dictionary of variant_type: gene mappings where:</dt>
+<dd><ul class="first last simple">
+<li>variant type is one or more of ‘snvs’,’indels’,’fusions’,’cnvs’</li>
+<li>gene is a list of genes to query.</li>
+</ul>
+</dd>
+</dl>
+<p class="last">query_patients (list): List of patients for which we want to obtain data.</p>
+</dd>
+<dt>Returns:</dt>
+<dd>Will return a dict of matching data with disease and MOI information</dd>
+</dl>
+<p>Example:
+&gt;&gt;&gt; query={‘snvs’ : [‘BRAF’,’MTOR’], ‘indels’ : [‘BRAF’, ‘MTOR’]}
+find_variant_frequency(query)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="matchbox_api_utils.MatchData.gen_patients_list">
+<code class="descname">gen_patients_list</code><span class="sig-paren">(</span><em>matchbox_data</em>, <em>patient</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.gen_patients_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.gen_patients_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>Process the MATCHBox API data.</p>
-<p>Process the MATCHBox API data (usually in JSON format from MongoDB) into 
-a much more concise and easily parsable dict of data. This dict will be 
-the main dataset used for later data analysis and queries and is the main 
+<p>Process the MATCHBox API data (usually in JSON format from MongoDB) into
+a much more concise and easily parsable dict of data. This dict will be
+the main dataset used for later data analysis and queries and is the main
 structure for the MatchboxData class below.</p>
 <dl class="docutils">
 <dt>Returns:</dt>
@@ -68,67 +255,37 @@ structure for the MatchboxData class below.</p>
 </dl>
 </dd></dl>
 
-</dd></dl>
-
-<dl class="class">
-<dt id="matchbox_api_utils.matchbox.MatchboxData">
-<em class="property">class </em><code class="descclassname">matchbox_api_utils.matchbox.</code><code class="descname">MatchboxData</code><span class="sig-paren">(</span><em>config_file=None</em>, <em>url=None</em>, <em>creds=None</em>, <em>patient=None</em>, <em>dumped_data='sys_default'</em>, <em>load_raw=None</em>, <em>make_raw=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>MatchboxData class</p>
-<p>Parsed MATCHBox Data from the API as collected from the Matchbox class above. This 
-class has methods to generate queries, further filtering, and heuristics on the 
-dataset.</p>
 <dl class="method">
-<dt id="matchbox_api_utils.matchbox.MatchboxData.find_variant_frequency">
-<code class="descname">find_variant_frequency</code><span class="sig-paren">(</span><em>query</em>, <em>query_patients=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.find_variant_frequency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData.find_variant_frequency" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>TODO: Update docs</dt>
-<dd>Add aMOI designator (also arm?)</dd>
-</dl>
-<p>Based on an input query, generate a dict of patient data that can be 
-further filtered.  Input required is a dict query data in the form:</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>{‘snvs’ <span class="classifier-delimiter">:</span> <span class="classifier">[‘GENE1’,’GENE2’,etc.],</span></dt>
-<dd><dl class="first last docutils">
-<dt>‘indels’ <span class="classifier-delimiter">:</span> <span class="classifier">[‘GENE1’, ‘GENE2’, etc.],</span></dt>
-<dd>.</dd>
-</dl>
-</dd>
-</dl>
-<p>}</p>
-</div></blockquote>
-<p>and so on
-Will return a dict of matching data with disease and MOI information</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="matchbox_api_utils.matchbox.MatchboxData.get_biopsy_numbers">
-<code class="descname">get_biopsy_numbers</code><span class="sig-paren">(</span><em>category=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.get_biopsy_numbers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData.get_biopsy_numbers" title="Permalink to this definition">¶</a></dt>
+<dt id="matchbox_api_utils.MatchData.get_biopsy_summary">
+<code class="descname">get_biopsy_summary</code><span class="sig-paren">(</span><em>category=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_biopsy_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_biopsy_summary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return dict of patients registered in MATCHBox with biopsy and sequencing
 information.</p>
-<p>Categories returned are total PSNs issued (including outside 
-assay patients), total passed biopsies, total failed biopsies (per MDACC 
+<p>Categories returned are total PSNs issued (including outside
+assay patients), total passed biopsies, total failed biopsies (per MDACC
 message), total MSNs (only counting latest MSN if more than one issued to
-a biopsy due to a failure) as a method of figuring out how many NAs were 
+a biopsy due to a failure) as a method of figuring out how many NAs were
 prepared, and total with sequencing data.</p>
-<p>Can filter output based on any one criteria by leveraging the “category” 
+<p>Can filter output based on any one criteria by leveraging the “category”
 variable</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>catetory (str): biopsy category to return</dd>
+<dd><dl class="first last docutils">
+<dt>catetory (str): biopsy category to return. Valid categories are ‘psn’,’passed_biopsy’,</dt>
+<dd>‘failed_biopsy’,’no_biopsy’,’msn’,’sequenced’,’outside’.</dd>
+</dl>
+</dd>
 <dt>Returns:</dt>
 <dd>dict: whole set of category:count or single category:count data.</dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="matchbox_api_utils.matchbox.MatchboxData.get_bsn">
-<code class="descname">get_bsn</code><span class="sig-paren">(</span><em>psn=None</em>, <em>msn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.get_bsn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData.get_bsn" title="Permalink to this definition">¶</a></dt>
+<dt id="matchbox_api_utils.MatchData.get_bsn">
+<code class="descname">get_bsn</code><span class="sig-paren">(</span><em>psn=None</em>, <em>msn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_bsn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_bsn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve a patient BSN from either an input PSN or MSN.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>psn (str): A PSN number to query. 
+<dd>psn (str): A PSN number to query.
 msn (str): A MSN number to query.</dd>
 <dt>Returns:</dt>
 <dd>bsn (str): A BSN that maps to the PSN or MSN input.</dd>
@@ -140,8 +297,8 @@ msn (str): A MSN number to query.</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="matchbox_api_utils.matchbox.MatchboxData.get_disease_summary">
-<code class="descname">get_disease_summary</code><span class="sig-paren">(</span><em>query_disease=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.get_disease_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData.get_disease_summary" title="Permalink to this definition">¶</a></dt>
+<dt id="matchbox_api_utils.MatchData.get_disease_summary">
+<code class="descname">get_disease_summary</code><span class="sig-paren">(</span><em>disease=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_disease_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_disease_summary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a summary of registered diseases and counts. Despite a MEDRA Code and other bits
 of disease related data, we’ll rely on output from CTEP Term value only.</p>
 <dl class="docutils">
@@ -153,12 +310,12 @@ of disease related data, we’ll rely on output from CTEP Term value only.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="matchbox_api_utils.matchbox.MatchboxData.get_msn">
-<code class="descname">get_msn</code><span class="sig-paren">(</span><em>psn=None</em>, <em>bsn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.get_msn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData.get_msn" title="Permalink to this definition">¶</a></dt>
+<dt id="matchbox_api_utils.MatchData.get_msn">
+<code class="descname">get_msn</code><span class="sig-paren">(</span><em>psn=None</em>, <em>bsn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_msn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_msn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve a patient BSN from either an input PSN or MSN.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>psn (str): A MSN number to query. 
+<dd>psn (str): A MSN number to query.
 bsn (str): A BSN number to query.</dd>
 <dt>Returns:</dt>
 <dd>msn (str): A string of comma separated MSNs that map to an input BSN or PSN.</dd>
@@ -170,50 +327,69 @@ bsn (str): A BSN number to query.</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="matchbox_api_utils.matchbox.MatchboxData.get_patients_and_disease">
-<code class="descname">get_patients_and_disease</code><span class="sig-paren">(</span><em>psn=None</em>, <em>msn=None</em>, <em>bsn=None</em>, <em>outside=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.get_patients_and_disease"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData.get_patients_and_disease" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
-are defined as being only Passed and can not be Failed, No Biopsy or
-outside assay biopsies at this time.</p>
-<dl class="function">
-<dt>
-<code class="descname">get_patients_and_disease</code><span class="sig-paren">(</span><span class="optional">[</span><em>outside=None</em><span class="optional">]</span><span class="optional">[</span>, <em>query_psn=None</em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.get_patients_and_disease"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
-
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>name</strong> – get_patients_and_disease</li>
-<li><strong>outside</strong> (<em>str</em>) – Return outside assay results or filter them out.</li>
-<li><strong>psn</strong> (<em>str</em>) – Optional PSN (or comma separated list) on which to filter data.</li>
-<li><strong>bsn</strong> (<em>str</em>) – Optional BSN on which to filter data.</li>
-<li><strong>msn</strong> (<em>str</em>) – Optional MSN on which to filter data.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Dict of PSN : Disease mappings</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
-</td>
-</tr>
-</tbody>
-</table>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">get_disease</span><span class="p">(</span><span class="n">psn</span><span class="o">=</span><span class="s1">&#39;11352&#39;</span><span class="p">))</span>
-<span class="go">&#39;Serous endometrial adenocarcinoma&#39;</span>
+<dt id="matchbox_api_utils.MatchData.get_patient_ta_status">
+<code class="descname">get_patient_ta_status</code><span class="sig-paren">(</span><em>psn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_patient_ta_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_patient_ta_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input a list of PSNs and return information about the treatment arm(s) to which they were
+assigned, if they were assigned to any arms. If no PSN list is passed to the function, return
+results for every PSN in the study.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>psn (list):  Optional list of PSNs to query.</dd>
+<dt>Returns:</dt>
+<dd>Dict of tuple of Status, Arm ID, and drug name.</dd>
+<dt>Example:</dt>
+<dd><div class="first highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_patient_ta_status</span><span class="p">(</span><span class="n">psn</span><span class="o">=</span><span class="s1">&#39;10005&#39;</span><span class="p">)</span>
+<span class="go">{&#39;10005&#39; : (u&#39;OFF_TRIAL_NO_TA_AVAILABLE&#39;, &#39;---&#39;, &#39;---&#39;)}</span>
 </pre></div>
 </div>
+<div class="last highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_patient_ta_status</span><span class="p">(</span><span class="n">psn</span><span class="o">=</span><span class="s1">&#39;10837&#39;</span><span class="p">)</span>
+<span class="go">{&#39;10837&#39;: (u&#39;ON_TREATMENT_ARM&#39;, u&#39;EAY131-Z1A&#39;, u&#39;Binimetinib&#39;)}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="matchbox_api_utils.matchbox.MatchboxData.get_psn">
-<code class="descname">get_psn</code><span class="sig-paren">(</span><em>msn=None</em>, <em>bsn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.get_psn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData.get_psn" title="Permalink to this definition">¶</a></dt>
+<dt id="matchbox_api_utils.MatchData.get_patients_and_disease">
+<code class="descname">get_patients_and_disease</code><span class="sig-paren">(</span><em>psn=None</em>, <em>msn=None</em>, <em>bsn=None</em>, <em>outside=False</em>, <em>no_disease=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_patients_and_disease"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_patients_and_disease" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return dict of PSN:Disease for valid biopsies.  Valid biopsies can
+are defined as being only Passed and can not be Failed, No Biopsy or
+outside assay biopsies at this time.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><p class="first">psn (str): Optional PSN or comma separated list of PSNs on which to filter data.
+bsn (str): Optional BSN or comma separated list of BSNs on which to filter data.
+msn (str): Optional MSN or comma separated list of MSNs on which to filter data.
+outside (bool): Also include outside assay data. False by default.
+no_disease (bool): Return all data, even if there is no disease indicated for the</p>
+<blockquote class="last">
+<div>patient specimen. Default: False</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd>Dict of PSN : Disease mappings. If no match for input ID, returns None.</dd>
+<dt>Example:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">get_disease</span><span class="p">(</span><span class="n">psn</span><span class="o">=</span><span class="s1">&#39;11352&#39;</span><span class="p">))</span>
+<span class="go">&#39;Serous endometrial adenocarcinoma&#39;</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="matchbox_api_utils.MatchData.get_patients_by_arm">
+<code class="descname">get_patients_by_arm</code><span class="sig-paren">(</span><em>armid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_patients_by_arm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_patients_by_arm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input an arm ID and return a list of patients that are on the treatment arm</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="matchbox_api_utils.MatchData.get_psn">
+<code class="descname">get_psn</code><span class="sig-paren">(</span><em>msn=None</em>, <em>bsn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_psn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_psn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve a patient PSN from either an input MSN or BSN.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>msn (str): A MSN number to query. 
+<dd>msn (str): A MSN number to query.
 bsn (str): A BSN number to query.</dd>
 <dt>Returns:</dt>
 <dd>psn (str): A PSN that maps to the MSN or BSN input.</dd>
@@ -225,24 +401,33 @@ bsn (str): A BSN number to query.</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="matchbox_api_utils.matchbox.MatchboxData.get_vcf">
-<code class="descname">get_vcf</code><span class="sig-paren">(</span><em>msn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.get_vcf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData.get_vcf" title="Permalink to this definition">¶</a></dt>
+<dt id="matchbox_api_utils.MatchData.get_seq_datafile">
+<code class="descname">get_seq_datafile</code><span class="sig-paren">(</span><em>dtype=None</em>, <em>msn=None</em>, <em>psn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_seq_datafile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_seq_datafile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get path of VCF file from MB Obj and return the VCF file from either the MB mirror or the source.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="matchbox_api_utils.matchbox.MatchboxData.map_msn_psn">
-<code class="descname">map_msn_psn</code><span class="sig-paren">(</span><em>pt_id</em>, <em>id_type</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#MatchboxData.map_msn_psn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.MatchboxData.map_msn_psn" title="Permalink to this definition">¶</a></dt>
+<dt id="matchbox_api_utils.MatchData.get_variant_report">
+<code class="descname">get_variant_report</code><span class="sig-paren">(</span><em>psn=None</em>, <em>msn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.get_variant_report"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.get_variant_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input a PSN or MSN and return a tab delimited set of variant data for the patient
+return var dict
+psn, msn, bsn
+disease</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="matchbox_api_utils.MatchData.map_msn_psn">
+<code class="descname">map_msn_psn</code><span class="sig-paren">(</span><em>pt_id</em>, <em>id_type</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.map_msn_psn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.map_msn_psn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Map a MSN to PSN or PSN to MSN</p>
 <p>Note: This function is going to be deprecated in favor of individual calls.</p>
 <p>NOTE: This function is deprecated in favor of individual get_bsn, get_psn,
-get_msn class of functions. 
-Given a patient ID (either MSN or PSN) and a type val, output corresponding 
+get_msn class of functions.
+Given a patient ID (either MSN or PSN) and a type val, output corresponding
 MSN / PSN mapping.</p>
 <dl class="docutils">
 <dt>Note:</dt>
 <dd>If requesting an MSN as output, you will recieve an array of data since
-there can be more than one MSN / PSN.  When requesting a PSN from an 
+there can be more than one MSN / PSN.  When requesting a PSN from an
 MSN, you will recieve only one value.</dd>
 <dt>Args:</dt>
 <dd>pt_id (str): Patient ID as either a MSN or PSN
@@ -256,101 +441,216 @@ id_type (str): Type of ID input (‘msn’ | ‘psn’).</dd>
 </div>
 </dd></dl>
 
+<dl class="method">
+<dt id="matchbox_api_utils.MatchData.matchbox_dump">
+<code class="descname">matchbox_dump</code><span class="sig-paren">(</span><em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_data.html#MatchData.matchbox_dump"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.MatchData.matchbox_dump" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump a parsed MATCHBox dataset.</p>
+<p>Call to the API and make a JSON file that can later be loaded in, rather
+than making an API call and reprocessing. Useful for quicker look ups as
+the API call can be very, very slow with such a large DB.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This is a different dataset than the raw dump.</p>
+</div>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>filename (str): Filename to use for output. Default filename is:
+‘mb_obj_&lt;date_generated&gt;.json’</dd>
+<dt>Returns:</dt>
+<dd>file: MATCHBox API JSON file.</dd>
+</dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="matchbox_api_utils.matchbox.get_today">
-<code class="descclassname">matchbox_api_utils.matchbox.</code><code class="descname">get_today</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#get_today"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.get_today" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+</dd></dl>
 
-<dl class="function">
-<dt id="matchbox_api_utils.matchbox.load_dumped_json">
-<code class="descclassname">matchbox_api_utils.matchbox.</code><code class="descname">load_dumped_json</code><span class="sig-paren">(</span><em>json_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox.html#load_dumped_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox.load_dumped_json" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</div>
-<div class="section" id="module-matchbox_api_utils.matchbox_conf">
-<span id="matchbox-api-utils-matchbox-conf-module"></span><h2>matchbox_api_utils.matchbox_conf module<a class="headerlink" href="#module-matchbox_api_utils.matchbox_conf" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
-<dt id="matchbox_api_utils.matchbox_conf.Config">
-<em class="property">class </em><code class="descclassname">matchbox_api_utils.matchbox_conf.</code><code class="descname">Config</code><span class="sig-paren">(</span><em>mb_config_file=None</em>, <em>mb_json_data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox_conf.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox_conf.Config" title="Permalink to this definition">¶</a></dt>
+<dt id="matchbox_api_utils.TreatmentArms">
+<em class="property">class </em><code class="descclassname">matchbox_api_utils.</code><code class="descname">TreatmentArms</code><span class="sig-paren">(</span><em>config_file=None</em>, <em>url=None</em>, <em>creds=None</em>, <em>json_db='sys_default'</em>, <em>load_raw=None</em>, <em>make_raw=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_arms.html#TreatmentArms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.TreatmentArms" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<dl class="classmethod">
-<dt id="matchbox_api_utils.matchbox_conf.Config.read_config">
-<em class="property">classmethod </em><code class="descname">read_config</code><span class="sig-paren">(</span><em>config_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/matchbox_conf.html#Config.read_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.matchbox_conf.Config.read_config" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<p>NCI-MATCH Treatment Arms and aMOIs Class</p>
+<dl class="method">
+<dt id="matchbox_api_utils.TreatmentArms.get_exclusion_disease">
+<code class="descname">get_exclusion_disease</code><span class="sig-paren">(</span><em>armid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_arms.html#TreatmentArms.get_exclusion_disease"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.TreatmentArms.get_exclusion_disease" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input an arm ID and return a list of exclusionary diseases for the arm, if there are any. Otherwise
+return None.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>armid (str): Full identifier of the arm to be queried.</dd>
+<dt>Returns:</dt>
+<dd>List of exclusionary diseases for the arm, or None if there aren’t any.</dd>
+<dt>Example:</dt>
+<dd><div class="first highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_exclusion_disease</span><span class="p">(</span><span class="s1">&#39;EAY131-Z1A&#39;</span><span class="p">)</span>
+<span class="go">[u&#39;Melanoma&#39;, u&#39;Colorectal Cancer&#39;]</span>
+</pre></div>
+</div>
+<div class="last highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_exclusion_disease</span><span class="p">(</span><span class="s1">&#39;EAY131-Y&#39;</span><span class="p">)</span>
+<span class="go">None</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="matchbox_api_utils.TreatmentArms.make_match_arms_db">
+<code class="descname">make_match_arms_db</code><span class="sig-paren">(</span><em>api_data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_arms.html#TreatmentArms.make_match_arms_db"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.TreatmentArms.make_match_arms_db" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a database of MATCH Treatment Arms.</p>
+<p>Read in raw API data and create pared down JSON structure that can be easily parsed later one.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="matchbox_api_utils.TreatmentArms.map_amoi">
+<code class="descname">map_amoi</code><span class="sig-paren">(</span><em>variant</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_arms.html#TreatmentArms.map_amoi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.TreatmentArms.map_amoi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input a variant dict derived from some kind and return either an aMOI id in the form of Arm(i|e). If
+variant is not an aMOI, returns ‘None’.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>variant (dict):  Variant dict to annotate.  Dict must have the following keys in order to be</dt>
+<dd><blockquote class="first">
+<div><p>valid:</p>
+<blockquote>
+<div><ul class="simple">
+<li>type : [snvs_indels, cnvs, fusions]</li>
+<li>oncomineVariantClass</li>
+<li>gene</li>
+<li>identifier (i.e. variant ID (COSM476))</li>
+<li>exon</li>
+<li>function</li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<p class="last">Not all variant types will have meaningful data for these fields, and so fields
+may be padded with a null char (e.g. ‘.’, ‘-‘, ‘NA’, etc.).</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns</dt>
+<dd>results (list):  Arm ID(s) with (i)nclusion or (e)xclusion information.</dd>
+<dt>Example:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">variant</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;type&#39;</span> <span class="p">:</span> <span class="s1">&#39;snvs_indels&#39;</span><span class="p">,</span> <span class="s1">&#39;gene&#39;</span> <span class="p">:</span> <span class="s1">&#39;BRAF&#39;</span><span class="p">,</span> <span class="s1">&#39;identifier&#39;</span> <span class="p">:</span> <span class="s1">&#39;COSM476&#39;</span><span class="p">,</span> <span class="s1">&#39;exon&#39;</span> <span class="p">:</span> <span class="s1">&#39;15&#39;</span><span class="p">,</span> <span class="s1">&#39;function&#39;</span> <span class="p">:</span> <span class="s1">&#39;missense&#39;</span> <span class="p">,</span> <span class="s1">&#39;oncominevariantclass&#39;</span> <span class="p">:</span> <span class="s1">&#39;Hotspot&#39;</span> <span class="p">}</span>
+<span class="go">[&#39;EAY131-Y(e)&#39;, &#39;EAY131-P(e)&#39;, &#39;EAY131-N(e)&#39;, &#39;EAY131-H(i)&#39;]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="matchbox_api_utils.TreatmentArms.map_drug_arm">
+<code class="descname">map_drug_arm</code><span class="sig-paren">(</span><em>armid=None</em>, <em>drugname=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_arms.html#TreatmentArms.map_drug_arm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.TreatmentArms.map_drug_arm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input an Arm ID or a drug name, and retun a tuple of arm, drugname, and ID. If no arm ID or
+drug name is input, will return a whole table of all arm data.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><p class="first">armid (str): Offcial NCI-MATCH Arm ID in the form of EAY131-xxx (e.g. EAY131-Z1A).
+drugname (str): Drug name as registered in the NCI-MATCH subprotocols.  Right now,</p>
+<blockquote class="last">
+<div>required to have the full string (e.g. ‘MLN0128(TAK-228)’ or, unfortunately,
+‘Sunitinib malate (SU011248 L-malate)’), but will work on a regex to
+help later on.</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd>List of tuples or None.</dd>
+<dt>Example:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">map_drug_arm</span><span class="p">(</span><span class="n">armid</span><span class="o">=</span><span class="s1">&#39;EAY131-Z1A&#39;</span><span class="p">)</span>
+<span class="go">(u&#39;EAY131-Z1A&#39;, &#39;Binimetinib&#39;, u&#39;788187&#39;)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="matchbox_api_utils.TreatmentArms.ta_json_dump">
+<code class="descname">ta_json_dump</code><span class="sig-paren">(</span><em>amois_filename=None</em>, <em>ta_filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matchbox_api_utils/match_arms.html#TreatmentArms.ta_json_dump"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#matchbox_api_utils.TreatmentArms.ta_json_dump" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump the TreatmentArms data to a JSON file that can be easily loaded downstream. We will make both the
+treatment arms object, as well as the amois lookup table object.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>amois_filename (str): Name of aMOI lookup JSON file. Default: amoi_lookup_&lt;datestring&gt;.json
+ta_filename (str): Name of TA object JSON file Default: ta_obj_&lt;datestring&gt;.json</dd>
+<dt>Returns:</dt>
+<dd>ta_obj_&lt;date&gt;.json
+amois_lookup_&lt;date&gt;.json</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 
 </div>
-<div class="section" id="module-matchbox_api_utils">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-matchbox_api_utils" title="Permalink to this headline">¶</a></h2>
-</div>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="readme.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Welcome to matchbox_api_utils’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Dave Sims.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">matchbox_api_utils</a></h1>
+
+    </section>
+
+  </div>
+  
 
 
+  
 
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.15.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
 
+  
 
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
 
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
 
-
-<h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">matchbox_api_utils package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-matchbox_api_utils.matchbox">matchbox_api_utils.matchbox module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-matchbox_api_utils.matchbox_conf">matchbox_api_utils.matchbox_conf module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-matchbox_api_utils">Module contents</a></li>
-</ul>
-</li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">Welcome to matchbox_api_utils’s documentation!</a></li>
-  </ul></li>
-</ul>
-</div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="footer">
-      &copy;2017, Author.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/matchbox_api_utils.rst.txt"
-          rel="nofollow">Page source</a>
-    </div>
-
-    
-
-    
-  </body>
+</body>
 </html>

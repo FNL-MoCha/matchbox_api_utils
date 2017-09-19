@@ -12,6 +12,9 @@ Welcome to matchbox_api_utils's documentation!
 
    matchbox_api_utils
 
+   readme
+   changelog
+
 
 Indices and tables
 ==================

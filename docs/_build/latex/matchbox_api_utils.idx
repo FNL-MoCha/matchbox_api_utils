@@ -1,0 +1,28 @@
+\indexentry{matchbox\_api\_utils.matchbox (module)|hyperpage}{1}
+\indexentry{Matchbox (class in matchbox\_api\_utils.matchbox)|hyperpage}{1}
+\indexentry{matchbox\_api\_utils.matchbox\_conf (module)|hyperpage}{1}
+\indexentry{Config (class in matchbox\_api\_utils.matchbox\_conf)|hyperpage}{1}
+\indexentry{read\_config() (matchbox\_api\_utils.matchbox\_conf.Config class method)|hyperpage}{1}
+\indexentry{matchbox\_api\_utils (module)|hyperpage}{1}
+\indexentry{Matchbox (class in matchbox\_api\_utils)|hyperpage}{1}
+\indexentry{MatchData (class in matchbox\_api\_utils)|hyperpage}{2}
+\indexentry{find\_variant\_frequency() (matchbox\_api\_utils.MatchData method)|hyperpage}{2}
+\indexentry{gen\_patients\_list() (matchbox\_api\_utils.MatchData method)|hyperpage}{2}
+\indexentry{get\_biopsy\_summary() (matchbox\_api\_utils.MatchData method)|hyperpage}{2}
+\indexentry{get\_bsn() (matchbox\_api\_utils.MatchData method)|hyperpage}{2}
+\indexentry{get\_disease\_summary() (matchbox\_api\_utils.MatchData method)|hyperpage}{3}
+\indexentry{get\_msn() (matchbox\_api\_utils.MatchData method)|hyperpage}{3}
+\indexentry{get\_patient\_ta\_status() (matchbox\_api\_utils.MatchData method)|hyperpage}{3}
+\indexentry{get\_patients\_and\_disease() (matchbox\_api\_utils.MatchData method)|hyperpage}{3}
+\indexentry{get\_patients\_by\_arm() (matchbox\_api\_utils.MatchData method)|hyperpage}{3}
+\indexentry{get\_psn() (matchbox\_api\_utils.MatchData method)|hyperpage}{3}
+\indexentry{get\_seq\_datafile() (matchbox\_api\_utils.MatchData method)|hyperpage}{4}
+\indexentry{get\_variant\_report() (matchbox\_api\_utils.MatchData method)|hyperpage}{4}
+\indexentry{map\_msn\_psn() (matchbox\_api\_utils.MatchData method)|hyperpage}{4}
+\indexentry{matchbox\_dump() (matchbox\_api\_utils.MatchData method)|hyperpage}{4}
+\indexentry{TreatmentArms (class in matchbox\_api\_utils)|hyperpage}{4}
+\indexentry{get\_exclusion\_disease() (matchbox\_api\_utils.TreatmentArms method)|hyperpage}{4}
+\indexentry{make\_match\_arms\_db() (matchbox\_api\_utils.TreatmentArms method)|hyperpage}{5}
+\indexentry{map\_amoi() (matchbox\_api\_utils.TreatmentArms method)|hyperpage}{5}
+\indexentry{map\_drug\_arm() (matchbox\_api\_utils.TreatmentArms method)|hyperpage}{5}
+\indexentry{ta\_json\_dump() (matchbox\_api\_utils.TreatmentArms method)|hyperpage}{5}

@@ -66,7 +66,7 @@ if __name__=='__main__':
 
     sys.stdout.write('Retrieving data from MATCHBox...')
     sys.stdout.flush()
-    data = MatchData(dumped_data=None,load_raw=args.data,patient=args.patient)
+    data = MatchData(json_db=None,load_raw=args.data,patient=args.patient)
     arms = TreatmentArms(json_db=None)
     sys.stdout.write('Done!\n')
 

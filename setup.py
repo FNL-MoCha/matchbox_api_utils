@@ -3,7 +3,7 @@ from setuptools import setup
 from setuptools.command.install import install as _install
 from subprocess import call
 
-version = '0.15.0'
+import matchbox_api_utils
 
 def _post_install(dir):
     call([sys.executable, 'postinstall.py'])
@@ -22,7 +22,7 @@ config = {
     'name'                   : 'matchbox_api_utils',
     'description'            : ('MATCHBox API Utlilites Package'),
     'long_description'       : readme(),
-    'version'                : version,
+    'version'                : matchbox_api_utils.__version__,
     'author'                 : 'Dave Sims',
     'author_email'           : 'david.sims2@nih.gov',
     'download_url'           : 'https://github.com/drmrgd/matchbox_api_utils.git',
