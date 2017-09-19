@@ -855,37 +855,37 @@ class MatchData(object):
 
     def get_patient_ta_status(self,psn=None):
         """
-        # XXX: Check this...I don't think it works right any more.  
-
         Input a list of PSNs and return information about the treatment arm(s) to which they were
         assigned, if they were assigned to any arms. If no PSN list is passed to the function, return
         results for every PSN in the study.
 
         Args:
-            psn (list):  Optional list of PSNs to query.
+            psn (str):  PSN string to query.
 
         Returns:
-            Dict of tuple of Status, Arm ID, and drug name.
+            Dict of Arm IDs with last status.
 
         Example:
-            >>> get_patient_ta_status(psn='10005')
-            {'10005' : (u'OFF_TRIAL_NO_TA_AVAILABLE', '---', '---')}
+            >>> data.get_patient_ta_status(psn=10837)
+            {u'EAY131-Z1A': u'ON_TREATMENT_ARM'}
 
-            >>> get_patient_ta_status(psn='10837')
-            {'10837': (u'ON_TREATMENT_ARM', u'EAY131-Z1A', u'Binimetinib')}
+            >>> data.get_patient_ta_status(psn=11889)
+            {u'EAY131-IX1': u'FORMERLY_ON_ARM_OFF_TRIAL', u'EAY131-I': u'COMPASSIONATE_CARE'}
+
+            >>> data.get_patient_ta_status(psn=10003)
+            {}
 
         """
         results = {}
         if psn:
-            psn_list = [str(x) for x in psn]
-            for p in psn_list:
-                if p in self.data:
-                    results[p] = (self.data[p]['ta_status'],self.data[p]['ta_arm'],self.data[p]['drug_name'])
-                else:
-                    results[p] = None
+            psn = str(psn)
+            if psn in self.data:
+                return self.data[psn]['ta_arms']
+            else:
+                return None
         else:
             for p in self.data:
-                results[p] = (self.data[p]['ta_status'],self.data[p]['ta_arm'],self.data[p]['drug_name'])
+                results[p] = self.data[p]['ta_arms']
         return results 
     
     def get_seq_datafile(self,dtype=None,msn=None,psn=None):
