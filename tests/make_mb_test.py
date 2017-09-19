@@ -11,13 +11,13 @@ class TestImport(unittest.TestCase):
         print ret 
         return ret.keys()
 
-    @unittest.skip('Skip create live conn test')
+    # @unittest.skip('Skip create live conn test')
     def test_can_create_live_connection(self):
         """
         Test that we can make a connection to the live MATCHBox instance and get the API data.
 
         """
-        data = MatchData(dumped_data = None)
+        data = MatchData(json_db= None)
         self.assertListEqual(self.keys,self.get_keys(data))
 
     # @unittest.skip('Skip load raw obj test')
@@ -37,7 +37,7 @@ class TestImport(unittest.TestCase):
 
         """
         proc_api_data = os.path.join(os.environ['HOME'], '.mb_utils/mb_obj.json')
-        data = MatchData(dumped_data=proc_api_data)
+        data = MatchData(json_db=proc_api_data)
         self.assertListEqual(self.keys,self.get_keys(data))
 
     # @unittest.skip('Skip load system proc obj test')

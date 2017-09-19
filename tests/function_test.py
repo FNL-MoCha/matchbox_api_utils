@@ -4,7 +4,7 @@ import unittest
 from matchbox_api_utils import MatchData
 
 class FunctionTests(unittest.TestCase):
-    data = MatchData(dumped_data = os.path.join(os.path.dirname(__file__),'mb_obj.json'))
+    data = MatchData(json_db= os.path.join(os.path.dirname(__file__),'mb_obj.json'))
 
     def test_get_biopsy_summary(self):
         """
