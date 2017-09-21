@@ -441,6 +441,32 @@ class MatchData(object):
                 sys.exit()
         return fusion_data
 
+    def get_patient_meta(self,psn,val=None):
+        """
+        Return data for a patient based on a metadata field name. Sometimes we may want to just get 
+        a quick bit of data or field for a patient record rather than a whole analysis, and this can
+        be a convenient way to just check a component rather than writing a method to get each and 
+        every bit out. If no metaval is entered, will return the whole patient dict.
+
+        Args:
+            psn (str):  PSN of patient for which we want to receive data.
+            val (str):  Optional metaval of data we want. If no entered, will
+                return the entire patient record.
+
+        Returns:
+            Either return dict of data if a metaval entered, or whole patient record. Returns 'None' if
+            no data for a particular record and raises and error if the metaval is not valid for the dataset.
+
+        """
+        if val:
+            try:
+                return {val:self.data[psn][val]}
+            except KeyError:
+                sys.stderr.write("ERROR: '%s' is not a valid metavalue for this dataset.\n" % val)
+                return None
+        else:
+            return dict(self.data[psn])
+
     def get_biopsy_summary(self,category=None):
         """Return dict of patients registered in MATCHBox with biopsy and sequencing
         information. 
