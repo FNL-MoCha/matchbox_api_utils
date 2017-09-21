@@ -183,15 +183,6 @@ class MatchData(object):
 
         counter = 0
         for i,msg in enumerate(triggers):
-
-            '''
-            # XXX
-            #DEBUG:
-            print('{}  Current Message: ({}/{})  {}'.format('-'*25, i+1, tot_msgs, '-'*25))
-            pp(msg)
-            print('-'*76)
-            '''
-
             # On a rare occassion, we get two of the same messages in a row.  Just skip the redundant message?
             if triggers[i-1]['patientStatus'] == msg['patientStatus']:
                 continue
@@ -200,8 +191,6 @@ class MatchData(object):
                 counter += 1
 
             if msg['patientStatus'] == 'PENDING_APPROVAL':
-                # XXX
-                # pp(assignments[counter])
                 curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],assignments[counter]['patientAssignmentLogic'], 'SELECTED')
                 arms.append(curr_arm)
 
@@ -217,9 +206,6 @@ class MatchData(object):
                 arm_hist[curr_arm] = 'FORMERLY_ON_ARM_PROGRESSED'
 
             elif msg['patientStatus'] == 'COMPASSIONATE_CARE':
-                # XXX
-                # pp(assignments)
-                # sys.exit()
                 curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],assignments[counter]['patientAssignmentLogic'], 'ARM_FULL')
                 arm_hist[curr_arm] = 'COMPASSIONATE_CARE'
 
@@ -227,12 +213,6 @@ class MatchData(object):
             if i+1 == tot_msgs:
                 last_status = msg['patientStatus']
                 last_msg = msg['message']
-
-                # XXX
-                # print('last status: %s' % last_status)
-                # print('hist: %s' % arm_hist[arms[-1]])
-                # pp(arm_hist)
-                # pp(arms)
                 if arms:
                     if last_status.startswith('OFF_TRIAL'):
                         if arm_hist[arms[-1]] == 'ON_TREATMENT_ARM':
@@ -261,12 +241,6 @@ class MatchData(object):
             if patient and psn != patient:
                 continue
             
-            # Trim dict for now..too damned long and confusing!
-            # TODO: can remove this once we've finished.
-            # XXX
-            for r in record['patientAssignments']:
-                del r['treatmentArm']
-
             patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
