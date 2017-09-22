@@ -172,6 +172,9 @@ class MatchData(object):
     @staticmethod
     def __get_pt_hist(triggers,assignments,rejoin_triggers):
         # Read the trigger messages to determine the patient treatment and study arm history.
+        # TODO: Still have an issue here!  If there was a progressino re-biopsy (like in the case of PSN11583), we
+        #       do not have the correct variant report necessarily.  This is causing an issue and will cause a mis-match
+        #       issue through out.  I think I need to try to get on top of the multi-biopsies and multi-MSNs a bit better.
         arms = []
         arm_hist = {}
         progressed = False
@@ -245,7 +248,7 @@ class MatchData(object):
             patients[psn]['psn']         = record['patientSequenceNumber']
             patients[psn]['concordance'] = record['concordance']
             patients[psn]['gender']      = record['gender']
-            patients[psn]['id_field']    = record['id']
+            patients[psn]['id_field']    = record['id']  # TODO: Dump this.
             patients[psn]['ethnicity']   = record['ethnicity']
 
             patients[psn]['dna_bam_path'] = '---'
@@ -261,10 +264,10 @@ class MatchData(object):
             # Get treatment arm history. 
             last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'],record['patientRejoinTriggers'])
 
-            patients[psn]['current_status']    = last_status
-            patients[psn]['last_msg']          = last_msg
-            patients[psn]['ta_arms']           = arm_hist
-            patients[psn]['progressed']        = progressed
+            patients[psn]['current_trial_status']    = last_status
+            patients[psn]['last_msg']                = last_msg
+            patients[psn]['ta_arms']                 = arm_hist
+            patients[psn]['progressed']              = progressed
 
             try:
                 race = record['races'][0]
@@ -434,12 +437,12 @@ class MatchData(object):
         """
         if val:
             try:
-                return {val:self.data[psn][val]}
+                return {val:self.data[str(psn)][val]}
             except KeyError:
                 sys.stderr.write("ERROR: '%s' is not a valid metavalue for this dataset.\n" % val)
                 return None
         else:
-            return dict(self.data[psn])
+            return dict(self.data[str(psn)])
 
     def get_biopsy_summary(self,category=None):
         """Return dict of patients registered in MATCHBox with biopsy and sequencing
