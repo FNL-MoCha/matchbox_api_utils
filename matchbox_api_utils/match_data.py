@@ -244,30 +244,11 @@ class MatchData(object):
             if patient and psn != patient:
                 continue
             
-            patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
-            patients[psn]['psn']         = record['patientSequenceNumber']
-            patients[psn]['concordance'] = record['concordance']
+            patients[psn]['psn']         = psn
             patients[psn]['gender']      = record['gender']
-            patients[psn]['id_field']    = record['id']  # TODO: Dump this.
             patients[psn]['ethnicity']   = record['ethnicity']
-
-            patients[psn]['dna_bam_path'] = '---'
-            patients[psn]['ir_runid']     = '---'
-            patients[psn]['rna_bam_path'] = '---'
-            patients[psn]['vcf_name']     = '---'
-            patients[psn]['vcf_path']     = '---'
-            patients[psn]['mois']         = '---'
-            patients[psn]['bsn']          = '---'
-            patients[psn]['ihc']          = '---'
-            patients[psn]['msn']          = '---'
-
-            # Get treatment arm history. 
-            last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'],record['patientRejoinTriggers'])
-
-            patients[psn]['current_trial_status']    = last_status
-            patients[psn]['last_msg']                = last_msg
-            patients[psn]['ta_arms']                 = arm_hist
-            patients[psn]['progressed']              = progressed
+            patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
+            patients[psn]['concordance'] = record['concordance']
 
             try:
                 race = record['races'][0]
@@ -287,47 +268,127 @@ class MatchData(object):
                 medra_code = '-'
             patients[psn]['medra_code'] = medra_code
 
-            if record['latestBiopsy'] == None:
-                patients[psn]['biopsy'] = 'No Biopsy'
-            elif record['latestBiopsy']['failure']:
-                patients[psn]['biopsy'] = 'Failed Biopsy'
+
+            # patients[psn]['dna_bam_path'] = '---'
+            # patients[psn]['ir_runid']     = '---'
+            # patients[psn]['rna_bam_path'] = '---'
+            # patients[psn]['vcf_name']     = '---'
+            # patients[psn]['vcf_path']     = '---'
+            # patients[psn]['mois']         = '---'
+            # patients[psn]['bsn']          = '---'
+            # patients[psn]['ihc']          = '---'
+            patients[psn]['all_msns']     = []
+            patients[psn]['all_biopsies'] = []
+
+            # Get treatment arm history. 
+            # TODO: Fix this.
+            last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'],record['patientRejoinTriggers'])
+
+            patients[psn]['current_trial_status']    = last_status
+            patients[psn]['last_msg']                = last_msg
+            patients[psn]['ta_arms']                 = arm_hist
+            patients[psn]['progressed']              = progressed
+
+
+            patients[psn]['biopsies'] = []
+            
+            if not record['biopsies']:
+                patients[psn]['biopsies'] = ['No Biopsy']
+                continue
             else:
-                patients[psn]['biopsy'] = 'Pass'
-                biopsy_data = record['latestBiopsy']
+                for biopsy in record['biopsies']:
+                    bsn = biopsy['biopsySequenceNumber']
+                    patients[psn]['all_biopsies'].append(bsn)
+                
+                    biopsy_data = defaultdict(dict)
+                    biopsy_data[bsn]['status'] = '---'
+                    biopsy_data[bsn]['ihc']    = '---'
+                    biopsy_data[bsn]['source'] = '---'
+                    biopsy_data[bsn]['ngs_data']    = []
 
-                patients[psn]['bsn'] = biopsy_data['biopsySequenceNumber']
-                patients[psn]['ihc'] = self.__get_ihc_results(biopsy_data['assayMessagesWithResult'])
+                    if biopsy['failure']:
+                        biopsy_data[bsn]['status'] = 'Failed Biopsy'
 
-                # Skip outside assays as the data is not useful yet.
-                if 'OUTSIDE_ASSAY' in patients[psn]['source']: 
-                    patients[psn]['biopsy'] = 'Outside'
+                    else:
+                        biopsy_data[bsn]['status'] = 'Pass'
+                        biopsy_data[bsn]['ihc'] = self.__get_ihc_results(biopsy['assayMessagesWithResult'])
 
-                msns = []
-                for message in biopsy_data['mdAndersonMessages']:
-                    if message['message'] == 'NUCLEIC_ACID_SENDOUT':
-                        msns.append(message['molecularSequenceNumber'])
-                patients[psn]['msn'] = msns # Can have more than one in the case of re-extractions.
+                        # Define biopsy type as Initial, Progression, or Outside. 
+                        # TODO: Check that this logic holds. Might need to distinguish between registration initial and other registration vals.
+                        if biopsy['associatedPatientStatus'] == 'REGISTRATION_OUTSIDE_ASSAY':
+                            if bsn.startswith('T-'):
+                                biopsy_data[bsn]['source'] = 'Outside_Confirmation'
+                            else:
+                                biopsy_data[bsn]['source'] = 'Outside'
+                        elif biopsy['associatedPatientStatus'] == 'PROGRESSION_REBIOPSY':
+                            biopsy_data[bsn]['source'] = 'Progression'
+                        elif biopsy['associatedPatientStatus'] == 'REGISTRATION':
+                            biopsy_data[bsn]['source'] = 'Initial'
 
-                for result in biopsy_data['nextGenerationSequences']:
-                    # Skip all Failed and Pending reports.
-                    if result['status'] != 'CONFIRMED':  
-                        continue 
-                    # Now patients are getting an MSN directly from outside assay and put into data like normal, but 
-                    # of course no IR stuff. So, we have to filter this.
-                    try:
-                        patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
-                        patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
-                        patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
-                        patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
-                        patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
-                    except:
-                        continue
-                        # print('offending psn: %s' % psn)
+                        # Make MSNs Struct
+                        msns = defaultdict(dict)
+                        for result in biopsy['nextGenerationSequences']:
+                            # Skip all Failed and Pending reports.
+                            if result['status'] != 'CONFIRMED':  
+                                continue 
+                            msn = result['ionReporterResults']['molecularSequenceNumber']
+                            patients[psn]['all_msns'].append(msn)
 
-                    # Get and add MOI data to patient record; might be from outside.
-                    variant_report                = result['ionReporterResults']['variantReport']
-                    patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
+                            # Now patients are getting an MSN directly from outside assay and put into data like normal, but 
+                            # of course no IR stuff. So, we have to filter this.
+                            try:
+                                msns[msn]['ir_runid']     = result['ionReporterResults']['jobName']
+                                msns[msn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
+                                msns[msn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
+                                msns[msn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+                            except:
+                                continue
+                                # print('offending psn: %s' % psn)
 
+                            # Get and add MOI data to patient record; might be from outside.
+                            variant_report     = result['ionReporterResults']['variantReport']
+                            msns[msn]['mois']  = self.__proc_ngs_data(variant_report)
+
+                            biopsy_data[bsn]['ngs_data'].append(dict(msns))
+
+                        # for message in biopsy['mdAndersonMessages']:
+                            # if message['message'] == 'NUCLEIC_ACID_SENDOUT':
+                                # msn = message['molecularSequenceNumber']
+                                # patients[psn]['all_msns'].append(msn)
+                                
+
+
+                    patients[psn]['biopsies'].append(dict(biopsy_data))
+                    
+
+                '''
+                    msns = []
+                    for message in biopsy_data['mdAndersonMessages']:
+                        if message['message'] == 'NUCLEIC_ACID_SENDOUT':
+                            msns.append(message['molecularSequenceNumber'])
+                    patients[psn]['msn'] = msns # Can have more than one in the case of re-extractions.
+
+                    for result in biopsy_data['nextGenerationSequences']:
+                        # Skip all Failed and Pending reports.
+                        if result['status'] != 'CONFIRMED':  
+                            continue 
+                        # Now patients are getting an MSN directly from outside assay and put into data like normal, but 
+                        # of course no IR stuff. So, we have to filter this.
+                        try:
+                            patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
+                            patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
+                            patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
+                            patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
+                            patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+                        except:
+                            continue
+                            # print('offending psn: %s' % psn)
+
+                        # Get and add MOI data to patient record; might be from outside.
+                        variant_report                = result['ionReporterResults']['variantReport']
+                        patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
+
+            '''
         # pp(dict(patients))
         # sys.exit()
         return patients
