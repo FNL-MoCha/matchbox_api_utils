@@ -133,21 +133,44 @@ class MatchData(object):
                 return json.dumps(self.data[str(psn)],indent=4,sort_keys=True)
 
     def __search_for_value(self,key,val,retval):
+        # XXX: This is now deprecated.  Remove once we finishe recoding for this method.
         # Input a key and return a value or None
         # Example: __search_for_value(key=psn,val=14420,retval=msn)
         #   => search for PSN14420 in dataset and return MSN<whatever>
         # Example: __search_for_value(key=psn,val=14420,retval=bsn)
-        #   => serach for PSN14420 in datasert and return BSN<whatever>
+        #   => search for PSN14420 in datasert and return BSN<whatever>
 
+        print('self.__search_for_value(): This method is longer valid!')
+        sys.exit(213)
         val = str(val)
-        for p in self.data:
-            if key == 'msn' and val in self.data[p]['msn']:
+        record = {}
+
+        # First find the record
+        if key == 'psn' and val in self.data:
+            record = self.data[val]
+        else:
+            for p in self.data:
+                if key == 'msn' and val in self.data[p]['all_msns']:
+                    record = self.data[p]
+                elif key == 'bsn' and val in self.data[p]['all_biopsies']:
+                    record = self.data[p]
+
+        # Now figure out if we need a toplevel return value or we have to traverse the record.
+        if retval in record.keys():
+            return record[retval]
+        elif retval == 'biopsy_status':
+            return record['biopsies'][val]['biopsy_status']
+
+        """
                 return self.data[p][retval]
+
             if key == 'psn' and p == val:
                 return self.data[p][retval]
+
             if key == 'bsn' and self.data[p]['bsn'] == val:
                 return self.data[p][retval]
 
+        """
         # If we made it here, then we didn't find a result.
         sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
         return None
@@ -267,16 +290,6 @@ class MatchData(object):
             except IndexError:
                 medra_code = '-'
             patients[psn]['medra_code'] = medra_code
-
-
-            # patients[psn]['dna_bam_path'] = '---'
-            # patients[psn]['ir_runid']     = '---'
-            # patients[psn]['rna_bam_path'] = '---'
-            # patients[psn]['vcf_name']     = '---'
-            # patients[psn]['vcf_path']     = '---'
-            # patients[psn]['mois']         = '---'
-            # patients[psn]['bsn']          = '---'
-            # patients[psn]['ihc']          = '---'
             patients[psn]['all_msns']     = []
             patients[psn]['all_biopsies'] = []
 
@@ -290,40 +303,37 @@ class MatchData(object):
             patients[psn]['progressed']              = progressed
 
 
-            patients[psn]['biopsies'] = []
+            patients[psn]['biopsies'] = {}
             
             if not record['biopsies']:
-                patients[psn]['biopsies'] = ['No Biopsy']
-                continue
+                patients[psn]['biopsies'] = ['No_Biopsy']
             else:
                 for biopsy in record['biopsies']:
                     bsn = biopsy['biopsySequenceNumber']
                     patients[psn]['all_biopsies'].append(bsn)
                 
                     biopsy_data = defaultdict(dict)
-                    biopsy_data[bsn]['status'] = '---'
-                    biopsy_data[bsn]['ihc']    = '---'
-                    biopsy_data[bsn]['source'] = '---'
-                    biopsy_data[bsn]['ngs_data']    = []
+                    biopsy_data[bsn]['ihc']      = '---'
+                    biopsy_data[bsn]['biopsy_source']   = '---'
+                    biopsy_data[bsn]['ngs_data'] = {}
 
                     if biopsy['failure']:
-                        biopsy_data[bsn]['status'] = 'Failed Biopsy'
+                        biopsy_data[bsn]['biopsy_status'] = 'Failed_Biopsy'
 
                     else:
-                        biopsy_data[bsn]['status'] = 'Pass'
+                        biopsy_data[bsn]['biopsy_status'] = 'Pass'
                         biopsy_data[bsn]['ihc'] = self.__get_ihc_results(biopsy['assayMessagesWithResult'])
 
                         # Define biopsy type as Initial, Progression, or Outside. 
-                        # TODO: Check that this logic holds. Might need to distinguish between registration initial and other registration vals.
                         if biopsy['associatedPatientStatus'] == 'REGISTRATION_OUTSIDE_ASSAY':
                             if bsn.startswith('T-'):
-                                biopsy_data[bsn]['source'] = 'Outside_Confirmation'
+                                biopsy_data[bsn]['biopsy_source'] = 'Outside_Confirmation'
                             else:
-                                biopsy_data[bsn]['source'] = 'Outside'
+                                biopsy_data[bsn]['biopsy_source'] = 'Outside'
                         elif biopsy['associatedPatientStatus'] == 'PROGRESSION_REBIOPSY':
-                            biopsy_data[bsn]['source'] = 'Progression'
+                            biopsy_data[bsn]['biopsy_source'] = 'Progression'
                         elif biopsy['associatedPatientStatus'] == 'REGISTRATION':
-                            biopsy_data[bsn]['source'] = 'Initial'
+                            biopsy_data[bsn]['biopsy_source'] = 'Initial'
 
                         # Make MSNs Struct
                         msns = defaultdict(dict)
@@ -334,8 +344,8 @@ class MatchData(object):
                             msn = result['ionReporterResults']['molecularSequenceNumber']
                             patients[psn]['all_msns'].append(msn)
 
-                            # Now patients are getting an MSN directly from outside assay and put into data like normal, but 
-                            # of course no IR stuff. So, we have to filter this.
+                            # Now patients are getting an MSN directly from outside assay and put into data like normal,
+                            # but of course no IR stuff. So, we have to filter this.
                             try:
                                 msns[msn]['ir_runid']     = result['ionReporterResults']['jobName']
                                 msns[msn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
@@ -347,48 +357,10 @@ class MatchData(object):
 
                             # Get and add MOI data to patient record; might be from outside.
                             variant_report     = result['ionReporterResults']['variantReport']
-                            msns[msn]['mois']  = self.__proc_ngs_data(variant_report)
+                            msns[msn]['mois']  = dict(self.__proc_ngs_data(variant_report))
+                            biopsy_data[bsn]['ngs_data'].update(dict(msns))
 
-                            biopsy_data[bsn]['ngs_data'].append(dict(msns))
-
-                        # for message in biopsy['mdAndersonMessages']:
-                            # if message['message'] == 'NUCLEIC_ACID_SENDOUT':
-                                # msn = message['molecularSequenceNumber']
-                                # patients[psn]['all_msns'].append(msn)
-                                
-
-
-                    patients[psn]['biopsies'].append(dict(biopsy_data))
-                    
-
-                '''
-                    msns = []
-                    for message in biopsy_data['mdAndersonMessages']:
-                        if message['message'] == 'NUCLEIC_ACID_SENDOUT':
-                            msns.append(message['molecularSequenceNumber'])
-                    patients[psn]['msn'] = msns # Can have more than one in the case of re-extractions.
-
-                    for result in biopsy_data['nextGenerationSequences']:
-                        # Skip all Failed and Pending reports.
-                        if result['status'] != 'CONFIRMED':  
-                            continue 
-                        # Now patients are getting an MSN directly from outside assay and put into data like normal, but 
-                        # of course no IR stuff. So, we have to filter this.
-                        try:
-                            patients[psn]['ir_runid']     = result['ionReporterResults']['jobName']
-                            patients[psn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
-                            patients[psn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
-                            patients[psn]['vcf_name']     = os.path.basename(result['ionReporterResults']['vcfFilePath'])
-                            patients[psn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
-                        except:
-                            continue
-                            # print('offending psn: %s' % psn)
-
-                        # Get and add MOI data to patient record; might be from outside.
-                        variant_report                = result['ionReporterResults']['variantReport']
-                        patients[psn]['mois']         = self.__proc_ngs_data(variant_report)
-
-            '''
+                    patients[psn]['biopsies'].update(dict(biopsy_data))
         # pp(dict(patients))
         # sys.exit()
         return patients
@@ -506,7 +478,9 @@ class MatchData(object):
             return dict(self.data[str(psn)])
 
     def get_biopsy_summary(self,category=None):
-        """Return dict of patients registered in MATCHBox with biopsy and sequencing
+        # TODO: Fix this. Not getting correct counts and fields.  Also, need to add number sequenced to this output.
+        """
+        Return dict of patients registered in MATCHBox with biopsy and sequencing
         information. 
         
         Categories returned are total PSNs issued (including outside 
@@ -526,33 +500,48 @@ class MatchData(object):
             dict: whole set of category:count or single category:count data.
 
         """
+        '''
         count = {
-            'psn'           : 0,
-            'passed_biopsy' : 0,
-            'failed_biopsy' : 0,
-            'no_biopsy'     : 0,
-            'msn'           : 0,
-            'sequenced'     : 0,
-            'outside'       : 0,
+            'psn'                  : 0,
+            'passed_biopsy'        : 0,
+            'failed_biopsy'        : 0,
+            'no_biopsy'            : 0,
+            'sequenced'            : 0,
+
+            'initial'              : 0,
+            'progression_biopsy'   : 0,
+            'outside'              : 0,
+            'outside_confirmation' : 0,
+
+            'sequenced'            : 0,
         }
+        '''
+
+        count = defaultdict(int)
 
         for p in self.data:
             count['psn'] += 1
-            biopsy_flag = self.data[p]['biopsy']
-            if biopsy_flag == 'No Biopsy':
-                count['no_biopsy'] += 1
-            elif biopsy_flag == 'Failed Biopsy':
-                count['failed_biopsy'] += 1 
-            elif biopsy_flag == 'Outside':
-                count['outside'] += 1
-            elif biopsy_flag == 'Pass':
-                count['passed_biopsy'] += 1 
-                if 'msn' in self.data[p] and self.data[p]['msn'] > 0:
-                    count['msn'] += 1
-                # From above, everything will get a default '---' val, but only CONFIRMED
-                # results actually get data.
-                if self.data[p]['mois'] != '---':
-                    count['sequenced'] += 1
+            for biopsy in self.data[p]['all_biopsies']:
+                biopsy_flag = self.data[p]['biopsies'][biopsy]['status']
+                source = self.data[p]['biopsies'][biopsy]['source']
+                count[biopsy_flag] += 1
+                count[source] += 1
+
+
+                '''
+                if biopsy_flag == 'No Biopsy':
+                    count['no_biopsy'] += 1
+                elif biopsy_flag == 'Failed Biopsy':
+                    count['failed_biopsy'] += 1 
+                elif biopsy_flag == 'Pass':
+                    count['passed_biopsy'] += 1 
+
+                elif source == 'Outside':
+                    count['outside'] += 1
+                elif source == 'Progression':
+                    count['progression_biopsy'] += 1
+                '''
+
         if category and category in count:
             return {category:count[category]}
         else:
@@ -576,57 +565,14 @@ class MatchData(object):
             file: MATCHBox API JSON file.
 
         """
-        # XXX
-        # Need a warning here if we load the sys default JSON file *and* make a JSON file; they 
-        # will be the same dataset!  Need to ensure a live query in that case.
-        # formatted_date = datetime.date.today().strftime('%m%d%y')
+        if self._json_db == 'sys_default':
+            sys.stderr.write('ERROR: You can not use the system default JSON file and create a system default JSON. You must use '
+                'json_db = None in the call to MatchData!\n')
+            return None
         formatted_date = utils.get_today('short')
         if not filename:
             filename = 'mb_obj_' + formatted_date + '.json'
-        # with open(filename, 'w') as outfile:
-            # json.dump(self.data,outfile,sort_keys=True,indent=4)
         utils.make_json(filename,self.data)
-
-    def map_msn_psn(self,pt_id,id_type):
-        """
-        Map a MSN to PSN or PSN to MSN
-
-        Note: This function is going to be deprecated in favor of individual calls.
-
-        NOTE: This function is deprecated in favor of individual get_bsn, get_psn,
-        get_msn class of functions. 
-        Given a patient ID (either MSN or PSN) and a type val, output corresponding 
-        MSN / PSN mapping. 
-
-        Note:
-           If requesting an MSN as output, you will recieve an array of data since
-           there can be more than one MSN / PSN.  When requesting a PSN from an 
-           MSN, you will recieve only one value.
-
-        Args:
-            pt_id (str): Patient ID as either a MSN or PSN
-            id_type (str): Type of ID input ('msn' | 'psn').
-
-        Returns:
-            result (str): Corresponding MSN or PSN that maps to the input MSN or PSN.
-
-        >>> print(map_msn_psn('14420','psn'))
-        [u'MSN44180']
-
-        """
-        result = ''
-        if id_type == 'psn':
-            result = self.data[pt_id]['msn']
-        elif id_type == 'msn':
-            for p in self.data:
-                if pt_id in self.data[p]['msn']:
-                    result = p
-            # result = self.__return_key_by_val(pt_id)
-
-        if not result:
-            print('No result found for id %s' % pt_id)
-            return None
-        return result
 
     def get_psn(self,msn=None,bsn=None):
         """
@@ -643,22 +589,25 @@ class MatchData(object):
         PSN14420
 
         """
-
-        psn = ''
-        if msn:
-            if not str(msn).startswith('MSN'):
-                msn = 'MSN'+str(msn)
-            psn = self.__search_for_value(key='msn',val=msn,retval='psn')
-        elif bsn:
-            psn = self.__search_for_value(key='bsn',val=bsn,retval='psn')
-        else:
-            sys.stderr.write('ERROR: No MSN or BSN entered!\n')
-            return None
+        query_term = ''
+        for p in self.data:
+            if msn:
+                if not str(msn).startswith('MSN'):
+                    msn = 'MSN'+str(msn)
+                query_term = msn
+                if msn in self.data[p]['all_msns']:
+                    return 'PSN' + p
+            elif bsn:
+                query_term = bsn
+                if bsn in self.data[p]['all_biopsies']:
+                    return 'PSN' + p
+            else:
+                sys.stderr.write('ERROR: No MSN or BSN entered!\n')
+                return None
         
-        if psn:
-            return "PSN"+psn
-        else:
-            return None
+        # If we made it here, then we didn't find a result.
+        sys.stderr.write('No result for id %s\n' % query_term)
+        return None
 
     def get_msn(self,psn=None,bsn=None):
         """
@@ -669,25 +618,33 @@ class MatchData(object):
             bsn (str): A BSN number to query.
 
         Returns:
-            msn (str): A string of comma separated MSNs that map to an input BSN or PSN.
+            A list of MSNs that correspond with the input PSN or BSN. 
 
         >>> print(get_msn(bsn='T-17-000550'))
-        MSN44180
+        [u'MSN44180']
 
         """
-        result = []
+        # result = []
+        query_term = ''
         if psn:
-            result = self.__search_for_value(key='psn',val=psn,retval='msn')
+            psn = str(psn)
+            query_term = psn
+            if psn in self.data:
+                return self.data[psn]['all_msns']
+            # result = self.__search_for_value(key='psn',val=psn,retval='all_msns')
         elif bsn:
-            result = self.__search_for_value(key='bsn',val=bsn,retval='msn')
+            query_term = bsn
+            # result = self.__search_for_value(key='bsn',val=bsn,retval='all_msns')
+            for p in self.data:
+                if bsn in self.data[p]['all_biopsies']:
+                    return self.data[p]['biopsies'][bsn]['ngs_data'].keys()
         else:
             sys.stderr.write('ERROR: No PSN or BSN entered!\n')
             return None
 
-        if result:
-            return ','.join(result)
-        else:
-            return None
+        # If we made it here, then we didn't find a result.
+        sys.stderr.write('No result for id %s\n' % query_term)
+        return None
 
     def get_bsn(self,psn=None,msn=None):
         """
@@ -698,21 +655,37 @@ class MatchData(object):
             msn (str): A MSN number to query.
 
         Returns:
-            bsn (str): A BSN that maps to the PSN or MSN input.
+            A list PSNs that correspond to the PSN or MSN input.
 
         >>> print(get_bsn(psn='14420'))
-        T-17-000550
+        [u'T-17-000550']
+
+        >>> print(get_bsn(msn='40493'))
+        [u'T-17-000165']
 
         """
-        if msn:
-            if not msn.startswith('MSN'):
-                msn = 'MSN'+msn
-            return self.__search_for_value(key='msn',val=msn,retval='bsn')
-        elif psn:
-            return self.__search_for_value(key='psn',val=psn,retval='bsn')
+        query_term = ''
+        if psn:
+            psn=str(psn)
+            query_term = psn
+            if psn in self.data:
+                return self.data[psn]['all_biopsies']
+        elif msn:
+            if not str(msn).startswith('MSN'):
+                msn = 'MSN'+str(msn)
+            query_term = msn
+            for p in self.data:
+                if msn in self.data[p]['all_msns']:
+                    for b in self.data[p]['biopsies']:
+                        if msn in self.data[p]['biopsies'][b]['ngs_data']:
+                            return [b]
         else:
             sys.stderr.write('ERROR: No PSN or MSN entered!\n')
             return None
+
+        # If we made it here, then we didn't find a result.
+        sys.stderr.write('No result for id %s\n' % query_term)
+        return None
 
     def get_disease_summary(self,disease=None):
         """
