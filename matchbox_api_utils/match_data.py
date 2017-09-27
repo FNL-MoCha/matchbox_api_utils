@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 # TODO:
 #    - get_ihc_results() -> a method to print out patient IHC data based on gene name or psn.
+#    - When you filter on a patient from the original API call (i.e. MatchData(patient=<psn>)), and then try to call some 
+#      methods afterward, will get a key error since the data struct is a bit different.  No longer have a dict of dicts,
+#      with PSNs as keys.  Need to fix that so all methods work OK.  
 import os
 import sys
 import json
@@ -127,7 +130,27 @@ class MatchData(object):
         # return [elem for elem in data if elem['gene'] in gene_list ]
         return [{i:elem[i] for i in wanted} for elem in data if elem['gene'] in gene_list]
         
-
+    @staticmethod
+    def __format_id(op,msn=None,psn=None):
+        if msn:
+            if op == 'add':
+                return 'MSN' + msn.lstrip('MSN')
+            elif op == 'rm':
+                return msn.lstrip('MSN')
+            else:
+                sys.stderr.write('ERROR: operation "%s" is not valid.  Can only choose from "add" or "rm"!\n')
+                sys.exit(1)
+        elif psn:
+            if op == 'add':
+                return 'PSN' + psn.lstrip('PSN')
+            elif op == 'rm':
+                return psn.lstrip('PSN')
+            else:
+                sys.stderr.write('ERROR: operation "%s" is not valid.  Can only choose from "add" or "rm"!\n')
+                sys.exit(1)
+        else:
+            sys.stderr.write("Nothing to do!\n")
+            return None
 
     def __get_patient_table(self,psn,next_key=None):
         # Output the filtered data table for a PSN so that we have a quick way to figure out 
@@ -892,31 +915,53 @@ class MatchData(object):
 
     def get_variant_report(self,psn=None,msn=None):
         """
-        Input a PSN or MSN and return a tab delimited set of variant data for the patient
-        return var dict
-        psn, msn, bsn
-        disease
+        Input a PSN or MSN (preferred!) and return a list of dicts of variant call data.
+
+        Since there can be more than one MSN per patient, one will get a more robust result 
+        by querying on a MSN.  That is, only one variant report / MSN can be generated and 
+        the results, then, will be clear.  In the case of querying by PSN, a variant report
+        for each MSN under that PSN, assuming that the MSN is associated with a variant 
+        report, will be returned.
+
+        Args:
+           msn (str):  MSN for which a variant report should be returned.
+           psn (str):  PSN for which the variant reports should be returned.
+
+        Returns:
+           List of dicts of variant results.
+           msn: { 'singleNucleotideVariants' : [{var_data}], 'copyNumberVariants' : [{var_data},{var_data}], etc. }
 
         """
-        if psn:
-            psn = str(psn) # allow flexibility if we do not explictly input string.
-            if self.data[psn]['mois'] and self.data[psn]['mois'] != '---':
-                try:
-                    ret_data = dict(self.data[psn]['mois'])
-                except:
-                    print('error: cant make dict for patient: %s' % psn)
-                    pp(self.data[psn]['mois'])
-                    sys.exit()
-                return dict(self.data[psn]['mois'])
-        # TODO: Not sure I want to look up by MSN. Better to work wiht a PSN since there can be multiple MSNs in my dataset.
-        #       Actually might be good to restructure this and get rid of multiple MSNs altogether.
-        elif msn:
-            msn = 'MSN' + str(msn).lstrip('MSN') 
-            return dict(self.__search_for_value(key='msn',val=msn,retval='mois'))
-        else:
-            sys.stderr.write('ERROR: you must input either a PSN or MSN to this function!\n')
-            # Bail out here instead of returning None?
-            return None
+        if msn:
+            msn = self.__format_id('add',msn=msn)
+            psn=self.get_psn(msn=self.__format('rm',msn=msn))
+            for biopsy in self.data[psn]['biopsies'].values():
+                if 'ngs_data' in biopsy and biopsy['ngs_data']['msn'] == msn:
+                    return {self.__format('add',msn=msn) : biopsy['ngs_data']['mois']}
+                else:
+                    return None
+        elif psn:
+            results = {}  # if we are searching by PSN, can get multiple reports. Print them all as a list.
+            psn = self.__format_id('rm',psn=psn)
+            try:
+                if not len(self.data[psn]['all_msns']) > 0:
+                    sys.stderr.write('No variant report available for patient: %s.\n' % psn)
+                    return None
+            except:
+                sys.stderr.write('ERROR: Patient %s does not exist in the database!\n')
+                return None
+
+            for biopsy in self.data[psn]['biopsies'].values():
+                # Skip the outside assays biopsies since the variant reports are unreliable for now. Maybe we'll 
+                # take these later with an option?
+                if biopsy['biopsy_source'] == 'Outside':
+                    continue
+                elif biopsy['ngs_data'] and 'mois' in biopsy['ngs_data']:
+                    results[self.__format_id('add',msn=biopsy['ngs_data']['msn'])] = biopsy['ngs_data']['mois']
+            if results:
+                return results
+            else:
+                return None
 
     def get_patient_ta_status(self,psn=None):
         """
