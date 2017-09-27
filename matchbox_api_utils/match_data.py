@@ -119,7 +119,15 @@ class MatchData(object):
 
     @staticmethod
     def __get_var_data_by_gene(data,gene_list):
-        return [elem for elem in data if elem['gene'] in gene_list ]
+        # Get variant report data if the gene is in the input gene list.  But, only output the variant level
+        # details, and filter out the VAF, coverage, etc. so that we can get unqiue lists later.  If we wanted
+        # to get sequence specific details, we'll run a variant report instead.
+        wanted = ('alternative', 'amoi', 'chromosome', 'exon', 'confirmed', 'function', 'gene', 'hgvs',
+            'identifier', 'oncominevariantclass', 'position', 'protein', 'reference', 'transcript', 'type')
+        # return [elem for elem in data if elem['gene'] in gene_list ]
+        return [{i:elem[i] for i in wanted} for elem in data if elem['gene'] in gene_list]
+        
+
 
     def __get_patient_table(self,psn,next_key=None):
         # Output the filtered data table for a PSN so that we have a quick way to figure out 
@@ -306,7 +314,7 @@ class MatchData(object):
             patients[psn]['biopsies'] = {}
             
             if not record['biopsies']:
-                patients[psn]['biopsies'] = ['No_Biopsy']
+                patients[psn]['biopsies'] = 'No_Biopsy'
             else:
                 for biopsy in record['biopsies']:
                     bsn = biopsy['biopsySequenceNumber']
@@ -315,6 +323,8 @@ class MatchData(object):
                     biopsy_data = defaultdict(dict)
                     biopsy_data[bsn]['ihc']      = '---'
                     biopsy_data[bsn]['biopsy_source']   = '---'
+
+                    # TODO remove this extra layer.  not needed.
                     biopsy_data[bsn]['ngs_data'] = {}
 
                     if biopsy['failure']:
@@ -336,7 +346,7 @@ class MatchData(object):
                             biopsy_data[bsn]['biopsy_source'] = 'Initial'
 
                         # Make MSNs Struct
-                        msns = defaultdict(dict)
+                        # msns = defaultdict(dict)
                         for result in biopsy['nextGenerationSequences']:
                             # Skip all Failed and Pending reports.
                             if result['status'] != 'CONFIRMED':  
@@ -347,18 +357,27 @@ class MatchData(object):
                             # Now patients are getting an MSN directly from outside assay and put into data like normal,
                             # but of course no IR stuff. So, we have to filter this.
                             try:
-                                msns[msn]['ir_runid']     = result['ionReporterResults']['jobName']
-                                msns[msn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
-                                msns[msn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
-                                msns[msn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+                                biopsy_data[bsn]['ngs_data']['msn']          = msn
+                                biopsy_data[bsn]['ngs_data']['ir_runid']     = result['ionReporterResults']['jobName']
+                                biopsy_data[bsn]['ngs_data']['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
+                                biopsy_data[bsn]['ngs_data']['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
+                                biopsy_data[bsn]['ngs_data']['vcf_path']     = result['ionReporterResults']['vcfFilePath']
+                                # msns[msn]['ir_runid']     = result['ionReporterResults']['jobName']
+                                # msns[msn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
+                                # msns[msn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
+                                # msns[msn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
                             except:
                                 continue
                                 # print('offending psn: %s' % psn)
 
                             # Get and add MOI data to patient record; might be from outside.
                             variant_report     = result['ionReporterResults']['variantReport']
-                            msns[msn]['mois']  = dict(self.__proc_ngs_data(variant_report))
-                            biopsy_data[bsn]['ngs_data'].update(dict(msns))
+                            # msns[msn]['mois']  = dict(self.__proc_ngs_data(variant_report))
+                            biopsy_data[bsn]['ngs_data']['mois']  = dict(self.__proc_ngs_data(variant_report))
+
+                            # TODO: remove this layer.
+                            # biopsy_data[bsn]['ngs_data'].update(dict(msns))
+                            # biopsy_data[bsn][msn] = dict(msns)
 
                     patients[psn]['biopsies'].update(dict(biopsy_data))
         # pp(dict(patients))
@@ -632,6 +651,8 @@ class MatchData(object):
             if psn in self.data:
                 return self.data[psn]['all_msns']
             # result = self.__search_for_value(key='psn',val=psn,retval='all_msns')
+
+        # TODO: Need to fix this...new struct may break it.
         elif bsn:
             query_term = bsn
             # result = self.__search_for_value(key='bsn',val=bsn,retval='all_msns')
@@ -670,6 +691,8 @@ class MatchData(object):
             query_term = psn
             if psn in self.data:
                 return self.data[psn]['all_biopsies']
+
+        # TODO: Need to fix this. new struct may break it.
         elif msn:
             if not str(msn).startswith('MSN'):
                 msn = 'MSN'+str(msn)
@@ -716,7 +739,7 @@ class MatchData(object):
         else:
             return dict(diseases)
 
-    def get_patients_and_disease(self,psn=None,msn=None,bsn=None,outside=False,no_disease=False):
+    def get_histology(self,psn=None,msn=None,bsn=None,outside=False,no_disease=False):
         """
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
         are defined as being only Passed and can not be Failed, No Biopsy or
@@ -734,7 +757,7 @@ class MatchData(object):
             Dict of PSN : Disease mappings. If no match for input ID, returns None.
 
         Example: 
-            >>> print(get_disease(psn='11352'))
+            >>> print(get_histology(psn='11352'))
             'Serous endometrial adenocarcinoma'
 
         """
@@ -747,43 +770,53 @@ class MatchData(object):
             sys.exit(1)
 
         # Prepare an ID list dict if one is provided. Need some special mapping and whatnot before we can pass it.
-        id_list = {}
+        psn_list = []
         if psn:
-            id_list['psn'] = [x.lstrip('PSN') for x in str(psn).split(',')]
+            psn_list = [x.lstrip('PSN') for x in str(psn).split(',')]
         elif msn:
-            id_list['msn'] = ['MSN'+x.lstrip('MSN') for x in str(msn).split(',')]
+            psn_list = [self.get_psn(msn=x.lstrip('MSN')).lstrip('PSN') for x in str(msn).split(',')]
         elif bsn:
-            id_list['bsn'] = bsn.split(',')
+            psn_list = [self.get_psn(bsn=x).lstrip('PSN') for x in bsn.split(',')]
         else:
-            id_list['psn'] = self.data.keys()
+            psn_list = self.data.keys()
 
+        # TODO: Might need to tweak and re-work the Outside and No Disease filters a bit as they can conflict. But this 
+        #       should be workable enough for now.
         output_data = {}
-        for id_type in id_list:
-            for i in id_list[id_type]:
-                biopsy = self.__search_for_value(key=id_type,val=i,retval='biopsy')
+        filtered = []
+        for psn in psn_list:
+            if psn in self.data:
+                # If the no disease filter is turned on (i.e. False) don't out put "No Biopsy" results.
+                if outside is False and 'OUTSIDE' in self.data[psn]['source']:
+                    filtered.append(psn)
+                    continue
 
-                # TODO: For now we're going to just remove patients based on these criteria. Eventually we may want to output them,
-                #       but with the reason for filtering (i.e. output Failed Biopsy, No Biopsy, etc.).
-                if outside is False and biopsy == 'Outside':
-                    # output_data[i] = None
-                    output_data[i] = biopsy
+                if no_disease is False and self.data[psn]['ctep_term'] == '-':
+                    filtered.append(psn)
                     continue
-                # Most Passed are OK, though there are a few cases where no fail flag applied yet.
-                if no_disease is False and biopsy != 'Pass':
-                    # output_data[i] = None
-                    output_data[i] = biopsy
-                    continue
-                else:
-                    output_data[i] = self.__search_for_value(key=id_type,val=i,retval='ctep_term')
+
+                output_data[psn] = self.data[psn]['ctep_term']
+        if filtered:
+            sys.stderr.write('WARN: The following specimens were filtered from the output due to either the '
+                '"outside" or "no_disease" filters:\n')
+            sys.stderr.write('\t%s\n' % ','.join(filtered))
+
         return output_data
 
-    def find_variant_frequency(self,query,query_patients=None):
+    def find_variant_frequency(self,query):
         """
         Find and return variant hit rates.
 
         Based on an input query in the form of a variant_type : gene dict, where the gene value
         can be a list of genes, output a list of patients that had hits in those gene with some 
         disease and variant information. 
+
+        The return val will be unique to a patient. So, in the cases where we have multiple biopsies
+        from the same patient (an intitial and progression re-biopsy for example), we will only get 
+        the union of the two sets, and duplicate variants will not be output.  This will preven the 
+        hit rate from getting over inflated.  Also, there is no sequence specific information output
+        in this version (i.e. no VAF, Coverage, etc.).  Sequence level information for a call can be
+        obtained from the get_variant_report() method below.
 
         Args:
             query (dict): Dictionary of variant_type: gene mappings where:
@@ -793,61 +826,68 @@ class MatchData(object):
             query_patients (list): List of patients for which we want to obtain data. 
 
         Returns:
-            Will return a dict of matching data with disease and MOI information
+            Will return a dict of matching data with disease and MOI information. 
         
         Example:
         >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
         find_variant_frequency(query)
 
-
         """
+        # Test cases:
+        #    psn11546 : Had failed biopsy, followed by good biopsy wiht NGS results.
         results = {} 
         count = 0
         for patient in self.data:
-            if query_patients and patient not in query_patients:
-                continue
-            if 'msn' in self.data[patient]: 
-                count += 1
-            matches = []
+            if self.data[patient]['biopsies'] != 'No_Biopsy':
+                matches = []
 
-            if 'mois' in self.data[patient]:
-                # input_data = dict(self.data[patient]['mois'])
-                input_data = self.data[patient]['mois']
+                for biopsy in self.data[patient]['biopsies']:
+                    b_record = self.data[patient]['biopsies'][biopsy]
 
-                # We might want to just print out all MOIs for a patient rather than having to 
-                # absolutely print out by MOIs.  Maybe there is a better way...write a new function?
-                if len(query) < 1:
-                    for var_type in input_data.keys():
-                        for var in input_data[var_type]:
-                            matches.append(var)
-                else:
-                    if 'snvs' in query and 'singleNucleotideVariants' in input_data:
-                        matches = matches + self.__get_var_data_by_gene(
-                            input_data['singleNucleotideVariants'],query['snvs']
-                        )
+                    # Get rid of Outside assays biopsies (but not outside confirmation) and Failed biopsies.
+                    if b_record['biopsy_source'] == 'Outside' or b_record['biopsy_status'] != "Pass":
+                        continue
+                    count += 1
+                    biopsies = []
 
-                    if 'indels' in query and 'indels' in input_data:
-                        matches = matches + self.__get_var_data_by_gene(input_data['indels'],query['indels'])
+                    # TODO: remove this try except once we're working OK. 
+                    try:
+                        if b_record['ngs_data'] and 'mois' in b_record['ngs_data']:
+                            biopsies.append(biopsy)
+                            input_data = b_record['ngs_data']['mois']
 
-                    if 'cnvs' in query and 'copyNumberVariants' in input_data:
-                        matches = matches + self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
+                            if 'snvs' in query and 'singleNucleotideVariants' in input_data:
+                                matches = matches + self.__get_var_data_by_gene(
+                                    input_data['singleNucleotideVariants'],query['snvs']
+                                )
 
-                    if 'fusions' in query and 'unifiedGeneFusions' in input_data:
-                        # input_data['unifiedGeneFusions'] is a list
-                        filtered_fusions = []
-                        for fusion in input_data['unifiedGeneFusions']:
-                            if fusion['identifier'].endswith('Novel') or fusion['identifier'].endswith('Non-Targeted'): 
-                                continue
-                            else:
-                                filtered_fusions.append(fusion)
-                        matches = matches + self.__get_var_data_by_gene(filtered_fusions,query['fusions'])
-            if matches:
-                results[patient] = {
-                    'psn'     : self.data[patient]['psn'],
-                    'disease' : self.data[patient]['ctep_term'],
-                    'msn'     : self.data[patient]['msn'],
-                    'mois'    : matches
-                }
+                            if 'indels' in query and 'indels' in input_data:
+                                matches = matches + self.__get_var_data_by_gene(input_data['indels'],query['indels'])
+
+                            if 'cnvs' in query and 'copyNumberVariants' in input_data:
+                                matches = matches + self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
+
+                            if 'fusions' in query and 'unifiedGeneFusions' in input_data:
+                                # input_data['unifiedGeneFusions'] is a list
+                                filtered_fusions = []
+                                for fusion in input_data['unifiedGeneFusions']:
+                                    if fusion['identifier'].endswith('Novel') or fusion['identifier'].endswith('Non-Targeted'): 
+                                        continue
+                                    else:
+                                        filtered_fusions.append(fusion)
+                                matches = matches + self.__get_var_data_by_gene(filtered_fusions,query['fusions'])
+                    except:
+                        print('offending patient record: %s' % patient)
+                        sys.exit()
+
+                    if matches:
+                        results[patient] = {
+                            'psn'      : self.data[patient]['psn'],
+                            'disease'  : self.data[patient]['ctep_term'],
+                            'msns'     : self.data[patient]['all_msns'],
+                            'bsns'     : biopsies,
+                            'mois'     : matches
+                        }
         return results,count
 
     def get_variant_report(self,psn=None,msn=None):
