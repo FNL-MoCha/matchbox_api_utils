@@ -163,49 +163,6 @@ class MatchData(object):
             else:
                 return json.dumps(self.data[str(psn)],indent=4,sort_keys=True)
 
-    def __search_for_value(self,key,val,retval):
-        # XXX: This is now deprecated.  Remove once we finishe recoding for this method.
-        # Input a key and return a value or None
-        # Example: __search_for_value(key=psn,val=14420,retval=msn)
-        #   => search for PSN14420 in dataset and return MSN<whatever>
-        # Example: __search_for_value(key=psn,val=14420,retval=bsn)
-        #   => search for PSN14420 in datasert and return BSN<whatever>
-
-        print('self.__search_for_value(): This method is longer valid!')
-        sys.exit(213)
-        val = str(val)
-        record = {}
-
-        # First find the record
-        if key == 'psn' and val in self.data:
-            record = self.data[val]
-        else:
-            for p in self.data:
-                if key == 'msn' and val in self.data[p]['all_msns']:
-                    record = self.data[p]
-                elif key == 'bsn' and val in self.data[p]['all_biopsies']:
-                    record = self.data[p]
-
-        # Now figure out if we need a toplevel return value or we have to traverse the record.
-        if retval in record.keys():
-            return record[retval]
-        elif retval == 'biopsy_status':
-            return record['biopsies'][val]['biopsy_status']
-
-        """
-                return self.data[p][retval]
-
-            if key == 'psn' and p == val:
-                return self.data[p][retval]
-
-            if key == 'bsn' and self.data[p]['bsn'] == val:
-                return self.data[p][retval]
-
-        """
-        # If we made it here, then we didn't find a result.
-        sys.stderr.write('No result for id %s: %s\n' % (key.upper(),val))
-        return None
-
     @staticmethod
     def __get_curr_arm(psn,assignment_logic_list,flag):
         # Figure out the arm to which the patient was assinged based on the flag message found in the TA Logic flow.
@@ -325,15 +282,12 @@ class MatchData(object):
             patients[psn]['all_biopsies'] = []
 
             # Get treatment arm history. 
-            # TODO: Fix this.
             last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'],record['patientRejoinTriggers'])
 
             patients[psn]['current_trial_status']    = last_status
             patients[psn]['last_msg']                = last_msg
             patients[psn]['ta_arms']                 = arm_hist
             patients[psn]['progressed']              = progressed
-
-
             patients[psn]['biopsies'] = {}
             
             if not record['biopsies']:
@@ -346,13 +300,10 @@ class MatchData(object):
                     biopsy_data = defaultdict(dict)
                     biopsy_data[bsn]['ihc']      = '---'
                     biopsy_data[bsn]['biopsy_source']   = '---'
-
-                    # TODO remove this extra layer.  not needed.
                     biopsy_data[bsn]['ngs_data'] = {}
 
                     if biopsy['failure']:
                         biopsy_data[bsn]['biopsy_status'] = 'Failed_Biopsy'
-
                     else:
                         biopsy_data[bsn]['biopsy_status'] = 'Pass'
                         biopsy_data[bsn]['ihc'] = self.__get_ihc_results(biopsy['assayMessagesWithResult'])
@@ -368,8 +319,6 @@ class MatchData(object):
                         elif biopsy['associatedPatientStatus'] == 'REGISTRATION':
                             biopsy_data[bsn]['biopsy_source'] = 'Initial'
 
-                        # Make MSNs Struct
-                        # msns = defaultdict(dict)
                         for result in biopsy['nextGenerationSequences']:
                             # Skip all Failed and Pending reports.
                             if result['status'] != 'CONFIRMED':  
@@ -385,23 +334,13 @@ class MatchData(object):
                                 biopsy_data[bsn]['ngs_data']['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
                                 biopsy_data[bsn]['ngs_data']['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
                                 biopsy_data[bsn]['ngs_data']['vcf_path']     = result['ionReporterResults']['vcfFilePath']
-                                # msns[msn]['ir_runid']     = result['ionReporterResults']['jobName']
-                                # msns[msn]['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
-                                # msns[msn]['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
-                                # msns[msn]['vcf_path']     = result['ionReporterResults']['vcfFilePath']
                             except:
                                 continue
                                 # print('offending psn: %s' % psn)
 
                             # Get and add MOI data to patient record; might be from outside.
                             variant_report     = result['ionReporterResults']['variantReport']
-                            # msns[msn]['mois']  = dict(self.__proc_ngs_data(variant_report))
                             biopsy_data[bsn]['ngs_data']['mois']  = dict(self.__proc_ngs_data(variant_report))
-
-                            # TODO: remove this layer.
-                            # biopsy_data[bsn]['ngs_data'].update(dict(msns))
-                            # biopsy_data[bsn][msn] = dict(msns)
-
                     patients[psn]['biopsies'].update(dict(biopsy_data))
         # pp(dict(patients))
         # sys.exit()
@@ -634,15 +573,14 @@ class MatchData(object):
         query_term = ''
         for p in self.data:
             if msn:
-                if not str(msn).startswith('MSN'):
-                    msn = 'MSN'+str(msn)
+                msn = self.__format_id('add', msn=msn)
                 query_term = msn
                 if msn in self.data[p]['all_msns']:
-                    return 'PSN' + p
+                    return self.__format_id('add',psn=p)
             elif bsn:
                 query_term = bsn
                 if bsn in self.data[p]['all_biopsies']:
-                    return 'PSN' + p
+                    return self.__format_id('add',psn=p)
             else:
                 sys.stderr.write('ERROR: No MSN or BSN entered!\n')
                 return None
@@ -653,7 +591,9 @@ class MatchData(object):
 
     def get_msn(self,psn=None,bsn=None):
         """
-        Retrieve a patient BSN from either an input PSN or MSN.
+        Retrieve a patient MSN from either an input PSN or BSN. Note that there can
+        always be more than 1 MSN per patient, but can only ever be 1 MSN per biopsy
+        at a time.
 
         Args:
             psn (str): A MSN number to query. 
@@ -665,23 +605,29 @@ class MatchData(object):
         >>> print(get_msn(bsn='T-17-000550'))
         [u'MSN44180']
 
+        >>> print(get_msn(bsn='T-16-000811'))
+        [u'MSN18184']
+
+        >>> print(get_msn(psn='11583'))
+        [u'MSN18184', u'MSN41897']
+
         """
-        # result = []
         query_term = ''
         if psn:
-            psn = str(psn)
+            psn = self.__format_id('rm',psn=psn)
             query_term = psn
             if psn in self.data:
                 return self.data[psn]['all_msns']
-            # result = self.__search_for_value(key='psn',val=psn,retval='all_msns')
-
-        # TODO: Need to fix this...new struct may break it.
         elif bsn:
             query_term = bsn
-            # result = self.__search_for_value(key='bsn',val=bsn,retval='all_msns')
             for p in self.data:
                 if bsn in self.data[p]['all_biopsies']:
-                    return self.data[p]['biopsies'][bsn]['ngs_data'].keys()
+                    biopsy_data = self.data[p]['biopsies'][bsn]
+                    try:
+                        return [biopsy_data['ngs_data']['msn']]
+                    except KeyError:
+                        # We have a biopsy, but no MSN issued yet (or at all).
+                        return None
         else:
             sys.stderr.write('ERROR: No PSN or BSN entered!\n')
             return None
@@ -692,39 +638,43 @@ class MatchData(object):
 
     def get_bsn(self,psn=None,msn=None):
         """
-        Retrieve a patient BSN from either an input PSN or MSN.
+        Retrieve a patient BSN from either an input PSN or MSN. Note that we can have more than one
+        BSN per PSN, but we can only ever have one BSN / MSN.
 
         Args:
             psn (str): A PSN number to query. 
             msn (str): A MSN number to query.
 
         Returns:
-            A list PSNs that correspond to the PSN or MSN input.
+            A list BSNs that correspond to the PSN or MSN input.
 
         >>> print(get_bsn(psn='14420'))
         [u'T-17-000550']
 
-        >>> print(get_bsn(msn='40493'))
-        [u'T-17-000165']
+        >>> print(get_bsn(psn='11583'))
+        [u'T-16-000811', u'T-17-000333'] 
+
+        >>> print(get_bsn(msn='18184'))
+        [u'T-16-000811']
 
         """
         query_term = ''
         if psn:
-            psn=str(psn)
+            psn = self.__format_id('rm', psn=psn)
             query_term = psn
             if psn in self.data:
                 return self.data[psn]['all_biopsies']
-
-        # TODO: Need to fix this. new struct may break it.
         elif msn:
-            if not str(msn).startswith('MSN'):
-                msn = 'MSN'+str(msn)
+            msn = self.__format_id('add',msn=msn)
             query_term = msn
             for p in self.data:
                 if msn in self.data[p]['all_msns']:
                     for b in self.data[p]['biopsies']:
-                        if msn in self.data[p]['biopsies'][b]['ngs_data']:
-                            return [b]
+                        try:
+                            if msn == self.data[p]['biopsies'][b]['ngs_data']['msn']:
+                                return [b]
+                        except KeyError:
+                            continue
         else:
             sys.stderr.write('ERROR: No PSN or MSN entered!\n')
             return None
@@ -1013,7 +963,6 @@ class MatchData(object):
 
         if msn:
             msn = 'MSN' + str(msn).strip('MSN')
-            psn = self.__search_for_value(key='msn',val=msn, retval='psn')
         elif psn:
             psn = str(psn).lstrip('PSN')
 
