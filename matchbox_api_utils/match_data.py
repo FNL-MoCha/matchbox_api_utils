@@ -459,7 +459,6 @@ class MatchData(object):
             return dict(self.data[str(psn)])
 
     def get_biopsy_summary(self,category=None):
-        # TODO: Fix this. Not getting correct counts and fields.  Also, need to add number sequenced to this output.
         """
         Return dict of patients registered in MATCHBox with biopsy and sequencing
         information. 
@@ -474,59 +473,55 @@ class MatchData(object):
         variable
 
         Args:
-            catetory (str): biopsy category to return. Valid categories are 'psn','passed_biopsy',
-                            'failed_biopsy','no_biopsy','msn','sequenced','outside'.
+            catetory (str): biopsy category to return. Valid categories are:
+            'patients','pass','failed_biopsy','no_biopsy','msns','sequenced',
+            'outside','outside_confirmation', 'progressed','initial'.
 
         Returns:
             dict: whole set of category:count or single category:count data.
 
+        Example:
+            >>> print(data.get_biopsy_summary())
+            {u'sequenced': 5620, u'msns': 5620, u'progression': 9, u'initial': 5563, u'patients': 6491, u'outside': 61, u'no_biopsy': 465, u'failed_biopsy': 574, u'pass': 5654, u'outside_confirmation': 21}
+
+            >>> print(data.get_biopsy_summary(category='patients'))
+            {'patients': 6491}
+
+
         """
-        '''
-        count = {
-            'psn'                  : 0,
-            'passed_biopsy'        : 0,
-            'failed_biopsy'        : 0,
-            'no_biopsy'            : 0,
-            'sequenced'            : 0,
-
-            'initial'              : 0,
-            'progression_biopsy'   : 0,
-            'outside'              : 0,
-            'outside_confirmation' : 0,
-
-            'sequenced'            : 0,
-        }
-        '''
-
         count = defaultdict(int)
 
         for p in self.data:
-            count['psn'] += 1
-            for biopsy in self.data[p]['all_biopsies']:
-                biopsy_flag = self.data[p]['biopsies'][biopsy]['status']
-                source = self.data[p]['biopsies'][biopsy]['source']
-                count[biopsy_flag] += 1
-                count[source] += 1
+            count[u'patients'] += 1
+            count[u'msns'] += len(self.data[p]['all_msns'])
+            # TODO: Can remove this when we finish
+            try:
+                if self.data[p]['biopsies'] == 'No_Biopsy':
+                    count[u'no_biopsy'] += 1
+                    continue
+                for biopsy in self.data[p]['biopsies'].values():
+                    biopsy_flag = biopsy['biopsy_status']
+                    source      = biopsy['biopsy_source']
+                    count[biopsy_flag.lower()] += 1
 
+                    # Source will be '---' when a biopsy fails, so exclude those
+                    if source != '---':
+                        count[source.lower()] += 1
+                    if biopsy['ngs_data']:
+                        count[u'sequenced'] += 1
+            except:
+                print('offending record: %s' % p)
+                raise
 
-                '''
-                if biopsy_flag == 'No Biopsy':
-                    count['no_biopsy'] += 1
-                elif biopsy_flag == 'Failed Biopsy':
-                    count['failed_biopsy'] += 1 
-                elif biopsy_flag == 'Pass':
-                    count['passed_biopsy'] += 1 
-
-                elif source == 'Outside':
-                    count['outside'] += 1
-                elif source == 'Progression':
-                    count['progression_biopsy'] += 1
-                '''
-
-        if category and category in count:
-            return {category:count[category]}
+        results = dict(count)
+        if category:
+            try:
+                return {category:results[category]}
+            except KeyError:
+                sys.stderr.write('ERROR: no such category "%s".\n' % category)
+                return None
         else:
-            return count
+            return results
     
     def matchbox_dump(self,filename=None):
         """
