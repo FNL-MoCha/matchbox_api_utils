@@ -133,6 +133,7 @@ class MatchData(object):
     @staticmethod
     def __format_id(op,msn=None,psn=None):
         if msn:
+            msn = str(msn)
             if op == 'add':
                 return 'MSN' + msn.lstrip('MSN')
             elif op == 'rm':
@@ -141,6 +142,7 @@ class MatchData(object):
                 sys.stderr.write('ERROR: operation "%s" is not valid.  Can only choose from "add" or "rm"!\n')
                 sys.exit(1)
         elif psn:
+            psn = str(psn)
             if op == 'add':
                 return 'PSN' + psn.lstrip('PSN')
             elif op == 'rm':
@@ -482,7 +484,8 @@ class MatchData(object):
 
         Example:
             >>> print(data.get_biopsy_summary())
-            {u'sequenced': 5620, u'msns': 5620, u'progression': 9, u'initial': 5563, u'patients': 6491, u'outside': 61, u'no_biopsy': 465, u'failed_biopsy': 574, u'pass': 5654, u'outside_confirmation': 21}
+            {u'sequenced': 5620, u'msns': 5620, u'progression': 9, u'initial': 5563, u'patients': 6491, 
+                u'outside': 61, u'no_biopsy': 465, u'failed_biopsy': 574, u'pass': 5654, u'outside_confirmation': 21}
 
             >>> print(data.get_biopsy_summary(category='patients'))
             {'patients': 6491}
@@ -707,7 +710,7 @@ class MatchData(object):
         else:
             return dict(diseases)
 
-    def get_histology(self,psn=None,msn=None,bsn=None,outside=False,no_disease=False):
+    def get_patient_histology(self,psn=None,msn=None,bsn=None,outside=False,no_disease=False):
         """
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
         are defined as being only Passed and can not be Failed, No Biopsy or
@@ -729,6 +732,10 @@ class MatchData(object):
             'Serous endometrial adenocarcinoma'
 
         """
+        # TODO: When we return the results now, we are only returning the PSN and
+        #       histology.  do we want to keep the original search term for the 
+        #       output?  I think that might be handy, but how can I map it all back?
+
         # Don't want to allow for mixed query types. So, number of None args must be > 2, 
         # or else user entered more than one arg type and that's not good.
         count_none = sum((x is None for x in (psn,msn,bsn)))
@@ -738,6 +745,8 @@ class MatchData(object):
             sys.exit(1)
 
         # Prepare an ID list dict if one is provided. Need some special mapping and whatnot before we can pass it.
+        # TODO:  What if we input an identifier that does not exist?  For example, I get a NoneType error if I try to run 'lstrip' on 
+        #        the return val of a PSN lookup when the MSN is not valid.  Need to write this better!
         psn_list = []
         if psn:
             psn_list = [x.lstrip('PSN') for x in str(psn).split(',')]
