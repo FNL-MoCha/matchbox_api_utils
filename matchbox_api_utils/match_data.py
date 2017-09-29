@@ -710,7 +710,7 @@ class MatchData(object):
         else:
             return dict(diseases)
 
-    def get_patient_histology(self,psn=None,msn=None,bsn=None,outside=False,no_disease=False):
+    def get_histology(self,psn=None,msn=None,bsn=None,outside=False,no_disease=False):
         """
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
         are defined as being only Passed and can not be Failed, No Biopsy or
@@ -725,17 +725,17 @@ class MatchData(object):
                 patient specimen. Default: False
 
         Returns:
-            Dict of PSN : Disease mappings. If no match for input ID, returns None.
+            Dict of ID : Disease mappings. If no match for input ID, returns None.
 
         Example: 
-            >>> print(get_histology(psn='11352'))
-            'Serous endometrial adenocarcinoma'
+            >>> data.get_histology(psn='11352')
+            {'PSN11352': u'Serous endometrial adenocarcinoma'}
+
+            >>> data.get_histology(msn=3060)
+            No result for id MSN3060
+            {'MSN3060': None}
 
         """
-        # TODO: When we return the results now, we are only returning the PSN and
-        #       histology.  do we want to keep the original search term for the 
-        #       output?  I think that might be handy, but how can I map it all back?
-
         # Don't want to allow for mixed query types. So, number of None args must be > 2, 
         # or else user entered more than one arg type and that's not good.
         count_none = sum((x is None for x in (psn,msn,bsn)))
@@ -745,34 +745,50 @@ class MatchData(object):
             sys.exit(1)
 
         # Prepare an ID list dict if one is provided. Need some special mapping and whatnot before we can pass it.
-        # TODO:  What if we input an identifier that does not exist?  For example, I get a NoneType error if I try to run 'lstrip' on 
-        #        the return val of a PSN lookup when the MSN is not valid.  Need to write this better!
-        psn_list = []
+        query_list = {} # always psn : original ID (ex: {'10098':'T-16-000987'})
+        output_data = {}
+
         if psn:
             psn_list = [x.lstrip('PSN') for x in str(psn).split(',')]
+            query_list = dict(zip(psn_list,map(lambda x: self.__format_id('add',psn=x),psn_list)))
+            for p in query_list:
+                if p not in self.data:
+                    output_data[query_list[p]] = None
+        
         elif msn:
-            psn_list = [self.get_psn(msn=x.lstrip('MSN')).lstrip('PSN') for x in str(msn).split(',')]
+            msn_list = [self.__format_id('add',msn=x) for x in str(msn).split(',')]
+            for m in msn_list:
+                psn = self.get_psn(msn=m)
+                if psn is not None:
+                    query_list[self.__format_id('rm',psn=psn)] = m
+                else:
+                    output_data[m] = None
+
         elif bsn:
-            psn_list = [self.get_psn(bsn=x).lstrip('PSN') for x in bsn.split(',')]
+            bsn_list = bsn.split(',')
+            for b in bsn_list:
+                psn = self.get_psn(bsn=b)
+                if psn is not None:
+                    query_list[self.__format_id('rm',psn=psn)] = b
+                else:
+                    output_data[b] = None
         else:
             psn_list = self.data.keys()
+            query_list = dict(zip(psn_list,map(lambda x: self.__format_id('add',psn=x),psn_list)))
 
-        # TODO: Might need to tweak and re-work the Outside and No Disease filters a bit as they can conflict. But this 
-        #       should be workable enough for now.
-        output_data = {}
+        # Iterate through the valid PSNs and get results if they pass filters.
         filtered = []
-        for psn in psn_list:
+        for psn in query_list:
             if psn in self.data:
                 # If the no disease filter is turned on (i.e. False) don't out put "No Biopsy" results.
                 if outside is False and 'OUTSIDE' in self.data[psn]['source']:
                     filtered.append(psn)
                     continue
-
                 if no_disease is False and self.data[psn]['ctep_term'] == '-':
                     filtered.append(psn)
                     continue
+                output_data[query_list[psn]] = self.data[psn]['ctep_term']
 
-                output_data[psn] = self.data[psn]['ctep_term']
         if filtered:
             sys.stderr.write('WARN: The following specimens were filtered from the output due to either the '
                 '"outside" or "no_disease" filters:\n')
