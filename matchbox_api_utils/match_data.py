@@ -9,7 +9,7 @@ import sys
 import json
 import itertools
 from collections import defaultdict
-from pprint import pprint as pp
+from pprint import pprint as pp  # TODO: remove in prod i think.
 
 import utils
 import matchbox_conf
@@ -28,7 +28,7 @@ class MatchData(object):
 
     """
 
-    def __init__(self,config_file=None,url=None,creds=None,patient=None,json_db='sys_default',load_raw=None,make_raw=None):
+    def __init__(self,config_file=None,url=None,creds=None,patient=None,json_db='sys_default',load_raw=None,make_raw=None, quiet=True):
         """
         Generate a MATCHBox data object that can be parsed and queried downstream with some methods. 
         
@@ -70,6 +70,7 @@ class MatchData(object):
         self._load_raw = load_raw
         self._config_file = config_file
         self.db_date = utils.get_today('long')
+        self._quiet = quiet
 
         if not self._url:
             self._url = utils.get_config_data(self._config_file,'url')
@@ -93,17 +94,22 @@ class MatchData(object):
         if make_raw:
             Matchbox(self._url,self._creds,make_raw='mb')
         elif self._load_raw:
-            print('\n  ->  Starting from a raw MB JSON Obj')
+            if self._quiet is False:
+                print('\n  ->  Starting from a raw MB JSON Obj')
             self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
             self.data = self.gen_patients_list(matchbox_data,self._patient)
         elif self._json_db:
-            print('\n  ->  Starting from a processed MB JSON Obj')
             self.db_date, self.data = utils.load_dumped_json(self._json_db)
+            if self._quiet is False:
+                print('\n  ->  Starting from a processed MB JSON Obj')
+                print('\n  ->  JSON database object date: %s' % self.db_date)
             if self._patient:
-                print('filtering on patient: %s\n' % self._patient)
+                if self._quiet is False:
+                    print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data,self._patient)
         else:
-            print('\n  ->  Starting from a live MB instance')
+            if self._quiet is False:
+                print('\n  ->  Starting from a live MB instance')
             matchbox_data = Matchbox(self._url,self._creds).api_data
             self.data = self.gen_patients_list(matchbox_data,self._patient)
 
