@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 # TODO:
 #    - get_ihc_results() -> a method to print out patient IHC data based on gene name or psn.
-#    - When you filter on a patient from the original API call (i.e. MatchData(patient=<psn>)), and then try to call some 
-#      methods afterward, will get a key error since the data struct is a bit different.  No longer have a dict of dicts,
-#      with PSNs as keys.  Need to fix that so all methods work OK.  
+#    - Add BSN query to args list of get_variant_report()
 import os
 import sys
 import json
@@ -191,9 +189,6 @@ class MatchData(object):
     @staticmethod
     def __get_pt_hist(triggers,assignments,rejoin_triggers):
         # Read the trigger messages to determine the patient treatment and study arm history.
-        # TODO: Still have an issue here!  If there was a progressino re-biopsy (like in the case of PSN11583), we
-        #       do not have the correct variant report necessarily.  This is causing an issue and will cause a mis-match
-        #       issue through out.  I think I need to try to get on top of the multi-biopsies and multi-MSNs a bit better.
         arms = []
         arm_hist = {}
         progressed = False
@@ -503,7 +498,6 @@ class MatchData(object):
         for p in self.data:
             count[u'patients'] += 1
             count[u'msns'] += len(self.data[p]['all_msns'])
-            # TODO: Can remove this when we finish
             try:
                 if self.data[p]['biopsies'] == 'No_Biopsy':
                     count[u'no_biopsy'] += 1
@@ -832,8 +826,6 @@ class MatchData(object):
         find_variant_frequency(query)
 
         """
-        # Test cases:
-        #    psn11546 : Had failed biopsy, followed by good biopsy wiht NGS results.
         results = {} 
         count = 0
         for patient in self.data:
@@ -849,7 +841,6 @@ class MatchData(object):
                     count += 1
                     biopsies = []
 
-                    # TODO: remove this try except once we're working OK. 
                     try:
                         if b_record['ngs_data'] and 'mois' in b_record['ngs_data']:
                             biopsies.append(biopsy)
@@ -910,10 +901,10 @@ class MatchData(object):
         """
         if msn:
             msn = self.__format_id('add',msn=msn)
-            psn=self.get_psn(msn=self.__format('rm',msn=msn))
+            psn=self.get_psn(msn=self.__format_id('rm',msn=msn))
             for biopsy in self.data[psn]['biopsies'].values():
                 if 'ngs_data' in biopsy and biopsy['ngs_data']['msn'] == msn:
-                    return {self.__format('add',msn=msn) : biopsy['ngs_data']['mois']}
+                    return {self.__format_id('add',msn=msn) : biopsy['ngs_data']['mois']}
                 else:
                     return None
         elif psn:
@@ -1005,6 +996,5 @@ class MatchData(object):
 
         for pt in self.data:
             if arm in self.data[pt]['ta_arms']:
-                # print(','.join([pt,arm,self.data[pt]['ta_arms'][arm]]))
                 results.append((pt,arm,self.data[pt]['ta_arms'][arm]))
         return results
