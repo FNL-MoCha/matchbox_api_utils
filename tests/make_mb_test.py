@@ -2,23 +2,33 @@
 # -*- coding: utf-8 -*-
 import sys,os
 import unittest
+
+from datetime import datetime
 from matchbox_api_utils import MatchData
 
 class TestImport(unittest.TestCase):
-    keys = ['sequenced', 'psn', 'msn', 'outside', 'no_biopsy', 'failed_biopsy', 'passed_biopsy']
-    def get_keys(self,data):
-        ret = data.get_biopsy_summary()
-        print ret 
-        return ret.keys()
+    default_keys = ['concordance', 'psn', 'ta_arms', 'last_msg', 'current_trial_status', 'gender', 'progressed', 
+        'all_biopsies', 'source', 'race', 'medra_code', 'ctep_term', 'all_msns', 'biopsies', 'ethnicity']
 
-    # @unittest.skip('Skip create live conn test')
+    @unittest.skip('Skip create live connection test.')
     def test_can_create_live_connection(self):
         """
         Test that we can make a connection to the live MATCHBox instance and get the API data.
 
         """
-        data = MatchData(json_db= None)
-        self.assertListEqual(self.keys,self.get_keys(data))
+        data = MatchData(json_db=None)
+        today = datetime.today().date()
+        mb_born_on = datetime.strptime(data.db_date, '%m/%d/%Y').date()
+
+        # DB Date should be same as today if we did a live query.
+        self.assertEqual(today,mb_born_on)
+
+        # Check early patient in DB has proper keys for this vesion
+        self.assertListEqual(sorted(self.default_keys), sorted(data.data['10002'].keys()))
+
+        # Load up one discrete patient and check keys.
+        patient_data = MatchData(json_db=None, patient=11583)
+        self.assertListEqual(sorted(self.default_keys), sorted(patient_data.data['11583'].keys()))
 
     # @unittest.skip('Skip load raw obj test')
     def test_can_load_raw_db(self):
@@ -26,26 +36,15 @@ class TestImport(unittest.TestCase):
         Test that we can load the raw API dataset rather than making a live MB call and proc that.
 
         """
-        raw_api_data = os.path.join(os.path.dirname(__file__),'../raw_mb_dump_090617.json')
+        raw_api_data = os.path.join(os.path.dirname(__file__),'../raw_mb_dump_092517.json')
         data = MatchData(load_raw=raw_api_data)
-        self.assertListEqual(self.keys,self.get_keys(data))
+        self.assertListEqual(sorted(self.default_keys),sorted(data.data['14652'].keys()))
         
-    # @unittest.skip('Skip load proc obj test')
-    def test_can_load_json_db(self):
-        """
-        Test that we can load a custom proc'd JSON dataset rather than a full API call and creation of JSON dataset.
-
-        """
-        proc_api_data = os.path.join(os.environ['HOME'], '.mb_utils/mb_obj.json')
-        data = MatchData(json_db=proc_api_data)
-        self.assertListEqual(self.keys,self.get_keys(data))
-
     # @unittest.skip('Skip load system proc obj test')
     def test_can_load_sys_json(self):
         """
         Test that we can load the system default dataset. In other words, run as the default condition would require.
-        This is the most important test, and the one that will likely remain in production.
 
         """
         data = MatchData()
-        self.assertListEqual(self.keys,self.get_keys(data))
+        self.assertListEqual(sorted(self.default_keys),sorted(data.data['12376'].keys()))
