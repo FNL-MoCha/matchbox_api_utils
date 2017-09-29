@@ -30,7 +30,7 @@ class TestImport(unittest.TestCase):
         patient_data = MatchData(json_db=None, patient=11583)
         self.assertListEqual(sorted(self.default_keys), sorted(patient_data.data['11583'].keys()))
 
-    @unittest.skip('Skip load raw obj test')
+    # @unittest.skip('Skip load raw obj test')
     def test_can_load_raw_db(self):
         """
         Test that we can load the raw API dataset rather than making a live MB call and proc that.
@@ -40,7 +40,7 @@ class TestImport(unittest.TestCase):
         data = MatchData(load_raw=raw_api_data)
         self.assertListEqual(sorted(self.default_keys),sorted(data.data['14652'].keys()))
         
-    @unittest.skip('Skip load system proc obj test')
+    # @unittest.skip('Skip load system proc obj test')
     def test_can_load_sys_json(self):
         """
         Test that we can load the system default dataset. In other words, run as the default condition would require.

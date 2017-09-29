@@ -50,9 +50,7 @@ class FunctionTests(unittest.TestCase):
         self.assertTrue('MSN44180' in self.data.get_msn(psn='14420'))
         self.assertTrue('MSN19349' in self.data.get_msn(psn=11352))
         self.assertTrue('MSN44180' in self.data.get_msn(bsn='T-17-000550'))
-
-        # TODO: Need to find a case with more than one MSN.  This case is no longer valid!
-        #self.assertEqual(self.data.get_msn(psn='11926'),['MSN19992,MSN21717'])
+        self.assertEqual(self.data.get_msn(psn='11583'),['MSN18184','MSN41897'])
 
     def test_get_bsn(self):
         """
@@ -63,36 +61,40 @@ class FunctionTests(unittest.TestCase):
         self.assertTrue('T-17-000550' in self.data.get_bsn(msn='44180'))
         self.assertTrue('T-17-000550' in self.data.get_bsn(msn='MSN44180'))
 
-    def test_get_patient_histology(self):
+    def test_get_histology(self):
         """
         Test get_patients_and_disease() with various inputs.
 
         """
-        self.assertEqual(self.data.get_patient_histology(psn='11352'),
-            {'11352': u'Serous endometrial adenocarcinoma'})
-        self.assertEqual(self.data.get_patient_histology(psn='11352,PSN10955,11222,PSN11070'),
+        self.assertEqual(self.data.get_histology(psn='11352'),
+            {'PSN11352': u'Serous endometrial adenocarcinoma'})
+        self.assertEqual(self.data.get_histology(psn='11352,PSN10955,11222,PSN11070'),
             {
-                '11352': u'Serous endometrial adenocarcinoma', 
-                '11070': u'Salivary gland cancer', 
-                '11222': u'Ovarian epithelial cancer', 
-                '10955': u'Squamous cell carcinoma of the anus'
+                'PSN11352': u'Serous endometrial adenocarcinoma', 
+                'PSN11070': u'Salivary gland cancer', 
+                'PSN11222': u'Ovarian epithelial cancer', 
+                'PSN10955': u'Squamous cell carcinoma of the anus'
             }
         )
-        self.assertEqual(self.data.get_patient_histology(psn='PSN11352'),
-            {'11352': u'Serous endometrial adenocarcinoma'}
+        self.assertEqual(self.data.get_histology(psn='PSN11352'),
+            {'PSN11352': u'Serous endometrial adenocarcinoma'}
         )
-        self.assertEqual(self.data.get_patient_histology(psn=11352),
-            {'11352': u'Serous endometrial adenocarcinoma'}
+        self.assertEqual(self.data.get_histology(psn=11352),
+            {'PSN11352': u'Serous endometrial adenocarcinoma'}
         )
-        # TODO: Fix this. Can't get a result when the MSN does not exist.
-        #self.assertEqual(self.data.get_patient_histology(msn=3060),{'MSN3060' : None})
 
-        # TODO: either fix the test to match the output (psn : disease) or have to fix 
-        #       the method to return {original_search_term : disease } 
-        #self.assertEqual(self.data.get_patient_histology(msn=3160),
-            #{'MSN3160': u'Ovarian epithelial cancer'}
-        #)
-        #self.assertEqual(self.data.get_patient_histology(bsn='T-17-000550'),
-            #{'T-17-000550': u'Carcinosarcoma of the uterus'}
-        #)
-        self.assertRaises(SystemExit,self.data.get_patient_histology,psn='11352',msn=3060)
+        self.assertEqual(self.data.get_histology(msn=3060),{'MSN3060' : None})
+
+        self.assertEqual(self.data.get_histology(msn=3160),
+            {'MSN3160': u'Ovarian epithelial cancer'}
+        )
+        self.assertEqual(self.data.get_histology(bsn='T-17-000550'),
+            {'T-17-000550': u'Carcinosarcoma of the uterus'}
+        )
+
+        self.assertEqual(self.data.get_histology(bsn='T-16-987,T-15-1,T-16-000811'),
+            {'T-15-1': None, 'T-16-000811': u'Salivary gland cancer', 'T-16-987': None}
+        )
+
+        self.assertRaises(SystemExit,self.data.get_histology,psn='11352',msn=3060)
+
