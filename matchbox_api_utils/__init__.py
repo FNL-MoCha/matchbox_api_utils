@@ -9,7 +9,7 @@ from matchbox import Matchbox
 from match_data import MatchData
 from match_arms import TreatmentArms
 
-__version__ = '0.18.dev0'
+__version__ = '0.19.dev0'
 
 __all__ = ['Matchbox','MatchData','TreatmentArms','matchbox_conf']
 
