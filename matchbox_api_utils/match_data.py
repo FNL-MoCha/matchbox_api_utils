@@ -130,9 +130,19 @@ class MatchData(object):
         # details, and filter out the VAF, coverage, etc. so that we can get unqiue lists later.  If we wanted
         # to get sequence specific details, we'll run a variant report instead.
         wanted = ('alternative', 'amoi', 'chromosome', 'exon', 'confirmed', 'function', 'gene', 'hgvs',
-            'identifier', 'oncominevariantclass', 'position', 'protein', 'reference', 'transcript', 'type')
+            'identifier', 'oncominevariantclass', 'position', 'protein', 'reference', 'transcript', 'type',
+            'driverGene','partnerGene','driverReadCount','annotation','confidenceInterval95percent',
+            'confidenceInterval5percent','copyNumber')
+
+        # This is first iteration, and I can't remember why I don't just want all variant level data any more.  
         # return [elem for elem in data if elem['gene'] in gene_list ]
-        return [{i:elem[i] for i in wanted} for elem in data if elem['gene'] in gene_list]
+        # return [{i:elem[i] for i in wanted if i in data} for elem in data if elem['gene'] in gene_list]
+
+        results = []
+        for rec in data:
+            if rec['gene'] in gene_list:
+                results.append({i:rec[i] for i in wanted if i in rec})
+        return results
         
     @staticmethod
     def __format_id(op,msn=None,psn=None):
@@ -427,12 +437,9 @@ class MatchData(object):
             elif gene1 not in drivers and gene2 not in drivers:
                 driver = partner = 'NA'
 
-            try:
-                fusion['driverGene'] = driver
-                fusion['partnerGene'] = partner
-            except:
-                pp(fusion_data)
-                sys.exit()
+            fusion['driverGene'] = driver
+            fusion['gene'] = driver  # Also make a "gene" entry so that we can look things up in a similar way to the other classes.
+            fusion['partnerGene'] = partner
         return fusion_data
 
     def get_patient_meta(self,psn,val=None):
@@ -789,7 +796,7 @@ class MatchData(object):
                     continue
                 output_data[query_list[psn]] = self.data[psn]['ctep_term']
 
-        if filtered:
+        if filtered and self._quiet is False:
             sys.stderr.write('WARN: The following specimens were filtered from the output due to either the '
                 '"outside" or "no_disease" filters:\n')
             sys.stderr.write('\t%s\n' % ','.join(filtered))
@@ -847,15 +854,13 @@ class MatchData(object):
                             input_data = b_record['ngs_data']['mois']
 
                             if 'snvs' in query and 'singleNucleotideVariants' in input_data:
-                                matches = matches + self.__get_var_data_by_gene(
-                                    input_data['singleNucleotideVariants'],query['snvs']
-                                )
+                                matches += self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
 
                             if 'indels' in query and 'indels' in input_data:
-                                matches = matches + self.__get_var_data_by_gene(input_data['indels'],query['indels'])
+                                matches += self.__get_var_data_by_gene(input_data['indels'],query['indels'])
 
                             if 'cnvs' in query and 'copyNumberVariants' in input_data:
-                                matches = matches + self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
+                                matches += self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
 
                             if 'fusions' in query and 'unifiedGeneFusions' in input_data:
                                 # input_data['unifiedGeneFusions'] is a list
@@ -865,10 +870,10 @@ class MatchData(object):
                                         continue
                                     else:
                                         filtered_fusions.append(fusion)
-                                matches = matches + self.__get_var_data_by_gene(filtered_fusions,query['fusions'])
+                                matches += self.__get_var_data_by_gene(filtered_fusions,query['fusions'])
                     except:
                         print('offending patient record: %s' % patient)
-                        sys.exit()
+                        raise
 
                     if matches:
                         results[patient] = {
