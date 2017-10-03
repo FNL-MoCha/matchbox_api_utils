@@ -10,7 +10,7 @@ class TestImport(unittest.TestCase):
     default_keys = ['concordance', 'psn', 'ta_arms', 'last_msg', 'current_trial_status', 'gender', 'progressed', 
         'all_biopsies', 'source', 'race', 'medra_code', 'ctep_term', 'all_msns', 'biopsies', 'ethnicity']
 
-    @unittest.skip('Skip create live connection test.')
+    # @unittest.skip('Skip create live connection test.')
     def test_can_create_live_connection(self):
         """
         Test that we can make a connection to the live MATCHBox instance and get the API data.
