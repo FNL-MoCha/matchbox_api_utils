@@ -10,7 +10,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData 
 
-version = '3.0.0_072417'
+version = '3.0.1_100517'
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -69,7 +69,14 @@ def map_id(mb_data,id_list,qtype):
             msn = mb_data.get_msn(bsn=pt)
             return_val = (psn,pt,msn)
 
-        print(','.join(return_val))
+        if not any(x.startswith('T-1') for x in return_val[1]):
+            sys.stderr.write("Can not find a match for non-outside assay results for input: %s\n" % pt)
+            return None
+        elif not any(x.startswith('MSN') for x in return_val[2]):
+            sys.stderr.write("Can not find a match for non-outside assay results for input: %s\n" % pt)
+            return None
+        else:
+            print(','.join(return_val))
 
 def validate_list(id_list,qtype):
     """
@@ -113,7 +120,7 @@ if __name__=='__main__':
         sys.stdout.write('Retrieving a live MATCHBox data object. This may take a few minutes...\n')
         sys.stdout.flush()
 
-    data = MatchData(json_db=args['json'])
+    data = MatchData(json_db=args['json'],quiet=False)
     sys.stdout.write('\n')
 
     print('Getting MSN / PSN mapping data...')
