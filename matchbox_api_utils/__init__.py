@@ -4,10 +4,9 @@ import os
 import re
 import datetime
 
-import matchbox_api_utils
-from matchbox import Matchbox
-from match_data import MatchData
-from match_arms import TreatmentArms
+from .matchbox import Matchbox
+from .match_data import MatchData
+from .match_arms import TreatmentArms
 
 __version__ = '0.19.1'
 
