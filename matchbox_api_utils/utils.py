@@ -6,7 +6,8 @@ import re
 import json
 import datetime
 
-import matchbox_conf
+from matchbox_api_utils import matchbox_conf
+
 
 def load_dumped_json(json_file):
     # Load in a JSON DB file (raw or proc) and return JSON obj and file ctime.

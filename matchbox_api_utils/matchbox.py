@@ -3,7 +3,7 @@ import os
 import sys
 import json
 
-import utils
+from matchbox_api_utils import utils
 
 
 class Matchbox(object):

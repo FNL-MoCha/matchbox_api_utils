@@ -8,11 +8,11 @@ import itertools
 from collections import defaultdict
 from pprint import pprint as pp  # TODO: remove in prod i think.
 
-import utils
-import matchbox_conf
+from matchbox_api_utils import utils
+from matchbox_api_utils import matchbox_conf
 
-from matchbox import Matchbox
-from match_arms import TreatmentArms
+from matchbox_api_utils.matchbox import Matchbox
+from matchbox_api_utils.match_arms import TreatmentArms
 
 
 class MatchData(object):

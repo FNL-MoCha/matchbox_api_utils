@@ -6,10 +6,10 @@ import json
 from collections import defaultdict
 from pprint import pprint as pp
 
-#import matchbox_api_utils
-import utils
-import matchbox_conf
-from matchbox import Matchbox
+from matchbox_api_utils import utils
+from matchbox_api_utils import matchbox_conf
+from matchbox_api_utils.matchbox import Matchbox
+
 
 class TreatmentArms(object):
     """
