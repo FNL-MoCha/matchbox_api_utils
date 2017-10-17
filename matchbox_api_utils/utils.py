@@ -1,4 +1,3 @@
-#!usr/bin/env python
 # -*- coding:utf-8 -*-
 # Set of functions that I am commonly using across all classes.
 import os
