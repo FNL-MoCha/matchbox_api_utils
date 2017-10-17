@@ -4,11 +4,11 @@ import os
 import re
 import datetime
 
-# from .matchbox import Matchbox
-# from .match_data import MatchData
-# from .match_arms import TreatmentArms
+from matchbox_api_utils.matchbox import Matchbox
+from matchbox_api_utils.match_data import MatchData
+from matchbox_api_utils.match_arms import TreatmentArms
 
-__version__ = '0.19.'
+__version__ = '0.19.4'
 
 __all__ = ['Matchbox','MatchData','TreatmentArms','matchbox_conf']
 
