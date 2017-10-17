@@ -2,17 +2,17 @@
 # TODO:
 #    - get_ihc_results() -> a method to print out patient IHC data based on gene name or psn.
 #    - Add BSN query to args list of get_variant_report()
-import os
 import sys
 import json
 import itertools
 from collections import defaultdict
 from pprint import pprint as pp  # TODO: remove in prod i think.
 
-import utils
-import matchbox_conf
-from matchbox import Matchbox
-from match_arms import TreatmentArms
+from matchbox_api_utils import utils
+from matchbox_api_utils import matchbox_conf
+
+from matchbox_api_utils.matchbox import Matchbox
+from matchbox_api_utils.match_arms import TreatmentArms
 
 
 class MatchData(object):
@@ -26,7 +26,8 @@ class MatchData(object):
 
     """
 
-    def __init__(self,config_file=None,url=None,creds=None,patient=None,json_db='sys_default',load_raw=None,make_raw=None, quiet=True):
+    def __init__(self, config_file=None, url=None, creds=None, patient=None, 
+            json_db='sys_default', load_raw=None, make_raw=None, quiet=True):
         """
         Generate a MATCHBox data object that can be parsed and queried downstream with some methods. 
         
@@ -218,7 +219,8 @@ class MatchData(object):
                 counter += 1
 
             if msg['patientStatus'] == 'PENDING_APPROVAL':
-                curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],assignments[counter]['patientAssignmentLogic'], 'SELECTED')
+                curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],
+                        assignments[counter]['patientAssignmentLogic'], 'SELECTED')
                 arms.append(curr_arm)
 
                 try:
@@ -233,7 +235,8 @@ class MatchData(object):
                 arm_hist[curr_arm] = 'FORMERLY_ON_ARM_PROGRESSED'
 
             elif msg['patientStatus'] == 'COMPASSIONATE_CARE':
-                curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],assignments[counter]['patientAssignmentLogic'], 'ARM_FULL')
+                curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],
+                        assignments[counter]['patientAssignmentLogic'], 'ARM_FULL')
                 arm_hist[curr_arm] = 'COMPASSIONATE_CARE'
 
             # When we hit the last message, return what we've collected.
@@ -295,7 +298,8 @@ class MatchData(object):
             patients[psn]['all_biopsies'] = []
 
             # Get treatment arm history. 
-            last_status,last_msg,arm_hist,progressed = self.__get_pt_hist(record['patientTriggers'],record['patientAssignments'],record['patientRejoinTriggers'])
+            last_status, last_msg, arm_hist, progressed = self.__get_pt_hist(record['patientTriggers'],
+                    record['patientAssignments'], record['patientRejoinTriggers'])
 
             patients[psn]['current_trial_status']    = last_status
             patients[psn]['last_msg']                = last_msg
@@ -438,7 +442,8 @@ class MatchData(object):
                 driver = partner = 'NA'
 
             fusion['driverGene'] = driver
-            fusion['gene'] = driver  # Also make a "gene" entry so that we can look things up in a similar way to the other classes.
+            # Also make a "gene" entry so that we can look things up in a similar way to the other classes.
+            fusion['gene'] = driver  
             fusion['partnerGene'] = partner
         return fusion_data
 
@@ -854,7 +859,8 @@ class MatchData(object):
                             input_data = b_record['ngs_data']['mois']
 
                             if 'snvs' in query and 'singleNucleotideVariants' in input_data:
-                                matches += self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],query['snvs'])
+                                matches += self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],
+                                    query['snvs'])
 
                             if 'indels' in query and 'indels' in input_data:
                                 matches += self.__get_var_data_by_gene(input_data['indels'],query['indels'])

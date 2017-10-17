@@ -84,4 +84,11 @@ class TreatmentArmTests(unittest.TestCase):
 
     def test_amoi_mapping(self):
         for case in self.test_cases:
-            self.assertEqual(self.arms.map_amoi(self.test_cases[case][0]), self.test_cases[case][1])
+            result = self.arms.map_amoi(self.test_cases[case][0])
+            if result is not None:
+                result = sorted(result)
+            answer = self.test_cases[case][1]
+            if answer is not None:
+                answer = sorted(answer)
+            # self.assertEqual(self.arms.map_amoi(self.test_cases[case][0]), self.test_cases[case][1])
+            self.assertEqual(result, answer)

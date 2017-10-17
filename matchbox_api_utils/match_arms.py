@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 # TODO:
 #    - get arm by gene lookup.
-import os
 import sys
-import re
 import json
 from collections import defaultdict
 from pprint import pprint as pp
 
-import utils
-import matchbox_conf
-import matchbox_api_utils
-from matchbox import Matchbox
+from matchbox_api_utils import utils
+from matchbox_api_utils import matchbox_conf
+from matchbox_api_utils.matchbox import Matchbox
+
 
 class TreatmentArms(object):
     """
