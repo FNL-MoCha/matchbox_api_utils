@@ -5,14 +5,15 @@ import json
 
 import utils
 
+
 class Matchbox(object):
 
     """
     MATCHBox API Connector Class.
 
     Basic connector class to make a call to the API and load the raw data. From
-    here we pass data, current MatchData or TreatmentArm data to appropiate calling
-    classes.  
+    here we pass data, current MatchData or TreatmentArm data to appropiate
+    calling classes.
 
     """
 
@@ -47,14 +48,17 @@ class Matchbox(object):
         self.creds = creds
         self.api_data = self.__api_call()
 
-        # For debugging purposes, we may want to dump the whole raw dataset out to see what keys / vals are availble.  
-        # today = datetime.date.today().strftime('%m%d%y')
+        # For debugging purposes, we may want to dump the whole raw dataset out 
+        # to see what keys / vals are availble.  
         today = utils.get_today('short')
         if make_raw:
             if make_raw == 'mb': 
                 filename = 'raw_mb_dump_' + today + '.json'
             elif make_raw == 'ta':
                 filename = 'raw_ta_dump_' + today + '.json'
+            else:
+                sys.stderr.write('ERROR: You must choose from "mb" or "ta" only.\n')
+                return None
 
             sys.stdout.write('Making a raw MATCHBox API dump that can be loaded for development '
                     'purposes rather than a live call to MATCHBox prior to parsing and filtering.\n')
