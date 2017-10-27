@@ -838,13 +838,51 @@ class MatchData(object):
         >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
         find_variant_frequency(query)
 
+        >>> pprint(data.find_variant_frequency({'snvs':['EGFR'], 'indels':['EGFR']}, [15232]))
+        ({'15232': {'bsns': [u'T-17-001423'],
+                    'disease': u'Lung adenocarcinoma',
+                    'mois': [{'alternative': u'T',
+                              'amoi': [u'EAY131-E(i)', u'EAY131-A(e)'],
+                              'chromosome': u'chr7',
+                              'confirmed': True,
+                              'exon': u'20',
+                              'function': u'missense',
+                              'gene': u'EGFR',
+                              'hgvs': u'c.2369C>T',
+                              'identifier': u'COSM6240',
+                              'oncominevariantclass': u'Hotspot',
+                              'position': u'55249071',
+                              'protein': u'p.Thr790Met',
+                              'reference': u'C',
+                              'transcript': u'NM_005228.3',
+                              'type': u'snvs_indels'},
+                             {'alternative': u'-',
+                              'amoi': [u'EAY131-A(i)'],
+                              'chromosome': u'chr7',
+                              'confirmed': True,
+                              'exon': u'19',
+                              'function': u'nonframeshiftDeletion',
+                              'gene': u'EGFR',
+                              'hgvs': u'c.2240_2257delTAAGAGAAGCAACATCTC',
+                              'identifier': u'COSM12370',
+                              'oncominevariantclass': u'Hotspot',
+                              'position': u'55242470',
+                              'protein': u'p.Leu747_Pro753delinsSer',
+                              'reference': u'TAAGAGAAGCAACATCTC',
+                              'transcript': u'NM_005228.3',
+                              'type': u'snvs_indels'}],
+                    'msns': [u'MSN52258'],
+                    'psn': u'15232'}},
+        1)
+
+
         """
         results = {} 
         count = 0
 
         # Queue up a patient's list in case you just want to find data for one patient.
         if query_patients:
-            pt_list = query_patients
+            pt_list = [self.__format_id('rm',x) for x in query_patients]
         else:
             pt_list = self.data.keys()
 
