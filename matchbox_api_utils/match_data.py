@@ -977,8 +977,11 @@ class MatchData(object):
 
             for biopsy in self.data[psn]['biopsies'].values():
                 # Skip the outside assays biopsies since the variant reports are unreliable for now. Maybe we'll 
-                # take these later with an option?
-                if biopsy['biopsy_source'] == 'Outside':
+                # take these later with an option? Also have to skip outside confirmation cases now as the assay
+                # does not always cover the variants and now MATCHBox is including calls that are outside of our 
+                # reportable range....a real mess!
+                # if biopsy['biopsy_source'] == 'Outside':
+                if 'Outside' in biopsy['biopsy_source']:
                     continue
                 elif biopsy['ngs_data'] and 'mois' in biopsy['ngs_data']:
                     results[self.__format_id('add',msn=biopsy['ngs_data']['msn'])] = biopsy['ngs_data']['mois']
@@ -1022,7 +1025,7 @@ class MatchData(object):
                 results[p] = self.data[p]['ta_arms']
         return results 
     
-    def get_patient_by_disease(self, histology=None, medra_code=None):
+    def get_patients_by_disease(self, histology=None, medra_code=None):
         """
         Input a disease and return a list of patients that were registered with that disease
         type. For histology query, we can do partial matching based on the python `in` function.
