@@ -1022,6 +1022,46 @@ class MatchData(object):
                 results[p] = self.data[p]['ta_arms']
         return results 
     
+    def get_patient_by_disease(self, histology=None, medra_code=None):
+        """
+        Input a disease and return a list of patients that were registered with that disease
+        type. For histology query, we can do partial matching based on the python `in` function.
+        So, if one were to query Lung Adenocarcinoma, Lung, Lung Adeno, or Adeno, all Lung 
+        Adenocarinoma cases would be returned.  Note that simply inputting Lung, would also 
+        return Non-small Cell Lung Adenocarinoma, Squamouse cell lung adenocarcinoma, etc, and 
+        querying "Adeno" would return anything that had adeno.  So, care must be taken with the 
+        query, and secondary filtering may be necessary.  Querying based on MEDRA codes is specific
+        and only an exact match will return results.
+
+        Args:
+            histology (str):  One of the CTEP shotname disease codes.
+            medra_code (str): A MEDRA code to query rather than histology.
+
+        Returns:
+            Dict of Patient : Histology Mapping
+
+        Example:
+            >>> <put example here>
+
+
+        """
+        if not any(x for x in [histology, medra_code]):
+            sys.stderr.write("ERROR: You must input either a histologie or medra code "
+                "to query!\n")
+            return None
+
+        results = {}
+        if histology:
+            for pt in self.data:
+                if histology.lower() in self.data[pt]['ctep_term'].lower():
+                    results[pt] = self.data[pt]['ctep_term']
+
+        elif medra_code:
+            for pt in self.data:
+                if medra_code == self.data[pt]['medra_code']:
+                    results[pt] = self.data[pt]['ctep_term']
+        return results
+
     def get_seq_datafile(self,dtype=None,msn=None,psn=None):
         # TODO: Change this to get datafile and try to get BAM, VCF, etc. based on args.
         """
