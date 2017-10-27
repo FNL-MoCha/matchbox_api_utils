@@ -8,7 +8,7 @@ from matchbox_api_utils.matchbox import Matchbox
 from matchbox_api_utils.match_data import MatchData
 from matchbox_api_utils.match_arms import TreatmentArms
 
-__version__ = '0.19.4'
+__version__ = '0.20.0'
 
 __all__ = ['Matchbox','MatchData','TreatmentArms','matchbox_conf']
 
