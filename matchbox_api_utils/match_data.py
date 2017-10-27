@@ -464,14 +464,15 @@ class MatchData(object):
             no data for a particular record and raises and error if the metaval is not valid for the dataset.
 
         """
+        psn = self.__format_id('rm',psn=psn)
         if val:
             try:
-                return {val:self.data[str(psn)][val]}
+                return {val:self.data[psn][val]}
             except KeyError:
                 sys.stderr.write("ERROR: '%s' is not a valid metavalue for this dataset.\n" % val)
                 return None
         else:
-            return dict(self.data[str(psn)])
+            return dict(self.data[psn])
 
     def get_biopsy_summary(self,category=None):
         """
@@ -808,7 +809,7 @@ class MatchData(object):
 
         return output_data
 
-    def find_variant_frequency(self,query):
+    def find_variant_frequency(self, query, query_patients=None):
         """
         Find and return variant hit rates.
 
@@ -840,7 +841,14 @@ class MatchData(object):
         """
         results = {} 
         count = 0
-        for patient in self.data:
+
+        # Queue up a patient's list in case you just want to find data for one patient.
+        if query_patients:
+            pt_list = query_patients
+        else:
+            pt_list = self.data.keys()
+
+        for patient in pt_list:
             if self.data[patient]['biopsies'] != 'No_Biopsy':
                 matches = []
 
