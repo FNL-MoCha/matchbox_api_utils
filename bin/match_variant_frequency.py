@@ -20,7 +20,7 @@ def get_args():
         analyzed in Excel.  
         ''',
     )
-    parser.add_argument('-j', '--json', metavar='<mb_json_file>', 
+    parser.add_argument('-j', '--json', metavar='<mb_json_file>', default='sys_default',
             help='Load a MATCHBox JSON file derived from "matchbox_json_dump.py" instead of a live query')
     parser.add_argument('-p', '--psn', metavar='<PSN>', 
             help='Only output data for a specific patient or comma separated list of patients')
