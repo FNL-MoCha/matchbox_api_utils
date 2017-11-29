@@ -8,7 +8,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData
 
-version = '1.1.081617'
+version = '1.2.112917'
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -38,13 +38,10 @@ def get_args():
 
     return args
 
-def gen_header(dtype,psns,biopsies):
-    today = datetime.date.today().strftime('%m/%d/%Y')
-    print(":::  MATCH {} Summary as of {} (Query PSNs: {}; Total Passed Biopsies: {})  :::\n".format(dtype,today,psns,biopsies))
-
 def disease_summary(data):
     '''
-    Generate a summary report of MATCH patients that have been biopsied and the counts for each disease type.
+    Generate a summary report of MATCH patients that have been biopsied and the
+    counts for each disease type.
     '''
     total, diseases = data.get_disease_summary()
     print('Disease\tCount')
@@ -55,27 +52,40 @@ def print_line(x,y,z):
     print(','.join([x,y,z]))
 
 def patient_summary(data,outfh,patients=None,outside=False,):
-    '''Print out a summary for each patient and their disease, excluding any that do not have disease data indicated'''
+    '''
+    Print out a summary for each patient and their disease, excluding any that
+    do not have disease data indicated
+    '''
 
-    num_collected_biopsies = data.get_biopsy_summary(category='passed_biopsy')
+    # Get total number of biopsies collected that had a "PASS" status.
+    num_collected_biopsies = data.get_biopsy_summary(category='pass').values()[0]
 
     results = {}
     if patients:
         for patient in patients:
-            return_data = data.get_patients_and_disease(query_psn=patient)
+            return_data = data.get_histology(psn=patient)
             if return_data:
                 results[patient] = return_data[patient]
     else:
-        results = data.get_patients_and_disease(outside=outside,no_disease=False)
+        # results = data.get_patients_and_disease(outside=outside,no_disease=False)
+        results = data.get_histology(outside=outside,no_disease=False)
 
     if results:
-        gen_header('Patient', len(results), num_collected_biopsies)
-        #print('PSN,BSN,Disease')
-        outfh.write('PSN,BSN,Disease\n')
-        for res in sorted(results):
-            bsn = data.get_bsn(psn=res)
-            #print_line(res,bsn,results[res])
-            outfh.write(','.join([res,bsn,results[res]]))
+        today = datetime.date.today().strftime('%m/%d/%Y')
+        
+        outfh.write(":::  MATCH {} Summary as of {} (Query PSNs: {}; Total Passed "
+                "Biopsies: {})  :::\n".format('Patient', today, len(results), 
+                    num_collected_biopsies))
+
+        outfh.write('PSN,BSN,MSN,Disease\n')
+        for res in sorted(results.keys()):
+            bsn = data.get_bsn(psn=res)[-1] # just take last biopsy; don't need all.
+            msn = data.get_msn(psn=res)
+            # If we got no MSN, that means we didn't get a successful sequencing run, 
+            # and the data is not going to be so useful. Skip those.
+            if len(msn) < 1:
+                continue
+            outfh.write(','.join([res,bsn,'|'.join(msn),results[res]]))
             outfh.write('\n')
     else:
         sys.stderr.write("ERROR: No data for input patient list!\n")
