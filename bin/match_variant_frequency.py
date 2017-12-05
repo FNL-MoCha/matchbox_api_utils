@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 # Input a set of variants and output a hitrate  for NCI-MATCH
+"""
+Input a list of genes by variant type and get back a table of NCI-MATCH hits that 
+cant be further analyzed in Excel. Can either input a patient (or comma separated 
+list of patients) to query, or query the entire dataset.  Will limit the patient
+set to the non-outside assay results only.
+"""
 import sys
 import os
 import json
@@ -9,16 +15,12 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData
 
-version = '0.11.0_081017'
+version = '0.12.0_120517'
 
 def get_args():
     parser = argparse.ArgumentParser(
         formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
-        description=
-        '''
-        Input a list of genes by variant type and get back a table of NCI-MATCH hits that can be further 
-        analyzed in Excel.  
-        ''',
+        description=__doc__,
     )
     parser.add_argument('-j', '--json', metavar='<mb_json_file>', default='sys_default',
             help='Load a MATCHBox JSON file derived from "matchbox_json_dump.py" instead of a live query')
@@ -42,17 +44,17 @@ def get_args():
     #if args.snv == args.indel == args.cnv == args.fusion == None:
     if all(x == None for x in [args.snv,args.indel,args.cnv,args.fusion]):
         sys.stderr.write('WARN: No SNV, Indel, CNV, or Fusion gene(s) added to query. Will output all MOIs.\n')
-        #sys.exit(1)
     return args
 
 def parse_query_results(data,vartype):
     wanted_data = []
     if vartype == 'snv':
-        wanted_data = ['identifier','gene','type','alleleFrequency','transcript','hgvs','protein','oncominevariantclass']
+        wanted_data = ['identifier', 'gene', 'type', 'alleleFrequency', 'transcript',
+                'hgvs', 'protein', 'oncominevariantclass']
     elif vartype == 'cnv':
-        wanted_data = ['gene','type','copyNumber']
+        wanted_data = ['gene', 'type', 'copyNumber']
     elif vartype == 'fusion':
-        wanted_data = ['identifier','gene','type','driverReadCount']
+        wanted_data = ['identifier', 'gene', 'type', 'driverReadCount']
     return map(data.get,wanted_data)
 
 def print_results(query_data,outfile,fmt):
@@ -73,7 +75,8 @@ def print_results(query_data,outfile,fmt):
     else:
         csv_writer = csv.writer(sys.stdout,delimiter=delimiter)
 
-    header = ['Patient','Disease','VarID','Gene','Type','Measurement','Transcript','CDS','AA','Function']
+    header = ['Patient', 'Disease', 'VarID', 'Gene', 'Type', 'Measurement',
+            'Transcript', 'CDS', 'AA', 'Function']
     csv_writer.writerow(header)
     
     for patient in query_data:
@@ -93,6 +96,13 @@ def split_genes(x):
 
 if __name__=='__main__':
     args = get_args()
+
+    # Make a call to MATCHbox to get a JSON obj of data.
+    if not args.json:
+        sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
+        sys.stdout.flush()
+    data = MatchData(json_db=args.json)
+    sys.stdout.write('\n')
 
     query_list = {}
     if args.snv:
@@ -114,17 +124,13 @@ if __name__=='__main__':
     if args.psn:
         patient_list = [str(x) for x in args.psn.split(',')]
     else:
+        
         patient_list = None
-    print("patients to query: {}".format(args.psn))
-
-    # Make a call to MATCHbox to get a JSON obj of data.
-    if not args.json:
-        sys.stdout.write('Retrieving MATCHBox data object.  This will take a few minutes...')
-        sys.stdout.flush()
-    data = MatchData(json_db=args.json)
-    sys.stdout.write('\n')
+    
+    print("Patients to query: {}".format(patient_list))
 
     # Gen a query result
-    query_data,total = data.find_variant_frequency(query_list,patient_list)
-    print('total patients queried: {}\n'.format(total))
+    query_data, patient_total, biopsy_total = data.find_variant_frequency(query_list, patient_list)
+    print('Total patients queried: {}'.format(patient_total))
+    print('Total biopsies queried: {}\n'.format(biopsy_total))
     print_results(query_data,args.output,args.style)
