@@ -938,7 +938,7 @@ class MatchData(object):
                             'bsns'     : biopsies,
                             'mois'     : matches
                         }
-        return results, len(plist), len(set(plist))
+        return results, len(set(plist)), len(plist)
 
     def get_variant_report(self, psn=None, msn=None):
         """
