@@ -832,7 +832,8 @@ class MatchData(object):
             query_patients (list): List of patients for which we want to obtain data. 
 
         Returns:
-            Will return a dict of matching data with disease and MOI information. 
+            Will return a dict of matching data with disease and MOI information, along with 
+            a count of the number of patients queried and the number of biopsies queried.
         
         Example:
         >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
@@ -878,7 +879,7 @@ class MatchData(object):
 
         """
         results = {} 
-        count = 0
+        plist = [] 
 
         # Queue up a patient's list in case you just want to find data for one patient.
         if query_patients:
@@ -887,20 +888,22 @@ class MatchData(object):
             pt_list = self.data.keys()
 
         for patient in pt_list:
-            if self.data[patient]['biopsies'] != 'No_Biopsy':
+            # Skip no biopsy and all outside biospy cases.  For outside assay cases, we 
+            # don't want to consider any of it since the confirmation data will skew results.
+            if self.data[patient]['biopsies'] != 'No_Biopsy' and 'OUTSIDE' not in self.data[patient]['source']:
                 matches = []
-
                 for biopsy in self.data[patient]['biopsies']:
                     b_record = self.data[patient]['biopsies'][biopsy]
 
                     # Get rid of Outside assays biopsies (but not outside confirmation) and Failed biopsies.
-                    if b_record['biopsy_source'] == 'Outside' or b_record['biopsy_status'] != "Pass":
+                    # if b_record['biopsy_source'] == 'Outside' or b_record['biopsy_status'] != "Pass":
+                    if b_record['biopsy_status'] != "Pass":
                         continue
-                    count += 1
                     biopsies = []
 
                     try:
                         if b_record['ngs_data'] and 'mois' in b_record['ngs_data']:
+                            plist.append(patient)
                             biopsies.append(biopsy)
                             input_data = b_record['ngs_data']['mois']
 
@@ -935,9 +938,9 @@ class MatchData(object):
                             'bsns'     : biopsies,
                             'mois'     : matches
                         }
-        return results,count
+        return results, len(plist), len(set(plist))
 
-    def get_variant_report(self,psn=None,msn=None):
+    def get_variant_report(self, psn=None, msn=None):
         """
         Input a PSN or MSN (preferred!) and return a list of dicts of variant call data.
 
