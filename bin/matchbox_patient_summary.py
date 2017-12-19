@@ -1,31 +1,37 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Get patient or disease summary statistics and data from the MATCH dataset.  
+"""
 import sys
 import os
 import json
 import argparse
 import datetime
+from operator import itemgetter
 from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData
 
-version = '1.2.112917'
+version = '2.0.121917'
 
 def get_args():
     parser = argparse.ArgumentParser(
-        formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=125),
-        description=
-        '''
-        Get patient or disease summary statistics and data from the MATCH dataset.  
-        '''
+        formatter_class = lambda prog: argparse.HelpFormatter(prog, 
+            max_help_position=100, width=125),
+        description=__doc__
     )
     parser.add_argument('result_type', choices=['patient','disease'], 
-            help='Type of data to output.')
+            help='Category of data to output. Can either be patient or disease level.')
     parser.add_argument('-j', '--json', metavar='<mb_json_file>', default='sys_default',
             help='MATCHBox JSON file containing patient data, usually from matchbox_json_dump.py')
     parser.add_argument('-p', '--psn', metavar='PSN', 
             help='Filter patient summary to only these patients. Can be a comma separated list')
     parser.add_argument('-t', '--tumor', metavar='<tumor_type>', 
-            help='Retrieve data for only these tumor types')
+            help='Retrieve data for only this tumor type or comma separate list of tumors. Note '
+                'that you must quote tumors with names containing spaces.')
+    parser.add_argument('-m', '--medra', metavar='<medra_code>', 
+            help='MEDRA Code or comma separated list of codes to search.')
     parser.add_argument('-O','--Outside', action='store_true', 
             help='Include Outside Assay study data (DEFAULT: False).')
     parser.add_argument('-o', '--outfile', metavar='<results.txt>', 
@@ -38,15 +44,22 @@ def get_args():
 
     return args
 
-def disease_summary(data):
+def disease_summary(data, ctep_term=None, medra=None):
     '''
     Generate a summary report of MATCH patients that have been biopsied and the
-    counts for each disease type.
+    counts for each disease type. Data coming in from get_disease_summary() will
+    be a dict of tuples.
     '''
-    total, diseases = data.get_disease_summary()
-    print('Disease\tCount')
-    for elem in sorted(diseases,key=diseases.get,reverse=True):
-        print('\t'.join([elem,str(diseases[elem])]))
+    total = 0
+    disease_counts = data.get_disease_summary(query_disease=ctep_term, query_medra=medra)
+
+    print('MEDRA_Code\tCount\tDisease')
+    for elem, val in sorted(disease_counts.iteritems(), 
+            key=lambda (k,v): itemgetter(1)(v), reverse=True):
+        print('\t'.join([elem, str(val[1]), val[0]]))
+        total += val[1]
+
+    # print('\n:::  Total cases: {}  :::'.format(total))
 
 def print_line(x,y,z):
     print(','.join([x,y,z]))
@@ -67,7 +80,6 @@ def patient_summary(data,outfh,patients=None,outside=False,):
             if return_data:
                 results[patient] = return_data[patient]
     else:
-        # results = data.get_patients_and_disease(outside=outside,no_disease=False)
         results = data.get_histology(outside=outside,no_disease=False)
 
     if results:
@@ -106,8 +118,9 @@ if __name__=='__main__':
         patients = args.psn.split(',')
 
     if not args.json:
-        sys.stdout.write('WARN: No MATCHBox JSON dump obj loaded. Performing live queries can take a few minutes, and '
-                         'be sped up by loading a JSON obj from `matchbox_json_dump.py` first.\n')
+        sys.stdout.write('WARN: No MATCHBox JSON dump obj loaded. Performing live '
+            'queries can take a few minutes, and be sped up by loading a JSON obj '
+            'from `matchbox_json_dump.py` first.\n')
         sys.stdout.flush()
 
     data = MatchData(json_db=args.json)
@@ -115,5 +128,11 @@ if __name__=='__main__':
     if args.result_type == 'patient':
         patient_summary(data,outfh,patients,outside=args.Outside)
     elif args.result_type == 'disease':
-        # TODO: Would be cool to add a filter here to, say, filter on only Breast Cancer or something
-        disease_summary(data)
+        if args.tumor:
+            tumor_list = args.tumor.split(',')
+            disease_summary(data, ctep_term=tumor_list)
+        elif args.medra:
+            medra_list = args.medra.split(',')
+            disease_summary(data, medra=medra_list)
+        else:
+            disease_summary(data)
