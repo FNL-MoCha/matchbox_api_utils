@@ -29,16 +29,18 @@ class MatchData(object):
     def __init__(self, config_file=None, url=None, creds=None, patient=None, 
             json_db='sys_default', load_raw=None, make_raw=None, quiet=True):
         """
-        Generate a MATCHBox data object that can be parsed and queried downstream with some methods. 
+        Generate a MATCHBox data object that can be parsed and queried downstream 
+        with some methods. 
         
-        Can instantiate with either a config JSON file, which contains the url, username, and password information
-        needed to access the resource, or by supplying the individual arguments to make the connection.  This class
-        will call the Matchbox class in order to make the connection and deploy the data.
+        Can instantiate with either a config JSON file, which contains the url, username, 
+        and password information needed to access the resource, or by supplying the 
+        individual arguments to make the connection.  This class will call the Matchbox 
+        class in order to make the connection and deploy the data.
 
-        Can do a live query to get data in real time, or load a MATCHBox JSON file derived from the 
-        matchbox_json_dump.py script that is a part of the package. Since data in MATCHBox is relatively static 
-        these days, it's preferred to use an existing JSON DB and only periodically update the DB with a 
-        call to the aforementioned script.
+        Can do a live query to get data in real time, or load a MATCHBox JSON file derived 
+        from the matchbox_json_dump.py script that is a part of the package. Since data in 
+        MATCHBox is relatively static these days, it's preferred to use an existing JSON DB 
+        and only periodically update the DB with a call to the aforementioned script.
 
          Args:
                config_file (file): Custom config file to use if not using system 
@@ -70,12 +72,13 @@ class MatchData(object):
         self._config_file = config_file
         self.db_date = utils.get_today('long')
         self._quiet = quiet
+        self._disease_db = {}
 
         if not self._url:
             self._url = utils.get_config_data(self._config_file,'url')
 
         if not self._creds:
-            self._creds = utils.get_config_data(self._config_file,'creds')
+            self._creds = utils.get_config_data(self._config_file, 'creds')
 
         if self._patient:
             self._patient = str(self._patient)
@@ -85,18 +88,18 @@ class MatchData(object):
         # matchbox_api_util.__init__.mb_json_data.  Otherwise use the passed arg; if it's None, do
         # a live call below, and if it's a custom file, load that.
         if self._json_db == 'sys_default':
-            self._json_db = utils.get_config_data(self._config_file,'mb_json_data')
+            self._json_db = utils.get_config_data(self._config_file, 'mb_json_data')
 
         ta_data = utils.get_config_data(self._config_file,'ta_json_data')
         self.arm_data = TreatmentArms(json_db=ta_data)
             
         if make_raw:
-            Matchbox(self._url,self._creds,make_raw='mb')
+            Matchbox(self._url, self._creds, make_raw='mb')
         elif self._load_raw:
             if self._quiet is False:
                 print('\n  ->  Starting from a raw MB JSON Obj')
             self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
-            self.data = self.gen_patients_list(matchbox_data,self._patient)
+            self.data = self.gen_patients_list(matchbox_data, self._patient)
         elif self._json_db:
             self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._quiet is False:
@@ -105,12 +108,16 @@ class MatchData(object):
             if self._patient:
                 if self._quiet is False:
                     print('filtering on patient: %s\n' % self._patient)
-                self.data = self.__filter_by_patient(self.data,self._patient)
+                self.data = self.__filter_by_patient(self.data, self._patient)
         else:
             if self._quiet is False:
                 print('\n  ->  Starting from a live MB instance')
-            matchbox_data = Matchbox(self._url,self._creds).api_data
-            self.data = self.gen_patients_list(matchbox_data,self._patient)
+            matchbox_data = Matchbox(self._url, self._creds).api_data
+            self.data = self.gen_patients_list(matchbox_data, self._patient)
+
+        # Load up a medra : ctep term db based on entries so that we can look
+        # data up on the fly.
+        self._disease_db = self.__make_disease_db()
 
     def __str__(self):
         return json.dumps(self.data,sort_keys=True,indent=4)
@@ -120,6 +127,16 @@ class MatchData(object):
 
     def __iter__(self):
         return self.data.itervalues()
+
+    def __make_disease_db(self):
+        # Make an on the fly mapping of medra to ctep term db for mapping later
+        # on.  Might make a class and all that later, but for now, since we do
+        # not know how this will be displayed later, this is good enough.
+        med_map = {}
+        for pt in self.data.values():
+            if 'medra_code' in pt and pt['medra_code'] != '-':
+                med_map.update({pt['medra_code'] : pt['ctep_term']})
+        return med_map
 
     @staticmethod
     def __filter_by_patient(json,patient):
@@ -694,48 +711,62 @@ class MatchData(object):
         sys.stderr.write('No result for id %s\n' % query_term)
         return None
 
-    def get_disease_summary(self,disease=None):
+    def get_disease_summary(self, query_disease=None, query_medra=None):
         """
-        Return a summary of registered diseases and counts. Despite a MEDRA Code and other bits
-        of disease related data, we'll rely on output from CTEP Term value only.
+        Return a summary of registered diseases and counts. With no args, will return
+        a list of all diseases and counts as a dict. One can also limit output to a
+        list of diseases or medra codes and get counts for those only. 
 
         Args:
-            query_disease (str): Disease or comma separated list of diseases to filter on.
+            query_disease (list): List of diseases to filter on.
+            query_medra   (list): List of MEDRA codes to filter on.
 
         Returns:
             Dictionary of disease(s) and counts.
 
         """
-        diseases = defaultdict(int)
-        for psn in self.data:
+        disease_counts = defaultdict(int)
+
+        for psn in self.data.values():
             # Skip the registered but not yet biopsied patients.
-            if self.data[psn]['medra_code'] == '-': 
+            if psn['medra_code'] == '-': 
                 continue
 
-            diseases[self.data[psn]['ctep_term']] += 1
+            string = '{}\t{}'.format(psn['medra_code'], psn['ctep_term'])
+            # diseases[self.data[psn]['ctep_term']] += 1
+            diseases[string] += 1
 
+        """
         if disease:
+            # TODO: Have to fix this for a query input since we are changing the key.
             if disease in diseases:
                 return {disease : diseases[disease]}
             else:
-                sys.stderr.write('Disease "%s" was not found in the database.\n' % disease)
+                sys.stderr.write('Disease "%s" was not found in the MATCH study '
+                    'dataset.\n' % disease)
                 return None
         else:
             return dict(diseases)
+        """
+        return dict(disease_counts)
 
-    def get_histology(self,psn=None,msn=None,bsn=None,outside=False,no_disease=False):
+    def get_histology(self, psn=None, msn=None, bsn=None, outside=False, 
+            no_disease=False):
         """
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
         are defined as being only Passed and can not be Failed, No Biopsy or
         outside assay biopsies at this time.
 
         Args:
-            psn (str): Optional PSN or comma separated list of PSNs on which to filter data.
-            bsn (str): Optional BSN or comma separated list of BSNs on which to filter data.
-            msn (str): Optional MSN or comma separated list of MSNs on which to filter data.
+            psn (str): Optional PSN or comma separated list of PSNs on which 
+                       to filter data.
+            bsn (str): Optional BSN or comma separated list of BSNs on which 
+                       to filter data.
+            msn (str): Optional MSN or comma separated list of MSNs on which 
+                       to filter data.
             outside (bool): Also include outside assay data. False by default.
-            no_disease (bool): Return all data, even if there is no disease indicated for the 
-                patient specimen. Default: False
+            no_disease (bool): Return all data, even if there is no disease 
+                               indicated for the patient specimen. Default: False
 
         Returns:
             Dict of ID : Disease mappings. If no match for input ID, returns None.
@@ -749,15 +780,16 @@ class MatchData(object):
             {'MSN3060': None}
 
         """
-        # Don't want to allow for mixed query types. So, number of None args must be > 2, 
-        # or else user entered more than one arg type and that's not good.
+        # Don't want to allow for mixed query types. So, number of None args 
+        # must be > 2 or else user incorrectly entered more than one arg type.
         count_none = sum((x is None for x in (psn,msn,bsn)))
         if count_none < 2:
-            sys.stderr.write('Error: Mixed query types detected. Please only use one type of query '
-                'ID in this function.\n')
+            sys.stderr.write('Error: Mixed query types detected. Please only use '
+                'one type of query ID in this function.\n')
             sys.exit(1)
 
-        # Prepare an ID list dict if one is provided. Need some special mapping and whatnot before we can pass it.
+        # Prepare an ID list dict if one is provided. Need some special mapping 
+        # and whatnot before we can pass it.
         query_list = {} # always psn : original ID (ex: {'10098':'T-16-000987'})
         output_data = {}
 
