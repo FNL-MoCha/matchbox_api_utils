@@ -722,33 +722,55 @@ class MatchData(object):
             query_medra   (list): List of MEDRA codes to filter on.
 
         Returns:
-            Dictionary of disease(s) and counts.
+            Dictionary of disease(s) and counts in the form of:
 
+                    {medra_code : (ctep_term, count)}
+        Example:
+            >>> data.get_disease_summary(query_medra=['10006190'])
+            {'10006190': (u'Invasive breast carcinoma', 641)}
+            
         """
         disease_counts = defaultdict(int)
+        results = defaultdict(list)
 
         for psn in self.data.values():
             # Skip the registered but not yet biopsied patients.
             if psn['medra_code'] == '-': 
                 continue
+            disease_counts[psn['medra_code']] += 1
 
-            string = '{}\t{}'.format(psn['medra_code'], psn['ctep_term'])
-            # diseases[self.data[psn]['ctep_term']] += 1
-            diseases[string] += 1
-
-        """
-        if disease:
-            # TODO: Have to fix this for a query input since we are changing the key.
-            if disease in diseases:
-                return {disease : diseases[disease]}
-            else:
-                sys.stderr.write('Disease "%s" was not found in the MATCH study '
-                    'dataset.\n' % disease)
+        if query_medra:
+            if isinstance(query_medra, list) is False:
+                sys.stderr.write('ERROR: arguments to get_disease_summary() must be lists!\n') 
                 return None
+            for q in query_medra:
+                q = str(q)
+                if q in disease_counts:
+                    results[q] = (self._disease_db[q], disease_counts[q])
+                else:
+                    sys.stderr.write('MEDRA code "%s" was not found in the MATCH study '
+                        'dataset.\n' % q)
+        elif query_disease:
+            if isinstance(query_disease, list) is False:
+                sys.stderr.write('ERROR: arguments to get_disease_summary() must be lists!\n') 
+                return None
+            for q in query_disease:
+                    print(q)
+                    q = str(q)
+                    medra = next((medra for medra,term in self._disease_db.items() if q == term), None)
+                    if medra is not None:
+                        results[medra] = (q, disease_counts[medra])
+                    else:
+                        sys.stderr.write('CTEP Term "%s" was not found in the MATCH study '
+                            'dataset.\n' % q)
         else:
-            return dict(diseases)
-        """
-        return dict(disease_counts)
+            for medra in self._disease_db:
+                results[medra] = (self._disease_db[medra], disease_counts[medra])
+
+        if results:
+            return dict(results)
+        else:
+            return None
 
     def get_histology(self, psn=None, msn=None, bsn=None, outside=False, 
             no_disease=False):
