@@ -108,15 +108,17 @@ def get_data(mb_data,psn=None,msn=None):
 
     psn = str(psn).lstrip('PSN')
     results['psn'] = 'PSN' + psn
-    results['disease'] = data.get_patients_and_disease(psn=psn)[psn]
-    results['msn'] = mb_data.get_msn(psn=psn)
+    results['disease'] = data.get_histology(psn=psn)['PSN'+psn]
+    # TODO: pop off last one and use that?  Check this...hacking!
+    results['msn'] = mb_data.get_msn(psn=psn).pop()
     results['bsn'] = mb_data.get_bsn(psn=psn)
     results['mois'] = []
     results['arms'] = data.get_patient_ta_status(psn=psn)
 
     variant_data = mb_data.get_variant_report(psn=psn)
     if variant_data:
-        for var_type in variant_data:
+        # TODO: check this.  Hacking right now!
+        for var_type in variant_data[results['msn']]:
             for var in variant_data[var_type]:
                 hgvs = make_hgvs(var['type'],var)
                 if var['amoi'] is None:
@@ -166,7 +168,8 @@ if __name__=='__main__':
 
     if not patients_list:
         print('No input file list passed. Retrieving data for all patients...')
-        patients_list = data.get_patients_and_disease().keys()
+        # TODO: is this best way?
+        patients_list = data.get_histology().keys()
 
 
     for pt in patients_list:
