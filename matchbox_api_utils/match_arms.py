@@ -353,11 +353,13 @@ class TreatmentArms(object):
             return [(arm, self.data[arm]['drug_name'], self.data[arm]['drug_id']) for arm in sorted(self.data)]
         elif armid:
             if armid in self.data:     
-                return (armid, self.data[armid]['drug_name'], self.data[armid]['drug_id'])
+                return (armid, self.data[armid]['drug_name'], 
+                        self.data[armid]['drug_id'])
         elif drugname: 
             for arm in self.data:
                 if self.data[arm]['drug_name'] == drugname:
-                    return (self.data[arm]['arm_id'],drugname, self.data[arm]['drug_id'])
+                    return (self.data[arm]['arm_id'],drugname, 
+                            self.data[arm]['drug_id'])
         return None
     
     def get_exclusion_disease(self,armid):
@@ -387,3 +389,28 @@ class TreatmentArms(object):
         else:
             print('ERROR: No arm with ID: "%s" found in study!' % armid)
             return None
+
+    def get_amois_by_arm(self, arm):
+        """
+        Input an arm identifier and return a list of aMOIs for the arm broken
+        down by category.
+
+        Args:
+            arm (str):  Arm identifier to query
+
+        Returns:
+            
+        """
+
+        try:
+            arm_data = self.data[arm]
+        except KeyError:
+            sys.stderr.write('ERROR: No arm with ID: "%s" found in study!\n' % arm)
+            return None
+
+        # Iterate through hotspots, cnvs, fusions, and non-hs aMOIs and generate
+        # a list of tuples of data that can be printed easily later.
+
+        #TODO: implement this.  For now just dump out dict.
+        return dict(arm_data['amois'])
+
