@@ -491,7 +491,7 @@ class MatchData(object):
         else:
             return dict(self.data[psn])
 
-    def get_biopsy_summary(self,category=None):
+    def get_biopsy_summary(self, category=None, ret_type='counts'):
         """
         Return dict of patients registered in MATCHBox with biopsy and sequencing
         information. 
@@ -507,49 +507,58 @@ class MatchData(object):
 
         Args:
             catetory (str): biopsy category to return. Valid categories are:
-            'patients','pass','failed_biopsy','no_biopsy','msns','sequenced',
-            'outside','outside_confirmation', 'progressed','initial'.
+                'pass', 'failed_biopsy', 'sequenced', 'outside','outside_confirmation', 
+                'progression','initial'.
+            ret_type (str): Data type to return. Valid types are "counts" and 
+                "ids", where counts is the total number in that category, and 
+                ids are the BSNs for the category. Default is "counts"
 
         Returns:
             dict: whole set of category:count or single category:count data.
 
+        # TODO: fix examples.
         Example:
             >>> print(data.get_biopsy_summary())
             {u'sequenced': 5620, u'msns': 5620, u'progression': 9, u'initial': 5563, u'patients': 6491, 
                 u'outside': 61, u'no_biopsy': 465, u'failed_biopsy': 574, u'pass': 5654, u'outside_confirmation': 21}
 
-            >>> print(data.get_biopsy_summary(category='patients'))
-            {'patients': 6491}
-
 
         """
         count = defaultdict(int)
+        ids = defaultdict(list)
 
         for p in self.data:
-            count[u'patients'] += 1
-            count[u'msns'] += len(self.data[p]['all_msns'])
+            count['patients'] += 1
             try:
                 if self.data[p]['biopsies'] == 'No_Biopsy':
-                    count[u'no_biopsy'] += 1
+                    count['no_biopsy'] += 1
                     continue
-                for biopsy in self.data[p]['biopsies'].values():
+                for bsn, biopsy in self.data[p]['biopsies'].iteritems():
                     biopsy_flag = biopsy['biopsy_status']
                     source      = biopsy['biopsy_source']
                     count[biopsy_flag.lower()] += 1
+                    ids[biopsy_flag.lower()].append(bsn) 
 
                     # Source will be '---' when a biopsy fails, so exclude those
                     if source != '---':
                         count[source.lower()] += 1
+                        ids[source.lower()].append(bsn)
                     if biopsy['ngs_data']:
-                        count[u'sequenced'] += 1
+                        count['sequenced'] += 1
+                        ids['sequenced'].append(bsn)
             except:
                 print('offending record: %s' % p)
                 raise
 
-        results = dict(count)
+        results = {}
+        if ret_type == 'counts':
+            results = dict(count)
+        elif ret_type == 'ids':
+            results = dict(ids)
+
         if category:
             try:
-                return {category:results[category]}
+                return {category : results[category]}
             except KeyError:
                 sys.stderr.write('ERROR: no such category "%s".\n' % category)
                 return None
@@ -712,6 +721,9 @@ class MatchData(object):
         return None
 
     def get_disease_summary(self, query_disease=None, query_medra=None):
+        # TODO: Data is good, but should try to filter outside assay data, failed 
+        # specimens, and progression biopsies (collapsed into one count) to get a
+        # value that is closer to the accepted 5560 count of study data cohort size.
         """
         Return a summary of registered diseases and counts. With no args, will return
         a list of all diseases and counts as a dict. One can also limit output to a
@@ -728,6 +740,14 @@ class MatchData(object):
         Example:
             >>> data.get_disease_summary(query_medra=['10006190'])
             {'10006190': (u'Invasive breast carcinoma', 641)}
+
+            >>> data.get_disease_summary(query_disease=['Invasive breast carcinoma'])
+            {u'10006190': ('Invasive breast carcinoma', 641)} 
+
+            >>> data.get_disease_summary(query_medra=[10006190,10024193,10014735])
+            {'10006190': (u'Invasive breast carcinoma', 641),
+             '10014735': (u'Endometrioid endometrial adenocarcinoma', 124),
+              '10024193': (u'Leiomyosarcoma (excluding uterine leiomyosarcoma)', 57)}
             
         """
         disease_counts = defaultdict(int)
@@ -755,7 +775,6 @@ class MatchData(object):
                 sys.stderr.write('ERROR: arguments to get_disease_summary() must be lists!\n') 
                 return None
             for q in query_disease:
-                    print(q)
                     q = str(q)
                     medra = next((medra for medra,term in self._disease_db.items() if q == term), None)
                     if medra is not None:
