@@ -1,8 +1,10 @@
+# -*- coding:utf-8 -*-
 import sys
 import os
 import json
 
 import matchbox_api_utils
+
 
 class Config(object):
     def __init__(self,mb_config_file=None,mb_json_data=None,ta_json_data=None,amois_lookup=None):

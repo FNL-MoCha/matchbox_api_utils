@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+Input a MSN, BSN, or PSN, and return the other identifiers. Useful when trying to retrieve the 
+correct dataset and you only know one piece of information.
+
+Note: We are only working with internal BSN, MSN, and PSN numbers for now and can not return
+Outside Assay identifiers at this time. 
+"""
 import sys
 import os
 import json
@@ -10,22 +17,13 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData 
 
-version = '3.0.0_072417'
+version = '3.1.0_011018'
 
 def get_args():
-    parser = argparse.ArgumentParser(
-        formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=125),
-        description=
-        '''
-        Input a MSN, BSN, or PSN, and return the other identifiers. Useful when trying to retrieve the 
-        correct dataset and you only know one piece of information.
-
-        Note: We are only working with internal BSN, MSN, and PSN numbers for now and can not return
-        Outside Assay identifiers at this time. 
-        '''
-    )
+    parser = argparse.ArgumentParser(description = __doc__)
     parser.add_argument('ids', metavar='<IDs>', nargs='?',
-            help='MATCH IDs to query.  Can be single or comma separated list.  Must be used with PSN or MSN option.')
+            help='MATCH IDs to query.  Can be single or comma separated list. '
+                'Must be used with PSN or MSN option.')
     parser.add_argument('-j', '--json', metavar='<mb_json_file>', default='sys_default',
             help='Load a MATCHBox JSON file derived from "matchbox_json_dump.py" instead '
                  'of a live query. By default will load the "sys_default" created during '
@@ -35,7 +33,10 @@ def get_args():
             help='Type of query string input. Can be MSN, PSN, or BSN')
     parser.add_argument('-f', '--file', metavar="<input_file>", 
             help='Load a batch file of all MSNs or PSNs to proc')
-    parser.add_argument('-v','--version',action='version', version = '%(prog)s  -  ' + version)
+    parser.add_argument('-o', '--outfile', metavar='<outfile>', default=sys.stdout,
+        help='Write output to file.')
+    parser.add_argument('-v','--version', action='version', 
+        version = '%(prog)s  -  ' + version)
     args = parser.parse_args()
 
     # Kludy way to use a sys default for the API, while still allowing for live queries
@@ -48,28 +49,78 @@ def read_batchfile(input_file):
     with open(input_file) as fh:
         return [ line.rstrip('\n') for line in fh ]
 
-def map_id(mb_data,id_list,qtype):
-    """Call to MATCHBox and return PSN, MSN, or BSN data based on the qtype."""
-    results = {}
+def map_id(mb_data, id_list, qtype):
+    """
+    Call to MATCHBox and return PSN, MSN, or BSN data based on the qtype.
+    """
+    results = []
 
+    # MSN and BSN results returns lists. Cat for easier str output.
     for pt in id_list:
         if qtype == 'psn':
-            msn = mb_data.get_msn(psn=pt)
             bsn = mb_data.get_bsn(psn=pt)
-            psn = 'PSN' + pt.lstrip('PSN')
-            return_val = (psn,bsn,msn)
+            if bsn:
+                bsn = cat_list(bsn)
+                msn = mb_data.get_msn(psn=pt)
+                if msn:
+                    msn = cat_list(msn)
+                else:
+                    msn = '---'
+                psn = 'PSN' + pt.lstrip('PSN')
+                results.append((psn, bsn, msn))
+
         elif qtype == 'msn':
             psn = mb_data.get_psn(msn=pt)
-            bsn = mb_data.get_bsn(msn=pt)
-            msn = 'MSN' + pt.lstrip('MSN')
-            return_val = (psn,bsn,msn)
+            if psn:
+                msn = 'MSN' + pt.lstrip('MSN')
+                bsn = cat_list(mb_data.get_bsn(msn=pt))
+                results.append((psn, bsn, msn))
 
         elif qtype == 'bsn':
             psn = mb_data.get_psn(bsn=pt)
-            msn = mb_data.get_msn(bsn=pt)
-            return_val = (psn,pt,msn)
+            if psn:
+                msn = mb_data.get_msn(bsn=pt)
+                if msn:
+                    msn = cat_list(msn)
+                else:
+                    msn = '---'
+                results.append((psn, pt, msn))
 
-        print(','.join(return_val))
+        # TODO: Need to handle errors better.  this won't work for outside assays. 
+        #       For example, looking up 16435 returns:
+        #
+        #            [u'61b685c6-8a72-43b2-84cc-b5c1abea41eb', u'MSN61978']
+        #
+        #       Perfectly valid data, but not that we can rely on fixing.
+        # print(','.join(return_val))
+
+        #if return_val[1].startswith('T-1') and return_val[2].startswith('MSN'):
+            #print(','.join(return_val))
+        #else:
+            #print('error')
+
+        # if not any(x.startswith('T-1') for x in return_val[1]):
+            # print('got here')
+            # sys.stderr.write("Can not find a match for non-outside assay results for input: %s\n" % pt)
+            # return None
+        # elif not any(x.startswith('MSN') for x in return_val[2]):
+            # sys.stderr.write("Can not find a match for non-outside assay results for input: %s\n" % pt)
+            # return None
+        # else:
+            # print(','.join(return_val))
+    return results
+
+def cat_list(l):
+    return ';'.join(l)
+
+def print_results(data, outfh):
+    if data:
+        sys.stdout.write('\n') # pad output from stderr msg if printing to stdout
+        outfh.write(','.join(['PSN', 'BSN', 'MSN']))
+        outfh.write('\n')
+        for i in data:
+            outfh.write(','.join(i))
+            outfh.write('\n')
 
 def validate_list(id_list,qtype):
     """
@@ -103,18 +154,21 @@ if __name__=='__main__':
     else:
         query_list = args['ids'].split(',')
 
-    valid_ids = validate_list(query_list,args['type'])
+    valid_ids = validate_list(query_list, args['type'])
     if not valid_ids:
         sys.stderr.write("ERROR: No valid IDs input!\n")
         sys.exit(1)
 
     # Make a call to MATCHbox to get a JSON obj of data.
     if not args['json']:
-        sys.stdout.write('Retrieving a live MATCHBox data object. This may take a few minutes...\n')
+        sys.stdout.write('Retrieving a live MATCHBox data object. This may take '
+           'a few minutes...\n')
         sys.stdout.flush()
 
-    data = MatchData(json_db=args['json'])
+    data = MatchData(json_db=args['json'], quiet=False)
     sys.stdout.write('\n')
 
     print('Getting MSN / PSN mapping data...')
-    map_id(data,valid_ids,args['type'])
+    results = map_id(data, valid_ids, args['type'])
+
+    print_results(results, args['outfile'])

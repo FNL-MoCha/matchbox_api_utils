@@ -15,12 +15,11 @@ class FunctionTests(unittest.TestCase):
 
         # Total num PSNs must equal to sum(passed_biopsy,failed_biopsy,no_biopsy,outside)
         biopsy_data = self.data.get_biopsy_summary()
-        print(biopsy_data)
         self.assertEqual(
-            sum([biopsy_data['passed_biopsy'],biopsy_data['failed_biopsy'],biopsy_data['no_biopsy'],
-                biopsy_data['outside']]
+            sum([biopsy_data['initial'],biopsy_data['outside'],biopsy_data['outside_confirmation'],
+                biopsy_data['progression']]
             ),
-            biopsy_data['psn']
+            biopsy_data['pass']
         )
 
     def test_get_disease_summary(self):
@@ -48,46 +47,54 @@ class FunctionTests(unittest.TestCase):
         Test get_msn() with PSN or BSN input. Also look for multiple MSN output.
 
         """
-        self.assertEqual(self.data.get_msn(psn='14420'),'MSN44180')
-        self.assertEqual(self.data.get_msn(psn=11352),'MSN19349')
-        self.assertEqual(self.data.get_msn(bsn='T-17-000550'),'MSN44180')
-        self.assertEqual(self.data.get_msn(psn='11926'),'MSN19992,MSN21717')
+        self.assertTrue('MSN44180' in self.data.get_msn(psn='14420'))
+        self.assertTrue('MSN19349' in self.data.get_msn(psn=11352))
+        self.assertTrue('MSN44180' in self.data.get_msn(bsn='T-17-000550'))
+        self.assertEqual(self.data.get_msn(psn='11583'),['MSN18184','MSN41897'])
 
     def test_get_bsn(self):
         """
         Test get_bsn() with PSN or MSN input.
 
         """
-        self.assertEqual(self.data.get_bsn(psn='14420'),'T-17-000550')
-        self.assertEqual(self.data.get_bsn(msn='44180'),'T-17-000550')
-        self.assertEqual(self.data.get_bsn(msn='MSN44180'),'T-17-000550')
+        self.assertTrue('T-17-000550' in self.data.get_bsn(psn='14420'))
+        self.assertTrue('T-17-000550' in self.data.get_bsn(msn='44180'))
+        self.assertTrue('T-17-000550' in self.data.get_bsn(msn='MSN44180'))
 
-    def test_get_patients_and_disease(self):
+    def test_get_histology(self):
         """
         Test get_patients_and_disease() with various inputs.
 
         """
-        self.assertEqual(self.data.get_patients_and_disease(psn='11352'),
-            {'11352': u'Serous endometrial adenocarcinoma'})
-        self.assertEqual(self.data.get_patients_and_disease(psn='11352,PSN10955,11222,PSN11070'),
+        self.assertEqual(self.data.get_histology(psn='11352'),
+            {'PSN11352': u'Serous endometrial adenocarcinoma'})
+        self.assertEqual(self.data.get_histology(psn='11352,PSN10955,11222,PSN11070'),
             {
-                '11352': u'Serous endometrial adenocarcinoma', 
-                '11070': u'Salivary gland cancer', 
-                '11222': u'Ovarian epithelial cancer', 
-                '10955': u'Squamous cell carcinoma of the anus'
+                'PSN11352': u'Serous endometrial adenocarcinoma', 
+                'PSN11070': u'Salivary gland cancer', 
+                'PSN11222': u'Ovarian epithelial cancer', 
+                'PSN10955': u'Squamous cell carcinoma of the anus'
             }
         )
-        self.assertEqual(self.data.get_patients_and_disease(psn='PSN11352'),
-            {'11352': u'Serous endometrial adenocarcinoma'}
+        self.assertEqual(self.data.get_histology(psn='PSN11352'),
+            {'PSN11352': u'Serous endometrial adenocarcinoma'}
         )
-        self.assertEqual(self.data.get_patients_and_disease(psn=11352),
-            {'11352': u'Serous endometrial adenocarcinoma'}
+        self.assertEqual(self.data.get_histology(psn=11352),
+            {'PSN11352': u'Serous endometrial adenocarcinoma'}
         )
-        self.assertEqual(self.data.get_patients_and_disease(msn=3060),{'MSN3060' : None})
-        self.assertEqual(self.data.get_patients_and_disease(msn=3160),
+
+        self.assertEqual(self.data.get_histology(msn=3060),{'MSN3060' : None})
+
+        self.assertEqual(self.data.get_histology(msn=3160),
             {'MSN3160': u'Ovarian epithelial cancer'}
         )
-        self.assertEqual(self.data.get_patients_and_disease(bsn='T-17-000550'),
+        self.assertEqual(self.data.get_histology(bsn='T-17-000550'),
             {'T-17-000550': u'Carcinosarcoma of the uterus'}
         )
-        self.assertRaises(SystemExit,self.data.get_patients_and_disease,psn='11352',msn=3060)
+
+        self.assertEqual(self.data.get_histology(bsn='T-16-987,T-15-1,T-16-000811'),
+            {'T-15-1': None, 'T-16-000811': u'Salivary gland cancer', 'T-16-987': None}
+        )
+
+        self.assertRaises(SystemExit,self.data.get_histology,psn='11352',msn=3060)
+
