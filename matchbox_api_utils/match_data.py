@@ -163,7 +163,7 @@ class MatchData(object):
         return results
         
     @staticmethod
-    def __format_id(op,msn=None,psn=None):
+    def __format_id(op, msn=None, psn=None):
         if msn:
             msn = str(msn)
             if op == 'add':
@@ -956,7 +956,7 @@ class MatchData(object):
 
         # Queue up a patient's list in case you just want to find data for one patient.
         if query_patients:
-            pt_list = [self.__format_id('rm',x) for x in query_patients]
+            pt_list = [self.__format_id('rm', psn=x) for x in query_patients]
         else:
             pt_list = self.data.keys()
 
