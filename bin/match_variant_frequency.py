@@ -132,4 +132,4 @@ if __name__=='__main__':
     query_data, patient_total, biopsy_total = data.find_variant_frequency(query_list, patient_list)
     print('Total patients queried: {}'.format(patient_total))
     print('Total biopsies queried: {}\n'.format(biopsy_total))
-    print_results(query_data,args.output,args.style)
+    print_results(query_data, args.output, args.style)
