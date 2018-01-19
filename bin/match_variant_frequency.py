@@ -15,11 +15,10 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData
 
-version = '0.12.0_120517'
+version = '0.13.0_011918'
 
 def get_args():
     parser = argparse.ArgumentParser(
-        formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=150),
         description=__doc__,
     )
     parser.add_argument('-j', '--json', metavar='<mb_json_file>', default='sys_default',
