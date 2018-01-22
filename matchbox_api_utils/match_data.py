@@ -147,10 +147,12 @@ class MatchData(object):
         # Get variant report data if the gene is in the input gene list.  But, only output the variant level
         # details, and filter out the VAF, coverage, etc. so that we can get unqiue lists later.  If we wanted
         # to get sequence specific details, we'll run a variant report instead.
+
+        # TODO: Why are we filtering out VAF, CN, etc? 
         wanted = ('alternative', 'amoi', 'chromosome', 'exon', 'confirmed', 'function', 'gene', 'hgvs',
             'identifier', 'oncominevariantclass', 'position', 'protein', 'reference', 'transcript', 'type',
             'driverGene','partnerGene','driverReadCount','annotation','confidenceInterval95percent',
-            'confidenceInterval5percent','copyNumber')
+            'confidenceInterval5percent','copyNumber','alleleFrequency','copyNumber','driverReadCount')
 
         # This is first iteration, and I can't remember why I don't just want all variant level data any more.  
         # return [elem for elem in data if elem['gene'] in gene_list ]
@@ -956,6 +958,9 @@ class MatchData(object):
 
         # Queue up a patient's list in case you just want to find data for one patient.
         if query_patients:
+            if type(query_patients) is not list:
+                sys.stderr.write('ERROR: You must input the query patients as a list, even if only inputting one!\n')
+                return None
             pt_list = [self.__format_id('rm', psn=x) for x in query_patients]
         else:
             pt_list = self.data.keys()
@@ -980,6 +985,7 @@ class MatchData(object):
                             biopsies.append(biopsy)
                             input_data = b_record['ngs_data']['mois']
 
+                            # XXX
                             if 'snvs' in query and 'singleNucleotideVariants' in input_data:
                                 matches += self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],
                                     query['snvs'])
