@@ -17,7 +17,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData 
 
-version = '3.1.0_011018'
+version = '3.2.012618'
 
 def get_args():
     parser = argparse.ArgumentParser(description = __doc__)
@@ -113,7 +113,8 @@ def map_id(mb_data, id_list, qtype):
 def cat_list(l):
     return ';'.join(l)
 
-def print_results(data, outfh):
+def print_results(data, output_file):
+    outfh = open(output_file, 'w')
     if data:
         sys.stdout.write('\n') # pad output from stderr msg if printing to stdout
         outfh.write(','.join(['PSN', 'BSN', 'MSN']))
