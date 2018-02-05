@@ -13,7 +13,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData
 
-version = '2.0.121917'
+version = '2.1.020518'
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -78,6 +78,8 @@ def patient_summary(data,outfh,patients=None,outside=False,):
         for patient in patients:
             return_data = data.get_histology(psn=patient)
             if return_data:
+                # have to correct entry if we do not add PSN to the front.
+                patient = 'PSN' + patient.lstrip('PSN')
                 results[patient] = return_data[patient]
     else:
         results = data.get_histology(outside=outside,no_disease=False)
