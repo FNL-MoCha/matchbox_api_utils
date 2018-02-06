@@ -77,6 +77,8 @@ def patient_summary(data,outfh,patients=None,outside=False,):
     if patients:
         for patient in patients:
             return_data = data.get_histology(psn=patient)
+            # TODO: Get patient last status here
+            # status = data.get_patient
             if return_data:
                 # have to correct entry if we do not add PSN to the front.
                 patient = 'PSN' + patient.lstrip('PSN')
@@ -99,7 +101,7 @@ def patient_summary(data,outfh,patients=None,outside=False,):
             # and the data is not going to be so useful. Skip those.
             if len(msn) < 1:
                 continue
-            outfh.write(','.join([res,bsn,'|'.join(msn),results[res]]))
+            outfh.write(','.join([res, bsn, '|'.join(msn), results[res]]))
             outfh.write('\n')
     else:
         sys.stderr.write("ERROR: No data for input patient list!\n")
@@ -111,7 +113,7 @@ if __name__=='__main__':
 
     if args.outfile:
         sys.stdout.write('Writing results to %s.\n' % args.outfile)
-        outfh = open(args.outfile,'w')
+        outfh = open(args.outfile, 'w')
     else:
         outfh = sys.stdout
 
@@ -128,7 +130,7 @@ if __name__=='__main__':
     data = MatchData(json_db=args.json)
 
     if args.result_type == 'patient':
-        patient_summary(data,outfh,patients,outside=args.Outside)
+        patient_summary(data, outfh, patients, outside=args.Outside)
     elif args.result_type == 'disease':
         if args.tumor:
             tumor_list = args.tumor.split(',')
