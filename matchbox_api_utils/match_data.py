@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # TODO:
-#    - get_ihc_results() -> a method to print out patient IHC data based on gene name or psn.
 #    - Add BSN query to args list of get_variant_report()
 import sys
 import json
@@ -139,11 +138,11 @@ class MatchData(object):
         return med_map
 
     @staticmethod
-    def __filter_by_patient(json,patient):
+    def __filter_by_patient(json, patient):
         return json[patient]
 
     @staticmethod
-    def __get_var_data_by_gene(data,gene_list):
+    def __get_var_data_by_gene(data, gene_list):
         # Get variant report data if the gene is in the input gene list.  But, only output the variant level
         # details, and filter out the VAF, coverage, etc. so that we can get unqiue lists later.  If we wanted
         # to get sequence specific details, we'll run a variant report instead.
@@ -1082,17 +1081,17 @@ class MatchData(object):
                 if 'Outside' in biopsy['biopsy_source']:
                     continue
                 elif biopsy['ngs_data'] and 'mois' in biopsy['ngs_data']:
-                    results[self.__format_id('add',msn=biopsy['ngs_data']['msn'])] = biopsy['ngs_data']['mois']
+                    results[self.__format_id('add', msn=biopsy['ngs_data']['msn'])] = biopsy['ngs_data']['mois']
             if results:
                 return results
             else:
                 return None
 
-    def get_patient_ta_status(self,psn=None):
+    def get_patient_ta_status(self, psn=None):
         """
-        Input a list of PSNs and return information about the treatment arm(s) to which they were
-        assigned, if they were assigned to any arms. If no PSN list is passed to the function, return
-        results for every PSN in the study.
+        Input a list of PSNs and return information about the treatment arm(s) 
+        to which they were assigned, if they were assigned to any arms. If no PSN 
+        list is passed to the function, return results for every PSN in the study.
 
         Args:
             psn (str):  PSN string to query.
@@ -1105,7 +1104,8 @@ class MatchData(object):
             {u'EAY131-Z1A': u'ON_TREATMENT_ARM'}
 
             >>> data.get_patient_ta_status(psn=11889)
-            {u'EAY131-IX1': u'FORMERLY_ON_ARM_OFF_TRIAL', u'EAY131-I': u'COMPASSIONATE_CARE'}
+            {u'EAY131-IX1': u'FORMERLY_ON_ARM_OFF_TRIAL', 
+                    u'EAY131-I': u'COMPASSIONATE_CARE'}
 
             >>> data.get_patient_ta_status(psn=10003)
             {}
@@ -1113,7 +1113,8 @@ class MatchData(object):
         """
         results = {}
         if psn:
-            psn = str(psn)
+            # psn = str(psn)
+            psn = self.__format_id('rm', psn=psn)
             if psn in self.data:
                 return self.data[psn]['ta_arms']
             else:
@@ -1163,7 +1164,7 @@ class MatchData(object):
                     results[pt] = self.data[pt]['ctep_term']
         return results
 
-    def get_patients_by_arm(self,arm):
+    def get_patients_by_arm(self, arm):
         results = []
         
         if arm not in self.arm_data.data:
@@ -1181,6 +1182,7 @@ class MatchData(object):
         # changed over time, and it's good to have results for all assays.
         all_ihc_assays = {'RB' : None, 'MSH2' : None, 'MLH1' : None, 'PTEN' : None}
         return {x : ihc_data.get(x, None) for x in all_ihc_assays.keys()}
+
 
     def get_ihc_results(self, psn=None, msn=None, bsn=None, assays=None):
         """
