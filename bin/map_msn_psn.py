@@ -152,6 +152,7 @@ if __name__=='__main__':
     results = map_id(data, valid_ids, args['type'])
 
     if args['outfile']:
+        sys.stderr.write("Writing output to %s.\n" % args['outfile'])
         outfh = open(args['outfile'], 'w')
     else:
         outfh = sys.stdout
