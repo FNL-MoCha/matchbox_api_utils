@@ -17,7 +17,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData 
 
-version = '3.3.021218'
+version = '3.4.021218'
 
 def get_args():
     parser = argparse.ArgumentParser(description = __doc__)
@@ -97,7 +97,7 @@ def print_results(data, outfh):
         sys.stdout.write('\n') # pad output from stderr msg if printing to stdout
         outfh.write(','.join(['PSN', 'BSN', 'MSN']))
         outfh.write('\n')
-        for i in data:
+        for i in sorted(data, key = lambda x: x[1]):
             outfh.write(','.join(i))
             outfh.write('\n')
 
