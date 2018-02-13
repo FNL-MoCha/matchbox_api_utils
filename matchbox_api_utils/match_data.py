@@ -641,7 +641,7 @@ class MatchData(object):
         sys.stderr.write('No result for id %s\n' % query_term)
         return None
 
-    def get_msn(self,psn=None,bsn=None):
+    def get_msn(self, psn=None, bsn=None):
         """
         Retrieve a patient MSN from either an input PSN or BSN. Note that there can
         always be more than 1 MSN per patient, but can only ever be 1 MSN per biopsy
@@ -666,7 +666,7 @@ class MatchData(object):
         """
         query_term = ''
         if psn:
-            psn = self.__format_id('rm',psn=psn)
+            psn = self.__format_id('rm', psn=psn)
             query_term = psn
             if psn in self.data:
                 return self.data[psn]['all_msns']
@@ -715,15 +715,16 @@ class MatchData(object):
             psn = self.__format_id('rm', psn=psn)
             query_term = psn
             if psn in self.data:
-                return self.data[psn]['all_biopsies']
+                biopsy_data = self.data[psn]['biopsies']
+                return [x for x in biopsy_data.keys() if biopsy_data[x]['biopsy_status'] != 'Failed_Biopsy']
         elif msn:
             msn = self.__format_id('add',msn=msn)
             query_term = msn
             for p in self.data:
                 if msn in self.data[p]['all_msns']:
-                    for b in self.data[p]['biopsies']:
+                    for b, data in self.data[p]['biopsies'].iteritems():
                         try:
-                            if msn == self.data[p]['biopsies'][b]['ngs_data']['msn']:
+                            if msn == data['ngs_data']['msn'] and data['biopsy_status'] != 'Failed_Biopsy':
                                 return [b]
                         except KeyError:
                             continue
