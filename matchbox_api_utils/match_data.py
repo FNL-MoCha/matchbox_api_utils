@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # TODO:
-#    - get_ihc_results() -> a method to print out patient IHC data based on gene name or psn.
 #    - Add BSN query to args list of get_variant_report()
 import sys
 import json
@@ -139,11 +138,11 @@ class MatchData(object):
         return med_map
 
     @staticmethod
-    def __filter_by_patient(json,patient):
+    def __filter_by_patient(json, patient):
         return json[patient]
 
     @staticmethod
-    def __get_var_data_by_gene(data,gene_list):
+    def __get_var_data_by_gene(data, gene_list):
         # Get variant report data if the gene is in the input gene list.  But, only output the variant level
         # details, and filter out the VAF, coverage, etc. so that we can get unqiue lists later.  If we wanted
         # to get sequence specific details, we'll run a variant report instead.
@@ -173,7 +172,8 @@ class MatchData(object):
             elif op == 'rm':
                 return msn.lstrip('MSN')
             else:
-                sys.stderr.write('ERROR: operation "%s" is not valid.  Can only choose from "add" or "rm"!\n')
+                sys.stderr.write('ERROR: operation "%s" is not valid.  Can only '
+                    'choose from "add" or "rm"!\n')
                 sys.exit(1)
         elif psn:
             psn = str(psn)
@@ -182,34 +182,39 @@ class MatchData(object):
             elif op == 'rm':
                 return psn.lstrip('PSN')
             else:
-                sys.stderr.write('ERROR: operation "%s" is not valid.  Can only choose from "add" or "rm"!\n')
+                sys.stderr.write('ERROR: operation "%s" is not valid.  Can only '
+                    'choose from "add" or "rm"!\n')
                 sys.exit(1)
         else:
             sys.stderr.write("Nothing to do!\n")
             return None
 
-    def __get_patient_table(self,psn,next_key=None):
-        # Output the filtered data table for a PSN so that we have a quick way to figure out 
-        # key : value structure for the dataset.
-        for key,val in self.data[str(psn)].items():
+    def __get_patient_table(self, psn, next_key=None):
+        # Output the filtered data table for a PSN so that we have a quick way 
+        # to figure out key : value structure for the dataset.
+        for key, val in self.data[str(psn)].items():
             if next_key:
-                if key==next_key:
-                    for k2,v2 in self.data[str(psn)][key].items():
-                        return json.dumps(self.data[str(psn)][key],indent=4,sort_keys=True)
+                if key == next_key:
+                    for k2, v2 in self.data[str(psn)][key].items():
+                        return json.dumps(self.data[str(psn)][key], indent=4,
+                                sort_keys=True)
             else:
-                return json.dumps(self.data[str(psn)],indent=4,sort_keys=True)
+                return json.dumps(self.data[str(psn)], indent=4, sort_keys=True)
 
     @staticmethod
-    def __get_curr_arm(psn,assignment_logic_list,flag):
-        # Figure out the arm to which the patient was assinged based on the flag message found in the TA Logic flow.
+    def __get_curr_arm(psn, assignment_logic_list, flag):
+        # Figure out the arm to which the patient was assinged based on the flag 
+        # message found in the TA Logic flow.
         try:
             return [x['treatmentArmId'] for x in assignment_logic_list if x['reasonCategory'] == flag][0]
         except:
-            # There are exactly 4 cases (as of 9/19/2017) where the patient has PTEN IHC-, but was not assigned Arm P
-            # directly for some reason that I can't discern. Instead patient was put on compassionate care for Arm P,
-            # and although I can't comptutationally derive that since there is no obvious messsage, I don't want to lose
-            # those results. So, I'm going to manually enter data for those 4 until I can figure out how to get this 
-            # in better.
+            # There are exactly 4 cases (as of 9/19/2017) where the patient has 
+            # PTEN IHC-, but was not assigned Arm P directly for some reason that 
+            # I can't discern. Instead patient was put on compassionate care for 
+            # Arm P, and although I can't comptutationally derive that since 
+            # there is no obvious messsage, I don't want to lose those results. 
+            # So, I'm going to manually enter data for those 4 until I can figure 
+            # out how to get this in better.
             if psn in ('13629','13899','14007','14057'):
                 return 'EAY131-P'
             else:
@@ -218,19 +223,22 @@ class MatchData(object):
 
     @staticmethod
     def __get_pt_hist(triggers,assignments,rejoin_triggers):
-        # Read the trigger messages to determine the patient treatment and study arm history.
+        # Read the trigger messages to determine the patient treatment and study 
+        # arm history.
         arms = []
         arm_hist = {}
         progressed = False
         tot_msgs = len(triggers)
 
-        # If we only ever got to registration and not further (so there's only 1 message), let's bail out
+        # If we only ever got to registration and not further (so there's only 1 
+        # message), let's bail out
         if tot_msgs == 1:
             return (triggers[0]['patientStatus'], triggers[0]['message'], {}, False)
 
         counter = 0
         for i,msg in enumerate(triggers):
-            # On a rare occassion, we get two of the same messages in a row.  Just skip the redundant message?
+            # On a rare occassion, we get two of the same messages in a row. Just
+            # skip the redundant message?
             if triggers[i-1]['patientStatus'] == msg['patientStatus']:
                 continue
             
@@ -245,7 +253,8 @@ class MatchData(object):
                 try:
                     arm_hist[curr_arm] = assignments[counter]['patientAssignmentMessage'][0]['status']
                 except IndexError:
-                    # We don't have a message because no actual assignment ever made (i.e. OFF_TRIAL before assignment)
+                    # We don't have a message because no actual assignment ever 
+                    # made (i.e. OFF_TRIAL before assignment)
                     arm_hist[curr_arm] = '.'
                 counter += 1
 
@@ -392,9 +401,11 @@ class MatchData(object):
         return ihc_results
 
     def __proc_ngs_data(self,ngs_results):
-       # Create and return a dict of variant call data that can be stored in the patient's obj.
+       # Create and return a dict of variant call data that can be stored in the 
+       # patient's obj.
         variant_call_data = defaultdict(list)
-        variant_list = ['singleNucleotideVariants', 'indels', 'copyNumberVariants', 'unifiedGeneFusions']
+        variant_list = ['singleNucleotideVariants', 'indels', 'copyNumberVariants',
+            'unifiedGeneFusions']
 
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
@@ -403,7 +414,8 @@ class MatchData(object):
                     var_data.update({'amoi' : self.arm_data.map_amoi(var_data)})
                     variant_call_data[var_type].append(var_data)
 
-        # Remap the driver / partner genes so that we know they're correct, and add a 'gene' field to use later on.
+        # Remap the driver / partner genes so that we know they're correct, and 
+        # add a 'gene' field to use later on.
         if 'unifiedGeneFusions' in variant_call_data:
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
 
@@ -466,7 +478,7 @@ class MatchData(object):
             fusion['partnerGene'] = partner
         return fusion_data
 
-    def get_patient_meta(self,psn,val=None):
+    def get_patient_meta(self, psn, val=None):
         """
         Return data for a patient based on a metadata field name. Sometimes we may want to just get 
         a quick bit of data or field for a patient record rather than a whole analysis, and this can
@@ -483,12 +495,13 @@ class MatchData(object):
             no data for a particular record and raises and error if the metaval is not valid for the dataset.
 
         """
-        psn = self.__format_id('rm',psn=psn)
+        psn = self.__format_id('rm', psn=psn)
         if val:
             try:
                 return {val:self.data[psn][val]}
             except KeyError:
-                sys.stderr.write("ERROR: '%s' is not a valid metavalue for this dataset.\n" % val)
+                sys.stderr.write("ERROR: '%s' is not a valid metavalue for this "
+                    "dataset.\n" % val)
                 return None
         else:
             return dict(self.data[psn])
@@ -523,7 +536,6 @@ class MatchData(object):
             >>> print(data.get_biopsy_summary())
             {u'sequenced': 5620, u'msns': 5620, u'progression': 9, u'initial': 5563, u'patients': 6491, 
                 u'outside': 61, u'no_biopsy': 465, u'failed_biopsy': 574, u'pass': 5654, u'outside_confirmation': 21}
-
 
         """
         count = defaultdict(int)
@@ -586,8 +598,9 @@ class MatchData(object):
 
         """
         if self._json_db == 'sys_default':
-            sys.stderr.write('ERROR: You can not use the system default JSON file and create a system default JSON. You must use '
-                'json_db = None in the call to MatchData!\n')
+            sys.stderr.write('ERROR: You can not use the system default JSON file '
+                'and create a system default JSON. You must use "json_db = None" '
+                'in the call to MatchData!\n')
             return None
         formatted_date = utils.get_today('short')
         if not filename:
@@ -628,7 +641,7 @@ class MatchData(object):
         sys.stderr.write('No result for id %s\n' % query_term)
         return None
 
-    def get_msn(self,psn=None,bsn=None):
+    def get_msn(self, psn=None, bsn=None):
         """
         Retrieve a patient MSN from either an input PSN or BSN. Note that there can
         always be more than 1 MSN per patient, but can only ever be 1 MSN per biopsy
@@ -653,7 +666,7 @@ class MatchData(object):
         """
         query_term = ''
         if psn:
-            psn = self.__format_id('rm',psn=psn)
+            psn = self.__format_id('rm', psn=psn)
             query_term = psn
             if psn in self.data:
                 return self.data[psn]['all_msns']
@@ -677,8 +690,8 @@ class MatchData(object):
 
     def get_bsn(self,psn=None,msn=None):
         """
-        Retrieve a patient BSN from either an input PSN or MSN. Note that we can have more than one
-        BSN per PSN, but we can only ever have one BSN / MSN.
+        Retrieve a patient BSN from either an input PSN or MSN. Note that we can 
+        have more than one BSN per PSN, but we can only ever have one BSN / MSN.
 
         Args:
             psn (str): A PSN number to query. 
@@ -702,15 +715,16 @@ class MatchData(object):
             psn = self.__format_id('rm', psn=psn)
             query_term = psn
             if psn in self.data:
-                return self.data[psn]['all_biopsies']
+                biopsy_data = self.data[psn]['biopsies']
+                return [x for x in biopsy_data.keys() if biopsy_data[x]['biopsy_status'] != 'Failed_Biopsy']
         elif msn:
             msn = self.__format_id('add',msn=msn)
             query_term = msn
             for p in self.data:
                 if msn in self.data[p]['all_msns']:
-                    for b in self.data[p]['biopsies']:
+                    for b, data in self.data[p]['biopsies'].iteritems():
                         try:
-                            if msn == self.data[p]['biopsies'][b]['ngs_data']['msn']:
+                            if msn == data['ngs_data']['msn'] and data['biopsy_status'] != 'Failed_Biopsy':
                                 return [b]
                         except KeyError:
                             continue
@@ -868,7 +882,8 @@ class MatchData(object):
         filtered = []
         for psn in query_list:
             if psn in self.data:
-                # If the no disease filter is turned on (i.e. False) don't out put "No Biopsy" results.
+                # If the no disease filter is turned on (i.e. False) don't out put 
+                # "No Biopsy" results.
                 if outside is False and 'OUTSIDE' in self.data[psn]['source']:
                     filtered.append(psn)
                     continue
@@ -878,8 +893,8 @@ class MatchData(object):
                 output_data[query_list[psn]] = self.data[psn]['ctep_term']
 
         if filtered and self._quiet is False:
-            sys.stderr.write('WARN: The following specimens were filtered from the output due to either the '
-                '"outside" or "no_disease" filters:\n')
+            sys.stderr.write('WARN: The following specimens were filtered from the '
+                'output due to either the "outside" or "no_disease" filters:\n')
             sys.stderr.write('\t%s\n' % ','.join(filtered))
 
         return output_data
@@ -959,7 +974,8 @@ class MatchData(object):
         # Queue up a patient's list in case you just want to find data for one patient.
         if query_patients:
             if type(query_patients) is not list:
-                sys.stderr.write('ERROR: You must input the query patients as a list, even if only inputting one!\n')
+                sys.stderr.write('ERROR: You must input the query patients as a '
+                    'list, even if only inputting one!\n')
                 return None
             pt_list = [self.__format_id('rm', psn=x) for x in query_patients]
         else:
@@ -973,8 +989,9 @@ class MatchData(object):
                 for biopsy in self.data[patient]['biopsies']:
                     b_record = self.data[patient]['biopsies'][biopsy]
 
-                    # Get rid of Outside assays biopsies (but not outside confirmation) and Failed biopsies.
-                    # if b_record['biopsy_source'] == 'Outside' or b_record['biopsy_status'] != "Pass":
+                    # Get rid of Outside assays biopsies (but not outside 
+                    # confirmation) and Failed biopsies.
+
                     if b_record['biopsy_status'] != "Pass":
                         continue
                     biopsies = []
@@ -985,7 +1002,6 @@ class MatchData(object):
                             biopsies.append(biopsy)
                             input_data = b_record['ngs_data']['mois']
 
-                            # XXX
                             if 'snvs' in query and 'singleNucleotideVariants' in input_data:
                                 matches += self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],
                                     query['snvs'])
@@ -1066,17 +1082,17 @@ class MatchData(object):
                 if 'Outside' in biopsy['biopsy_source']:
                     continue
                 elif biopsy['ngs_data'] and 'mois' in biopsy['ngs_data']:
-                    results[self.__format_id('add',msn=biopsy['ngs_data']['msn'])] = biopsy['ngs_data']['mois']
+                    results[self.__format_id('add', msn=biopsy['ngs_data']['msn'])] = biopsy['ngs_data']['mois']
             if results:
                 return results
             else:
                 return None
 
-    def get_patient_ta_status(self,psn=None):
+    def get_patient_ta_status(self, psn=None):
         """
-        Input a list of PSNs and return information about the treatment arm(s) to which they were
-        assigned, if they were assigned to any arms. If no PSN list is passed to the function, return
-        results for every PSN in the study.
+        Input a list of PSNs and return information about the treatment arm(s) 
+        to which they were assigned, if they were assigned to any arms. If no PSN 
+        list is passed to the function, return results for every PSN in the study.
 
         Args:
             psn (str):  PSN string to query.
@@ -1089,7 +1105,8 @@ class MatchData(object):
             {u'EAY131-Z1A': u'ON_TREATMENT_ARM'}
 
             >>> data.get_patient_ta_status(psn=11889)
-            {u'EAY131-IX1': u'FORMERLY_ON_ARM_OFF_TRIAL', u'EAY131-I': u'COMPASSIONATE_CARE'}
+            {u'EAY131-IX1': u'FORMERLY_ON_ARM_OFF_TRIAL', 
+                    u'EAY131-I': u'COMPASSIONATE_CARE'}
 
             >>> data.get_patient_ta_status(psn=10003)
             {}
@@ -1097,7 +1114,8 @@ class MatchData(object):
         """
         results = {}
         if psn:
-            psn = str(psn)
+            # psn = str(psn)
+            psn = self.__format_id('rm', psn=psn)
             if psn in self.data:
                 return self.data[psn]['ta_arms']
             else:
@@ -1147,29 +1165,7 @@ class MatchData(object):
                     results[pt] = self.data[pt]['ctep_term']
         return results
 
-    def get_seq_datafile(self,dtype=None,msn=None,psn=None):
-        # TODO: Change this to get datafile and try to get BAM, VCF, etc. based on args.
-        """
-        .. note: 
-           THIS METHOD IS NOT YET IMPLEMENTED AND IS JUST A PLACEHOLDER.
-
-        Get path of VCF file from MB Obj and return the VCF file from either the MB mirror or the source.
-        """
-        valid_types = ('vcf','dna','rna','all')
-        if dtype and dtype not in valid_types:
-            sys.stderr.write('ERROR: %s is not a valid data type. You must choose from "vcf", "rna", or "dna".\n')
-            sys.exit(1)
-
-        if msn:
-            msn = 'MSN' + str(msn).strip('MSN')
-        elif psn:
-            psn = str(psn).lstrip('PSN')
-
-        print('psn: %s' % psn)
-        # pp(dict(self.data[psn]))
-        return
-
-    def get_patients_by_arm(self,arm):
+    def get_patients_by_arm(self, arm):
         results = []
         
         if arm not in self.arm_data.data:
@@ -1178,5 +1174,80 @@ class MatchData(object):
 
         for pt in self.data:
             if arm in self.data[pt]['ta_arms']:
-                results.append((pt,arm,self.data[pt]['ta_arms'][arm]))
+                results.append((pt, arm, self.data[pt]['ta_arms'][arm]))
         return results
+
+    @staticmethod
+    def __map_ihc_results(ihc_data):
+        # Set up a dict of assays now that we'll fill in since the number has 
+        # changed over time, and it's good to have results for all assays.
+        all_ihc_assays = {'RB' : None, 'MSH2' : None, 'MLH1' : None, 'PTEN' : None}
+        return {x : ihc_data.get(x, None) for x in all_ihc_assays.keys()}
+
+
+    def get_ihc_results(self, psn=None, msn=None, bsn=None, assays=None):
+        """
+        Get the IHC results for a patient.
+
+        Args:
+            psn (str):  Query the data by PSN. Note: that multiple results will
+                be returned since there can be more than one MSN / PSN.
+            msn (str):  Query the data by MSN.
+            bsn (str):  Query the data by BSN.
+            assay (list): IHC assay for which we want to return results. If no 
+                assay is passed, will return all IHC assay results.
+
+        Returns:
+            Dict of lists containing the MSN and all IHC assays available for 
+            the specimen.
+
+        Example:
+            >>> self.get_ihc_results(msn='MSN30791')
+            {'MSN30791': {'MLH1': u'POSITIVE',
+                          'MSH2': u'POSITIVE',
+                          'PTEN': u'POSITIVE',
+                          'RB': u'ND'}}
+
+            >>> get_ihc_results(bsn='T-16-002222', assays=['PTEN'])
+            {u'MSN30791': {'PTEN': u'POSITIVE'}}
+
+        """
+
+        if not any(x for x in [psn, msn, bsn]):
+            sys.stderr.write("ERROR: You must input an MSN, BSN, or PSN to "
+                " query!\n")
+            return None
+        if (len([y for y in [psn, msn, bsn] if y is not None]) > 1):
+            sys.stderr.write("ERROR: Only enter one ID per query. We can not look "
+                "up an MSN and PSN at the same time, for example.\n")
+            return None
+
+        results = defaultdict(dict)
+
+        if psn:
+            record = self.get_patient_meta(psn=psn)
+            bsns = record['all_biopsies']
+            for b in bsns:
+                ihc_data = record['biopsies'][b]['ihc']
+                msn = record['biopsies'][b]['ngs_data']['msn']
+                results[msn] = self.__map_ihc_results(ihc_data)
+        elif msn:
+            psn = self.get_psn(msn=msn)
+            record = self.get_patient_meta(psn=psn)
+            for b in record['all_biopsies']:
+                if msn == record['biopsies'][b]['ngs_data']['msn']:
+                    ihc_data = record['biopsies'][b]['ihc']
+                    results[msn] = self.__map_ihc_results(ihc_data)
+        elif bsn:
+            psn = self.get_psn(bsn=bsn)
+            record = self.get_patient_meta(psn=psn)
+            ihc_data = record['biopsies'][bsn]['ihc']
+            msn = record['biopsies'][bsn]['ngs_data']['msn']
+            results[msn] = self.__map_ihc_results(ihc_data)
+
+        if assays:
+            for m in results:
+                filtered_results = {a : results[m].get(a, None) for a in assays}
+                results[m] = filtered_results
+
+        return dict(results)
