@@ -60,15 +60,9 @@ for f in json_files:
 
 mb_data_files = get_files('mb_obj',json_files)
 mb_json_data = get_latest_data(mb_data_files)
-# print('mb JSON datafile is: %s' % mb_json_data)
-# sys.exit()
 
 ta_data_files = get_files('ta_obj',json_files)
 ta_json_data = get_latest_data(ta_data_files)
-# print('TA JSON datafile is: %s' % ta_json_data)
-# sys.exit()
 
 amois_files = get_files('amoi_lookup',json_files)
 amoi_json_data = get_latest_data(amois_files)
-# print('amois Lookup JSON datafile is: %s' % amoi_json_data)
-# sys.exit()
