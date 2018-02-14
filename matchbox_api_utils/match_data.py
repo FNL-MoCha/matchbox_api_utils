@@ -1114,7 +1114,6 @@ class MatchData(object):
         """
         results = {}
         if psn:
-            # psn = str(psn)
             psn = self.__format_id('rm', psn=psn)
             if psn in self.data:
                 return self.data[psn]['ta_arms']
