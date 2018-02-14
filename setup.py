@@ -12,7 +12,8 @@ def _post_install(dir):
 class install(_install):
     def run(self):
         _install.do_egg_install(self)
-        self.execute(_post_install, (self.install_lib,), msg="Running post install task")
+        self.execute(_post_install, (self.install_lib,), 
+                msg="Running post install task")
         
 def readme():
     with open('README.rst') as fh:
