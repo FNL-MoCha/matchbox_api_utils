@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # Post install script to set up environment
 import sys
 import os
@@ -7,7 +8,10 @@ import datetime
 from subprocess import call
 from pprint import pprint as pp
 
-# Want to store data in user's home dir, but if running with `sudo` need to make special consideration.
+import matchbox_api_utils
+
+# Want to store data in user's home dir, but if running with `sudo` need to 
+# make special consideration.
 if 'SUDO_USER' in os.environ:
     system_user = os.environ['SUDO_USER']
 else:
@@ -18,15 +22,17 @@ def write_json(user,passwd,root_dir):
     config_data = {
         'name' : 'MATCHBox API config file',
         'version' : '1.0',
-        'description' : 'Config file for MATCHBox API script in order to access '
-                        'system with appropriate credentials',
+        'description' : 'Config file for MATCHBox API script in order to access'
+            'system with appropriate credentials',
         'creds' : {
             'username' : user,
             'password' : passwd,
         },
         'url' : 'https://matchbox.nci.nih.gov/match/common/rs/getPatients',
-        'manifest_url' : 'https://matchbox.nci.nih.gov/reportapi/patientSpecimenTrackingSummary',
-        'arms_url' : 'https://matchbox.nci.nih.gov/match/common/rs/getTreatmentArms'
+        'manifest_url' : 'https://matchbox.nci.nih.gov/reportapi/patient'
+            'SpecimenTrackingSummary',
+        'arms_url' : 'https://matchbox.nci.nih.gov/match/common/rs/'
+            'getTreatmentArms'
     }
     with open(config_file, 'w') as fh:
         json.dump(config_data, fh, indent=4)
@@ -45,43 +51,44 @@ def fix_perms(input_file):
     os.system('chown {} {}'.format(system_user, input_file))
 
 def pre_build_mb_obj(root_dir):
-    '''First time launch, build a matchbox json dump file and put it into 
-       $HOME/.mb_utils.
-    '''
+    """
+    First time launch, build a matchbox json dump file and put it into 
+    $HOME/.mb_utils.
+    """
     datestring=datetime.date.today().strftime('%m%d%y')
     mb_obj_file = os.path.join(root_dir,'mb_obj_' + datestring + '.json')
     ta_obj_file = os.path.join(root_dir,'ta_obj_' + datestring + '.json')
-    amoi_lookup_file = os.path.join(root_dir, 'amoi_lookup_' + datestring + '.json')
+    amoi_lookup_file = os.path.join(root_dir, 
+            'amoi_lookup_' + datestring + '.json')
     sys.stdout.write('Creating a MATCHBox data dump for quicker lookups.\n')
     sys.stdout.write(
-        '''(NOTE: can do live queries at any time, but this can take quite a while and the use
-        of routinely collected data dumps using matchbox_data_dump.py is preferred and
-        encouraged.\n
+        '''(NOTE: can do live queries at any time, but this can take quite a 
+        while and the use of routinely collected data dumps using 
+        matchbox_data_dump.py is preferred and encouraged.\n
         '''
     )
 
-    call(['bin/matchbox_json_dump.py','-m', mb_obj_file, '-t', ta_obj_file, '-a', amoi_lookup_file])
+    call(['bin/matchbox_json_dump.py', '-m', mb_obj_file, '-t', ta_obj_file, 
+        '-a', amoi_lookup_file])
 
-    # Need to make sure that non-root user is owner of these files rather than root (since probably need
-    # sudo to install). 
-    # os.system('chown {} {}'.format(system_user,mb_obj_file))
+    # Need to make sure that non-root user is owner of these files rather than 
+    # root (since probably need sudo to install). 
     for f in (mb_obj_file, ta_obj_file, amoi_lookup_file):
         fix_perms(f)
     
     sys.stdout.write("\n" + '@'*75 + "\n")
-    sys.stdout.write('\tWe recommend you run the matchbox_data_dump.py program\n\troutintely '
-        'to pick up any new data that has been generated\n\tsince last polling.\n')
+    sys.stdout.write('\tWe recommend you run the matchbox_data_dump.py '
+        'program\n\troutintely to pick up any new data that has been '
+        'generated\n\tsince last polling.\n')
     sys.stdout.write('@'*75 + "\n")
 
 if __name__=='__main__':
-    # print('@'*75)
-    # print('\tSkipping all postinstall tasks for now.')
-    # print('@'*75)
+    root_dir = matchbox_api_utils.mb_utils_root
+    # Just in case we had to make this when setting up the package (i.e. we had
+    # to use `sudo`, fix the perms so that the user owns rather than $ROOT
+    fix_perms(root_dir)
 
-    root_dir = os.path.join(os.environ['HOME'], '.mb_utils/')
-    if not os.path.isdir(root_dir):
-        os.mkdir(root_dir)
-    sys.stdout.write('\n' + '-'*25 +'  MATCHBox API Utils Setup  '+ '-'*25 + '\n')
+    sys.stdout.write('\n{0}  MATCHBox API Utils Setup  {0}\n'.format('-'*25))
 
     make_config_file(root_dir)
     pre_build_mb_obj(root_dir)
