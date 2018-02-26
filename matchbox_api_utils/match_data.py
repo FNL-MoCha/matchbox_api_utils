@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-# TODO:
-#    - Add BSN query to args list of get_variant_report()
 import sys
 import json
 import itertools
 from collections import defaultdict
-from pprint import pprint as pp  # TODO: remove in prod i think.
+from pprint import pprint as pp
 
 from matchbox_api_utils import utils
 from matchbox_api_utils import matchbox_conf
@@ -19,50 +17,56 @@ class MatchData(object):
     """
     MatchboxData class
 
-    Parsed MATCHBox Data from the API as collected from the Matchbox class above. This 
-    class has methods to generate queries, further filtering, and heuristics on the 
-    dataset.
+    Parsed MATCHBox Data from the API as collected from the Matchbox class above. 
+    This class has methods to generate queries, further filtering, and heuristics 
+    on the dataset.
 
+    Generate a MATCHBox data object that can be parsed and queried downstream 
+    with some methods. 
+    
+    Can instantiate with either a config JSON file, which contains the url, 
+    username, and password information needed to access the resource, or by 
+    supplying the individual arguments to make the connection.  This class will 
+    call the Matchbox class in order to make the connection and deploy the data.
+
+    Can do a live query to get data in real time, or load a MATCHBox JSON file 
+    derived from the ``matchbox_json_dump.py`` script that is a part of the 
+    package.  Since data in MATCHBox is relatively static these days, it's 
+    preferred to use an existing JSON DB and only periodically update the DB with 
+    a call to the aforementioned script.
+
+    Args:
+        config_file (file): Custom config file to use if not using system 
+            default.
+
+        url (str): MATCHBox API URL to use if not using a config file.
+
+        creds (dict): MATCHBox credentials to use if not using a config file.
+            Needs to be in the form of:
+
+                ``{'username':<username>, 'password':<password>}``
+
+        patient (str): Limit data to a specific PSN.
+
+        json_db (file): MATCHbox processed JSON file containing the whole
+            dataset. This is usually generated from 'matchbox_json_dump.py'. 
+            The default value is 'sys_default' which loads the default 
+            package data. If you wish you get a live call, set this variable 
+            to "None".
+
+        load_raw (file): Load a raw API dataset rather than making a fresh
+            call to the API. This is intended for dev purpose
+            only and will be disabled.
+
+        make_raw (bool): Make a raw API JSON dataset for dev purposes only.
+
+        quiet (bool): If True, suppress module output debug, information, etc.
+            messages.
     """
 
     def __init__(self, config_file=None, url=None, creds=None, patient=None, 
             json_db='sys_default', load_raw=None, make_raw=None, quiet=True):
-        """
-        Generate a MATCHBox data object that can be parsed and queried downstream 
-        with some methods. 
-        
-        Can instantiate with either a config JSON file, which contains the url, username, 
-        and password information needed to access the resource, or by supplying the 
-        individual arguments to make the connection.  This class will call the Matchbox 
-        class in order to make the connection and deploy the data.
 
-        Can do a live query to get data in real time, or load a MATCHBox JSON file derived 
-        from the matchbox_json_dump.py script that is a part of the package. Since data in 
-        MATCHBox is relatively static these days, it's preferred to use an existing JSON DB 
-        and only periodically update the DB with a call to the aforementioned script.
-
-         Args:
-               config_file (file): Custom config file to use if not using system 
-                                   default.
-               url (str):          MATCHBox API URL to use.
-               creds (dict):       MATCHBox credentials to use. Needs to be in the 
-                                   form of:
-
-                            {'username':<username>,'password':<password>}
-
-               patient (str):      Limit data to a specific PSN.
-               json_db (file): MATCHbox processed JSON file containing the 
-                                   whole dataset. This is usually generated from 
-                                   'matchbox_json_dump.py'. The default value is 
-                                   'sys_default' which loads the default package 
-                                   data. If you wish you get a live call, set this
-                                   variable to "None".
-               load_raw (file):    Load a raw API dataset rather than making a fresh
-                                   call to the API. This is intended for dev purpose
-                                   only and will be disabled.
-               make_raw (bool):    Make a raw API JSON dataset for dev purposes only.
-
-        """
         self._url = url
         self._creds = creds
         self._patient = patient
@@ -83,11 +87,13 @@ class MatchData(object):
             self._patient = str(self._patient)
             self._url += '?patientId=%s' % self._patient 
 
-        # If json_db is 'sys_default', get json file from matchbox_conf.Config, which is from 
-        # matchbox_api_util.__init__.mb_json_data.  Otherwise use the passed arg; if it's None, do
-        # a live call below, and if it's a custom file, load that.
+        # If json_db is 'sys_default', get json file from matchbox_conf.Config, 
+        # which is from matchbox_api_util.__init__.mb_json_data.  Otherwise use 
+        # the passed arg; if it's None, do a live call below, and if it's a 
+        # custom file, load that.
         if self._json_db == 'sys_default':
-            self._json_db = utils.get_config_data(self._config_file, 'mb_json_data')
+            self._json_db = utils.get_config_data(self._config_file, 
+                'mb_json_data')
 
         ta_data = utils.get_config_data(self._config_file,'ta_json_data')
         self.arm_data = TreatmentArms(json_db=ta_data)
@@ -143,17 +149,21 @@ class MatchData(object):
 
     @staticmethod
     def __get_var_data_by_gene(data, gene_list):
-        # Get variant report data if the gene is in the input gene list.  But, only output the variant level
-        # details, and filter out the VAF, coverage, etc. so that we can get unqiue lists later.  If we wanted
-        # to get sequence specific details, we'll run a variant report instead.
+        # Get variant report data if the gene is in the input gene list.  But, 
+        # only output the variant level details, and filter out the VAF, coverage, 
+        # etc. so that we can get unqiue lists later.  If we wanted to get 
+        # sequence specific details, we'll run a variant report instead.
 
-        # TODO: Why are we filtering out VAF, CN, etc? 
-        wanted = ('alternative', 'amoi', 'chromosome', 'exon', 'confirmed', 'function', 'gene', 'hgvs',
-            'identifier', 'oncominevariantclass', 'position', 'protein', 'reference', 'transcript', 'type',
-            'driverGene','partnerGene','driverReadCount','annotation','confidenceInterval95percent',
-            'confidenceInterval5percent','copyNumber','alleleFrequency','copyNumber','driverReadCount')
+        wanted = ('alternative', 'amoi', 'chromosome', 'exon', 'confirmed', 
+            'function', 'gene', 'hgvs', 'identifier', 'oncominevariantclass', 
+            'position', 'protein', 'reference', 'transcript', 'type', 'driverGene',
+            'partnerGene', 'driverReadCount', 'annotation', 
+            'confidenceInterval95percent', 'confidenceInterval5percent',
+            'copyNumber', 'alleleFrequency', 'copyNumber', 'driverReadCount')
 
-        # This is first iteration, and I can't remember why I don't just want all variant level data any more.  
+        # This is first iteration, and I can't remember why I don't just want 
+        # all variant level data any more.  
+        # Deleted bit: 
         # return [elem for elem in data if elem['gene'] in gene_list ]
         # return [{i:elem[i] for i in wanted if i in data} for elem in data if elem['gene'] in gene_list]
 
@@ -281,7 +291,7 @@ class MatchData(object):
 
                 return last_status,last_msg,arm_hist,progressed
 
-    def gen_patients_list(self,matchbox_data,patient):
+    def gen_patients_list(self, matchbox_data, patient):
         """Process the MATCHBox API data.
 
         Process the MATCHBox API data (usually in JSON format from MongoDB) into 
@@ -289,8 +299,16 @@ class MatchData(object):
         the main dataset used for later data analysis and queries and is the main 
         structure for the MatchboxData class below.
 
+        Args:
+            matchbox_data (dict): Dict of MATCHBox JSON data to process.
+            patient (str): Patient identifier (PSN) to filter data.
+
         Returns:
-            patients (dict): Dict of parsed MATCHBox API data.
+            dict: Dict of parsed MATCHBox API data.
+
+        Todo:
+            Internalize this method so that it's not exposed.  No reason to call 
+            it.
 
         """
         patients = defaultdict(dict)
@@ -395,7 +413,8 @@ class MatchData(object):
     def __get_ihc_results(ihc_data):
         # Get and load IHC results from dataset.
         ihc_results = {result['biomarker'].rstrip('s').lstrip('ICC') : result['result'] for result in ihc_data}
-        # Won't always get RB IHC; depends on if we have other qualifying genomic event.  Fill in data anyway.
+        # Won't always get RB IHC; depends on if we have other qualifying genomic 
+        # event.  Fill in data anyway.
         if 'RB' not in ihc_results:
             ihc_results['RB'] = 'ND'
         return ihc_results
@@ -432,13 +451,17 @@ class MatchData(object):
         }
 
         include_fields = { 
-                'snvs_indels' :  ['alleleFrequency', 'alternative', 'alternativeAlleleObservationCount', 'chromosome', 
-                    'exon', 'flowAlternativeAlleleObservationCount', 'flowReferenceAlleleObservations', 'function', 
-                    'gene', 'hgvs', 'identifier', 'oncominevariantclass', 'position', 'readDepth', 'reference', 
-                    'referenceAlleleObservations', 'transcript', 'protein', 'confirmed'], 
-                'cnvs'        : ['chromosome', 'gene', 'confidenceInterval5percent', 'confidenceInterval95percent', 
-                    'copyNumber','confirmed'],
-                'fusions'     : ['annotation', 'identifier', 'driverReadCount', 'driverGene', 'partnerGene','confirmed']
+                'snvs_indels' :  ['alleleFrequency', 'alternative', 
+                    'alternativeAlleleObservationCount', 'chromosome', 'exon', 
+                    'flowAlternativeAlleleObservationCount', 
+                    'flowReferenceAlleleObservations', 'function', 'gene', 'hgvs', 
+                    'identifier', 'oncominevariantclass', 'position', 'readDepth', 
+                    'reference', 'referenceAlleleObservations', 'transcript', 
+                    'protein', 'confirmed'], 
+                'cnvs'        : ['chromosome', 'gene', 'confidenceInterval5percent', 
+                    'confidenceInterval95percent', 'copyNumber','confirmed'],
+                'fusions'     : ['annotation', 'identifier', 'driverReadCount', 
+                    'driverGene', 'partnerGene','confirmed']
         }
         data = dict((key, vardata[key]) for key in include_fields[meta_key[vartype]])
         data['type'] = meta_key[vartype]
@@ -446,13 +469,18 @@ class MatchData(object):
 
     @staticmethod
     def __remap_fusion_genes(fusion_data):
-        # Fix the fusion driver / partner annotation since it is not always correct the way it's being parsed.  Also
-        # add in a 'gene' field so that it's easier to aggregate data later on (the rest of the elements use 'gene').
-        drivers = ['ABL1','AKT2','AKT3','ALK','AR','AXL','BRAF','BRCA1','BRCA2','CDKN2A','EGFR','ERBB2','ERBB4','ERG',
-                   'ETV1','ETV1a','ETV1b','ETV4','ETV4a','ETV5','ETV5a','ETV5d','FGFR1','FGFR2','FGFR3','FGR','FLT3',
-                   'JAK2','KRAS','MDM4','MET','MYB','MYBL1','NF1','NOTCH1','NOTCH4','NRG1','NTRK1','NTRK2','NTRK3',
-                   'NUTM1','PDGFRA','PDGFRB','PIK3CA','PPARG','PRKACA','PRKACB','PTEN','RAD51B','RAF1','RB1','RELA',
-                   'RET','ROS1','RSPO2','RSPO3','TERT']
+        # Fix the fusion driver / partner annotation since it is not always 
+        # correct the way it's being parsed.  Also add in a 'gene' field so that 
+        # it's easier to aggregate data later on (the rest of the elements use 
+        # 'gene').
+        drivers = ['ABL1', 'AKT2', 'AKT3', 'ALK', 'AR', 'AXL', 'BRAF', 'BRCA1', 
+            'BRCA2', 'CDKN2A', 'EGFR', 'ERBB2', 'ERBB4', 'ERG', 'ETV1', 'ETV1a', 
+            'ETV1b', 'ETV4', 'ETV4a', 'ETV5', 'ETV5a', 'ETV5d', 'FGFR1', 'FGFR2', 
+            'FGFR3', 'FGR', 'FLT3', 'JAK2', 'KRAS', 'MDM4', 'MET', 'MYB', 'MYBL1', 
+            'NF1', 'NOTCH1', 'NOTCH4', 'NRG1', 'NTRK1', 'NTRK2', 'NTRK3', 'NUTM1', 
+            'PDGFRA', 'PDGFRB', 'PIK3CA', 'PPARG', 'PRKACA', 'PRKACB', 'PTEN', 
+            'RAD51B', 'RAF1', 'RB1', 'RELA', 'RET', 'ROS1', 'RSPO2', 'RSPO3', 
+            'TERT']
 
         for fusion in fusion_data:
             gene1 = fusion['driverGene']
@@ -473,17 +501,19 @@ class MatchData(object):
                 driver = partner = 'NA'
 
             fusion['driverGene'] = driver
-            # Also make a "gene" entry so that we can look things up in a similar way to the other classes.
+            # Also make a "gene" entry so that we can look things up in a similar 
+            # way to the other classes.
             fusion['gene'] = driver  
             fusion['partnerGene'] = partner
         return fusion_data
 
     def get_patient_meta(self, psn, val=None):
         """
-        Return data for a patient based on a metadata field name. Sometimes we may want to just get 
-        a quick bit of data or field for a patient record rather than a whole analysis, and this can
-        be a convenient way to just check a component rather than writing a method to get each and 
-        every bit out. If no metaval is entered, will return the whole patient dict.
+        Return data for a patient based on a metadata field name. Sometimes we 
+        may want to just get a quick bit of data or field for a patient record 
+        rather than a whole analysis, and this can be a convenient way to just 
+        check a component rather than writing a method to get each and every bit
+        out. If no metaval is entered, will return the whole patient dict.
 
         Args:
             psn (str):  PSN of patient for which we want to receive data.
@@ -491,8 +521,10 @@ class MatchData(object):
                 return the entire patient record.
 
         Returns:
-            Either return dict of data if a metaval entered, or whole patient record. Returns 'None' if
-            no data for a particular record and raises and error if the metaval is not valid for the dataset.
+            dict: 
+            Either return dict of data if a metaval entered, or whole patient 
+            record. Returns 'None' if no data for a particular record and raises 
+            and error if the metaval is not valid for the dataset.
 
         """
         psn = self.__format_id('rm', psn=psn)
@@ -522,20 +554,30 @@ class MatchData(object):
 
         Args:
             catetory (str): biopsy category to return. Valid categories are:
-                'pass', 'failed_biopsy', 'sequenced', 'outside','outside_confirmation', 
-                'progression','initial'.
+                * 'pass'
+                * 'failed_biopsy'
+                * 'sequenced'
+                * 'outside'
+                * 'outside_confirmation'
+                * 'progression'
+                * 'initial'
+
             ret_type (str): Data type to return. Valid types are "counts" and 
                 "ids", where counts is the total number in that category, and 
                 ids are the BSNs for the category. Default is "counts"
 
         Returns:
-            dict: whole set of category:count or single category:count data.
+            dict: Whole set of category : count or single category : count data.
 
-        # TODO: fix examples.
-        Example:
+        Todo: 
+            * Fix examples.
+
+        Examples:
             >>> print(data.get_biopsy_summary())
-            {u'sequenced': 5620, u'msns': 5620, u'progression': 9, u'initial': 5563, u'patients': 6491, 
-                u'outside': 61, u'no_biopsy': 465, u'failed_biopsy': 574, u'pass': 5654, u'outside_confirmation': 21}
+            {u'sequenced': 5620, u'msns': 5620, u'progression': 9, 
+                u'initial': 5563, u'patients': 6491, u'outside': 61, 
+                u'no_biopsy': 465, u'failed_biopsy': 574, u'pass': 5654, 
+                u'outside_confirmation': 21}
 
         """
         count = defaultdict(int)
@@ -579,7 +621,7 @@ class MatchData(object):
         else:
             return results
     
-    def matchbox_dump(self,filename=None):
+    def matchbox_dump(self, filename=None):
         """
         Dump a parsed MATCHBox dataset.
         
@@ -587,14 +629,16 @@ class MatchData(object):
         than making an API call and reprocessing. Useful for quicker look ups as 
         the API call can be very, very slow with such a large DB.
 
-        .. note:: This is a different dataset than the raw dump.
+        .. note:: 
+            This is a different dataset than the raw dump.
 
         Args:
             filename (str): Filename to use for output. Default filename is:
-            'mb_obj_<date_generated>.json'
+
+                ``'mb_obj_<date_generated>.json'``
 
         Returns:
-            file: MATCHBox API JSON file.
+            JSON: MATCHBox API JSON file.
 
         """
         if self._json_db == 'sys_default':
@@ -607,7 +651,7 @@ class MatchData(object):
             filename = 'mb_obj_' + formatted_date + '.json'
         utils.make_json(filename,self.data)
 
-    def get_psn(self,msn=None,bsn=None):
+    def get_psn(self, msn=None, bsn=None):
         """
         Retrieve a patient PSN from either an input MSN or BSN.
 
@@ -616,10 +660,11 @@ class MatchData(object):
             bsn (str): A BSN number to query.
 
         Returns:
-            psn (str): A PSN that maps to the MSN or BSN input.
+            str: A PSN that maps to the MSN or BSN input.
 
-        >>> print(get_psn(bsn='T-17-000550'))
-        PSN14420
+        Examples: 
+            >>> print(get_psn(bsn='T-17-000550'))
+            PSN14420
 
         """
         query_term = ''
@@ -643,25 +688,28 @@ class MatchData(object):
 
     def get_msn(self, psn=None, bsn=None):
         """
-        Retrieve a patient MSN from either an input PSN or BSN. Note that there can
-        always be more than 1 MSN per patient, but can only ever be 1 MSN per biopsy
-        at a time.
-
+        Retrieve a patient MSN from either an input PSN or BSN. 
+        
         Args:
             psn (str): A MSN number to query. 
             bsn (str): A BSN number to query.
 
+        .. note:: 
+            There can always be more than 1 MSN per patient, but can only 
+            ever be 1 MSN per biopsy at a time.
+
         Returns:
-            A list of MSNs that correspond with the input PSN or BSN. 
+            list: A list of MSNs that correspond with the input PSN or BSN. 
 
-        >>> print(get_msn(bsn='T-17-000550'))
-        [u'MSN44180']
+        Examples: 
+            >>> print(get_msn(bsn='T-17-000550'))
+            [u'MSN44180']
 
-        >>> print(get_msn(bsn='T-16-000811'))
-        [u'MSN18184']
+            >>> print(get_msn(bsn='T-16-000811'))
+            [u'MSN18184']
 
-        >>> print(get_msn(psn='11583'))
-        [u'MSN18184', u'MSN41897']
+            >>> print(get_msn(psn='11583'))
+            [u'MSN18184', u'MSN41897']
 
         """
         query_term = ''
@@ -688,26 +736,30 @@ class MatchData(object):
         sys.stderr.write('No result for id %s\n' % query_term)
         return None
 
-    def get_bsn(self,psn=None,msn=None):
+    def get_bsn(self, psn=None, msn=None):
         """
-        Retrieve a patient BSN from either an input PSN or MSN. Note that we can 
-        have more than one BSN per PSN, but we can only ever have one BSN / MSN.
-
+        Retrieve a patient BSN from either an input PSN or MSN. 
+        
         Args:
             psn (str): A PSN number to query. 
             msn (str): A MSN number to query.
 
+        .. note:: 
+            Can have more than one BSN per PSN, but can only ever have 
+            one BSN / MSN.
+
         Returns:
-            A list BSNs that correspond to the PSN or MSN input.
+            list: A list BSNs that correspond to the PSN or MSN input.
 
-        >>> print(get_bsn(psn='14420'))
-        [u'T-17-000550']
+        Examples: 
+            >>> print(get_bsn(psn='14420'))
+            [u'T-17-000550']
 
-        >>> print(get_bsn(psn='11583'))
-        [u'T-16-000811', u'T-17-000333'] 
+            >>> print(get_bsn(psn='11583'))
+            [u'T-16-000811', u'T-17-000333'] 
 
-        >>> print(get_bsn(msn='18184'))
-        [u'T-16-000811']
+            >>> print(get_bsn(msn='18184'))
+            [u'T-16-000811']
 
         """
         query_term = ''
@@ -737,9 +789,6 @@ class MatchData(object):
         return None
 
     def get_disease_summary(self, query_disease=None, query_medra=None):
-        # TODO: Data is good, but should try to filter outside assay data, failed 
-        # specimens, and progression biopsies (collapsed into one count) to get a
-        # value that is closer to the accepted 5560 count of study data cohort size.
         """
         Return a summary of registered diseases and counts. With no args, will return
         a list of all diseases and counts as a dict. One can also limit output to a
@@ -750,10 +799,16 @@ class MatchData(object):
             query_medra   (list): List of MEDRA codes to filter on.
 
         Returns:
-            Dictionary of disease(s) and counts in the form of:
+            Dictionary of disease(s) and counts in the form of::
 
-                    {medra_code : (ctep_term, count)}
-        Example:
+                    ``{medra_code : (ctep_term, count)}``
+
+        Todo:
+            * Data is good but should try to filter outside assay data, failed
+              specimens, and progression biopsies (collapsed into one count) to 
+              get a value that is closer tot eh accepted final count.
+
+        Examples:
             >>> data.get_disease_summary(query_medra=['10006190'])
             {'10006190': (u'Invasive breast carcinoma', 641)}
 
@@ -777,27 +832,29 @@ class MatchData(object):
 
         if query_medra:
             if isinstance(query_medra, list) is False:
-                sys.stderr.write('ERROR: arguments to get_disease_summary() must be lists!\n') 
+                sys.stderr.write('ERROR: arguments to get_disease_summary() must '
+                    'be lists!\n') 
                 return None
             for q in query_medra:
                 q = str(q)
                 if q in disease_counts:
                     results[q] = (self._disease_db[q], disease_counts[q])
                 else:
-                    sys.stderr.write('MEDRA code "%s" was not found in the MATCH study '
-                        'dataset.\n' % q)
+                    sys.stderr.write('MEDRA code "%s" was not found in the MATCH '
+                        'study dataset.\n' % q)
         elif query_disease:
             if isinstance(query_disease, list) is False:
-                sys.stderr.write('ERROR: arguments to get_disease_summary() must be lists!\n') 
+                sys.stderr.write('ERROR: arguments to get_disease_summary() must '
+                    'be lists!\n') 
                 return None
             for q in query_disease:
                     q = str(q)
-                    medra = next((medra for medra,term in self._disease_db.items() if q == term), None)
+                    medra = next((medra for medra, term in self._disease_db.items() if q == term), None)
                     if medra is not None:
                         results[medra] = (q, disease_counts[medra])
                     else:
-                        sys.stderr.write('CTEP Term "%s" was not found in the MATCH study '
-                            'dataset.\n' % q)
+                        sys.stderr.write('CTEP Term "%s" was not found in the MATCH '
+                            'study dataset.\n' % q)
         else:
             for medra in self._disease_db:
                 results[medra] = (self._disease_db[medra], disease_counts[medra])
@@ -816,19 +873,20 @@ class MatchData(object):
 
         Args:
             psn (str): Optional PSN or comma separated list of PSNs on which 
-                       to filter data.
+                to filter data.
             bsn (str): Optional BSN or comma separated list of BSNs on which 
-                       to filter data.
+                to filter data.
             msn (str): Optional MSN or comma separated list of MSNs on which 
-                       to filter data.
+                to filter data.
             outside (bool): Also include outside assay data. False by default.
             no_disease (bool): Return all data, even if there is no disease 
-                               indicated for the patient specimen. Default: False
+                indicated for the patient specimen. Default: False
 
         Returns:
-            Dict of ID : Disease mappings. If no match for input ID, returns None.
+            dict: Dict of ID : Disease mappings. If no match for input ID, 
+                returns None.
 
-        Example: 
+        Examples: 
             >>> data.get_histology(psn='11352')
             {'PSN11352': u'Serous endometrial adenocarcinoma'}
 
@@ -903,68 +961,72 @@ class MatchData(object):
         """
         Find and return variant hit rates.
 
-        Based on an input query in the form of a variant_type : gene dict, where the gene value
-        can be a list of genes, output a list of patients that had hits in those gene with some 
-        disease and variant information. 
+        Based on an input query in the form of a `variant_type : gene` dict,
+        where the gene value can be a list of genes, output a list of patients
+        that had hits in those gene with some disease and variant information. 
 
-        The return val will be unique to a patient. So, in the cases where we have multiple biopsies
-        from the same patient (an intitial and progression re-biopsy for example), we will only get 
-        the union of the two sets, and duplicate variants will not be output.  This will preven the 
-        hit rate from getting over inflated.  Also, there is no sequence specific information output
-        in this version (i.e. no VAF, Coverage, etc.).  Sequence level information for a call can be
-        obtained from the get_variant_report() method below.
+        The return val will be unique to a patient. So, in the cases where we 
+        have multiple biopsies from the same patient (an intitial and progression 
+        re-biopsy for example), we will only get the union of the two sets, and 
+        duplicate variants will not be output.  This will preven the hit rate from 
+        getting over inflated.  Also, there is no sequence specific information 
+        output in this version (i.e. no VAF, Coverage, etc.).  Sequence level 
+        information for a call can be obtained from the `get_variant_report()` 
+        method below.
 
         Args:
             query (dict): Dictionary of variant_type: gene mappings where:
                 -  variant type is one or more of 'snvs','indels','fusions','cnvs'
                 -  gene is a list of genes to query.
 
-            query_patients (list): List of patients for which we want to obtain data. 
+            query_patients (list): List of patients for which we want to obtain 
+                data. 
 
         Returns:
-            Will return a dict of matching data with disease and MOI information, along with 
-            a count of the number of patients queried and the number of biopsies queried.
+            dict: Return a dict of matching data with disease and MOI information, 
+                along with a count of the number of patients queried and the 
+                number of biopsies queried.
         
-        Example:
-        >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
-        find_variant_frequency(query)
+        Examples:
+            >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
+            find_variant_frequency(query)
 
-        >>> pprint(data.find_variant_frequency({'snvs':['EGFR'], 'indels':['EGFR']}, [15232]))
-        ({'15232': {'bsns': [u'T-17-001423'],
-                    'disease': u'Lung adenocarcinoma',
-                    'mois': [{'alternative': u'T',
-                              'amoi': [u'EAY131-E(i)', u'EAY131-A(e)'],
-                              'chromosome': u'chr7',
-                              'confirmed': True,
-                              'exon': u'20',
-                              'function': u'missense',
-                              'gene': u'EGFR',
-                              'hgvs': u'c.2369C>T',
-                              'identifier': u'COSM6240',
-                              'oncominevariantclass': u'Hotspot',
-                              'position': u'55249071',
-                              'protein': u'p.Thr790Met',
-                              'reference': u'C',
-                              'transcript': u'NM_005228.3',
-                              'type': u'snvs_indels'},
-                             {'alternative': u'-',
-                              'amoi': [u'EAY131-A(i)'],
-                              'chromosome': u'chr7',
-                              'confirmed': True,
-                              'exon': u'19',
-                              'function': u'nonframeshiftDeletion',
-                              'gene': u'EGFR',
-                              'hgvs': u'c.2240_2257delTAAGAGAAGCAACATCTC',
-                              'identifier': u'COSM12370',
-                              'oncominevariantclass': u'Hotspot',
-                              'position': u'55242470',
-                              'protein': u'p.Leu747_Pro753delinsSer',
-                              'reference': u'TAAGAGAAGCAACATCTC',
-                              'transcript': u'NM_005228.3',
-                              'type': u'snvs_indels'}],
-                    'msns': [u'MSN52258'],
-                    'psn': u'15232'}},
-        1)
+            >>> pprint(data.find_variant_frequency({'snvs':['EGFR'], 'indels':['EGFR']}, [15232]))
+            ({'15232': {'bsns': [u'T-17-001423'],
+                        'disease': u'Lung adenocarcinoma',
+                        'mois': [{'alternative': u'T',
+                                  'amoi': [u'EAY131-E(i)', u'EAY131-A(e)'],
+                                  'chromosome': u'chr7',
+                                  'confirmed': True,
+                                  'exon': u'20',
+                                  'function': u'missense',
+                                  'gene': u'EGFR',
+                                  'hgvs': u'c.2369C>T',
+                                  'identifier': u'COSM6240',
+                                  'oncominevariantclass': u'Hotspot',
+                                  'position': u'55249071',
+                                  'protein': u'p.Thr790Met',
+                                  'reference': u'C',
+                                  'transcript': u'NM_005228.3',
+                                  'type': u'snvs_indels'},
+                                 {'alternative': u'-',
+                                  'amoi': [u'EAY131-A(i)'],
+                                  'chromosome': u'chr7',
+                                  'confirmed': True,
+                                  'exon': u'19',
+                                  'function': u'nonframeshiftDeletion',
+                                  'gene': u'EGFR',
+                                  'hgvs': u'c.2240_2257delTAAGAGAAGCAACATCTC',
+                                  'identifier': u'COSM12370',
+                                  'oncominevariantclass': u'Hotspot',
+                                  'position': u'55242470',
+                                  'protein': u'p.Leu747_Pro753delinsSer',
+                                  'reference': u'TAAGAGAAGCAACATCTC',
+                                  'transcript': u'NM_005228.3',
+                                  'type': u'snvs_indels'}],
+                        'msns': [u'MSN52258'],
+                        'psn': u'15232'}},
+            1)
 
 
         """
@@ -1037,21 +1099,28 @@ class MatchData(object):
 
     def get_variant_report(self, psn=None, msn=None):
         """
-        Input a PSN or MSN (preferred!) and return a list of dicts of variant call data.
+        Input a PSN or MSN (preferred!) and return a list of dicts of variant 
+        call data.
 
-        Since there can be more than one MSN per patient, one will get a more robust result 
-        by querying on a MSN.  That is, only one variant report / MSN can be generated and 
-        the results, then, will be clear.  In the case of querying by PSN, a variant report
-        for each MSN under that PSN, assuming that the MSN is associated with a variant 
-        report, will be returned.
+        Since there can be more than one MSN per patient, one will get a more 
+        robust result by querying on a MSN.  That is, only one variant report 
+        per MSN can be generated and the results, then, will be clear.  In the 
+        case of querying by PSN, a variant report for each MSN under that PSN, 
+        assuming that the MSN is associated with a variant report, will be 
+        returned.
 
         Args:
            msn (str):  MSN for which a variant report should be returned.
            psn (str):  PSN for which the variant reports should be returned.
 
         Returns:
-           List of dicts of variant results.
-           msn: { 'singleNucleotideVariants' : [{var_data}], 'copyNumberVariants' : [{var_data},{var_data}], etc. }
+           dict: List of dicts of variant results.
+           ``msn: { 'singleNucleotideVariants' : [{var_data}], 'copyNumberVariants' : [{var_data},{var_data}], etc. }``
+
+        Examples:
+
+        Todo:
+            Add examples here.
 
         """
         if msn:
@@ -1063,26 +1132,31 @@ class MatchData(object):
                 else:
                     return None
         elif psn:
-            results = {}  # if we are searching by PSN, can get multiple reports. Print them all as a list.
+            # if we are searching by PSN, can get multiple reports. Print them 
+            # all as a list.
+            results = {}  
             psn = self.__format_id('rm',psn=psn)
             try:
                 if not len(self.data[psn]['all_msns']) > 0:
-                    sys.stderr.write('No variant report available for patient: %s.\n' % psn)
+                    sys.stderr.write('No variant report available for patient: '
+                        '%s.\n' % psn)
                     return None
             except:
-                sys.stderr.write('ERROR: Patient %s does not exist in the database!\n')
+                sys.stderr.write('ERROR: Patient %s does not exist in the '
+                    'database!\n')
                 return None
 
             for biopsy in self.data[psn]['biopsies'].values():
-                # Skip the outside assays biopsies since the variant reports are unreliable for now. Maybe we'll 
-                # take these later with an option? Also have to skip outside confirmation cases now as the assay
-                # does not always cover the variants and now MATCHBox is including calls that are outside of our 
-                # reportable range....a real mess!
-                # if biopsy['biopsy_source'] == 'Outside':
+                # Skip the outside assays biopsies since the variant reports are 
+                # unreliable for now. Maybe we'll take these later with an option? 
+                # Also have to skip outside confirmation cases now as the assay
+                # does not always cover the variants and now MATCHBox is including 
+                # calls that are outside of our reportable range....a real mess!
                 if 'Outside' in biopsy['biopsy_source']:
                     continue
                 elif biopsy['ngs_data'] and 'mois' in biopsy['ngs_data']:
-                    results[self.__format_id('add', msn=biopsy['ngs_data']['msn'])] = biopsy['ngs_data']['mois']
+                    identifier = self.__format_id('add', msn=biopsy['ngs_data']['msn'])
+                    results[identifier] = biopsy['ngs_data']['mois']
             if results:
                 return results
             else:
@@ -1095,12 +1169,12 @@ class MatchData(object):
         list is passed to the function, return results for every PSN in the study.
 
         Args:
-            psn (str):  PSN string to query.
+            psn (str): PSN string to query.
 
         Returns:
-            Dict of Arm IDs with last status.
+            dict: Dict of Arm IDs with last status.
 
-        Example:
+        Examples:
             >>> data.get_patient_ta_status(psn=10837)
             {u'EAY131-Z1A': u'ON_TREATMENT_ARM'}
 
@@ -1126,30 +1200,35 @@ class MatchData(object):
     
     def get_patients_by_disease(self, histology=None, medra_code=None):
         """
-        Input a disease and return a list of patients that were registered with that disease
-        type. For histology query, we can do partial matching based on the python `in` function.
-        So, if one were to query Lung Adenocarcinoma, Lung, Lung Adeno, or Adeno, all Lung 
-        Adenocarinoma cases would be returned.  Note that simply inputting Lung, would also 
-        return Non-small Cell Lung Adenocarinoma, Squamouse cell lung adenocarcinoma, etc, and 
-        querying "Adeno" would return anything that had adeno.  So, care must be taken with the 
-        query, and secondary filtering may be necessary.  Querying based on MEDRA codes is specific
-        and only an exact match will return results.
+        Input a disease and return a list of patients that were registered with 
+        that disease type. For histology query, we can do partial matching based 
+        on the python ``in`` function. So, if one were to query `Lung 
+        Adenocarcinoma`, `Lung` , `Lung Adeno`, or `Adeno`, all Lung Adenocarinoma 
+        cases would be returned.  
+        
+        .. note:: 
+            Simply inputting `Lung`, would also return `Non-small Cell Lung 
+            Adenocarinoma`, `Squamous Cell Lung Adenocarcinoma`, etc, and querying 
+            `Adeno` would return anything that had `adeno`. So, care must be taken 
+            with the query, and secondary filtering may be necessary. Querying 
+            based on MEDRA codes is specific and only an exact match will return 
+            results; **This is the preferred method.**
 
         Args:
             histology (str):  One of the CTEP shotname disease codes.
             medra_code (str): A MEDRA code to query rather than histology.
 
         Returns:
-            Dict of Patient : Histology Mapping
+            dict: Dict of Patient : Histology Mapping
 
-        Example:
+        Examples:
             >>> <put example here>
 
 
         """
         if not any(x for x in [histology, medra_code]):
-            sys.stderr.write("ERROR: You must input either a histologie or medra code "
-                "to query!\n")
+            sys.stderr.write("ERROR: You must input either a histologie or medra "
+                "code to query!\n")
             return None
 
         results = {}
@@ -1189,18 +1268,22 @@ class MatchData(object):
         Get the IHC results for a patient.
 
         Args:
-            psn (str):  Query the data by PSN. Note: that multiple results will
-                be returned since there can be more than one MSN / PSN.
+            psn (str):  Query the data by PSN. 
+            
             msn (str):  Query the data by MSN.
             bsn (str):  Query the data by BSN.
             assay (list): IHC assay for which we want to return results. If no 
                 assay is passed, will return all IHC assay results.
 
+        .. note:: 
+            Multiple results will be returned since there can be more than 
+            one MSN / PSN.
+
         Returns:
-            Dict of lists containing the MSN and all IHC assays available for 
+            dict: Dict of lists containing the MSN and all IHC assays available for 
             the specimen.
 
-        Example:
+        Examples:
             >>> self.get_ihc_results(msn='MSN30791')
             {'MSN30791': {'MLH1': u'POSITIVE',
                           'MSH2': u'POSITIVE',
