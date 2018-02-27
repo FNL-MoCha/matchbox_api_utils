@@ -50,9 +50,9 @@ class MatchData(object):
 
         json_db (file): MATCHbox processed JSON file containing the whole
             dataset. This is usually generated from 'matchbox_json_dump.py'. 
-            The default value is 'sys_default' which loads the default 
+            The default value is ``'sys_default'`` which loads the default 
             package data. If you wish you get a live call, set this variable 
-            to "None".
+            to ``None``.
 
         load_raw (file): Load a raw API dataset rather than making a fresh
             call to the API. This is intended for dev purpose
@@ -104,7 +104,7 @@ class MatchData(object):
             if self._quiet is False:
                 print('\n  ->  Starting from a raw MB JSON Obj')
             self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
-            self.data = self.gen_patients_list(matchbox_data, self._patient)
+            self.data = self.__gen_patients_list(matchbox_data, self._patient)
         elif self._json_db:
             self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._quiet is False:
@@ -118,7 +118,7 @@ class MatchData(object):
             if self._quiet is False:
                 print('\n  ->  Starting from a live MB instance')
             matchbox_data = Matchbox(self._url, self._creds).api_data
-            self.data = self.gen_patients_list(matchbox_data, self._patient)
+            self.data = self.__gen_patients_list(matchbox_data, self._patient)
 
         # Load up a medra : ctep term db based on entries so that we can look
         # data up on the fly.
@@ -291,26 +291,18 @@ class MatchData(object):
 
                 return last_status,last_msg,arm_hist,progressed
 
-    def gen_patients_list(self, matchbox_data, patient):
-        """Process the MATCHBox API data.
+    def __gen_patients_list(self, matchbox_data, patient):
+        #Process the MATCHBox API data (usually in JSON format from MongoDB) into 
+        #a much more concise and easily parsable dict of data. This dict will be 
+        #the main dataset used for later data analysis and queries and is the main 
+        #structure for the MatchboxData class below.
 
-        Process the MATCHBox API data (usually in JSON format from MongoDB) into 
-        a much more concise and easily parsable dict of data. This dict will be 
-        the main dataset used for later data analysis and queries and is the main 
-        structure for the MatchboxData class below.
+        #Args:
+            #matchbox_data (dict): Dict of MATCHBox JSON data to process.
+            #patient (str): Patient identifier (PSN) to filter data.
 
-        Args:
-            matchbox_data (dict): Dict of MATCHBox JSON data to process.
-            patient (str): Patient identifier (PSN) to filter data.
-
-        Returns:
-            dict: Dict of parsed MATCHBox API data.
-
-        Todo:
-            Internalize this method so that it's not exposed.  No reason to call 
-            it.
-
-        """
+        #Returns:
+            #dict: Dict of parsed MATCHBox API data.
         patients = defaultdict(dict)
         for record in matchbox_data:
             psn = record['patientSequenceNumber']       
@@ -515,6 +507,10 @@ class MatchData(object):
         check a component rather than writing a method to get each and every bit
         out. If no metaval is entered, will return the whole patient dict.
 
+        .. note::
+            This function is more for debugging and troubleshooting that for real
+            functionality.
+
         Args:
             psn (str):  PSN of patient for which we want to receive data.
             val (str):  Optional metaval of data we want. If no entered, will
@@ -523,7 +519,7 @@ class MatchData(object):
         Returns:
             dict: 
             Either return dict of data if a metaval entered, or whole patient 
-            record. Returns 'None' if no data for a particular record and raises 
+            record. Returns ``None`` if no data for a particular record and raises 
             and error if the metaval is not valid for the dataset.
 
         """
@@ -549,25 +545,27 @@ class MatchData(object):
         a biopsy due to a failure) as a method of figuring out how many NAs were 
         prepared, and total with sequencing data.
 
-        Can filter output based on any one criteria by leveraging the "category" 
+        Can filter output based on any one criteria by leveraging the ``category`` 
         variable
 
         Args:
             catetory (str): biopsy category to return. Valid categories are:
-                * 'pass'
-                * 'failed_biopsy'
-                * 'sequenced'
-                * 'outside'
-                * 'outside_confirmation'
-                * 'progression'
-                * 'initial'
+
+                * pass
+                * failed_biopsy
+                * sequenced
+                * outside
+                * outside_confirmation
+                * progression
+                * initial
 
             ret_type (str): Data type to return. Valid types are "counts" and 
                 "ids", where counts is the total number in that category, and 
                 ids are the BSNs for the category. Default is "counts"
 
         Returns:
-            dict: Whole set of category : count or single category : count data.
+            dict: 
+            Whole set of category : count or single category : count data.
 
         Todo: 
             * Fix examples.
@@ -635,10 +633,11 @@ class MatchData(object):
         Args:
             filename (str): Filename to use for output. Default filename is:
 
-                ``'mb_obj_<date_generated>.json'``
+                ``mb_obj_<date_generated>.json``
 
         Returns:
-            JSON: MATCHBox API JSON file.
+            json: 
+            MATCHBox API JSON file.
 
         """
         if self._json_db == 'sys_default':
@@ -790,23 +789,23 @@ class MatchData(object):
 
     def get_disease_summary(self, query_disease=None, query_medra=None):
         """
-        Return a summary of registered diseases and counts. With no args, will return
-        a list of all diseases and counts as a dict. One can also limit output to a
-        list of diseases or medra codes and get counts for those only. 
+        Return a summary of registered diseases and counts. With no args, will 
+        return a list of all diseases and counts as a dict. One can also limit 
+        output to a list of diseases or medra codes and get counts for those only. 
 
         Args:
             query_disease (list): List of diseases to filter on.
             query_medra   (list): List of MEDRA codes to filter on.
 
         Returns:
-            Dictionary of disease(s) and counts in the form of::
+            dict: Dictionary of disease(s) and counts in the form of: ::
 
-                    ``{medra_code : (ctep_term, count)}``
+            {medra_code : (ctep_term, count)}
 
         Todo:
             * Data is good but should try to filter outside assay data, failed
               specimens, and progression biopsies (collapsed into one count) to 
-              get a value that is closer tot eh accepted final count.
+              get a value that is closer to the accepted final count.
 
         Examples:
             >>> data.get_disease_summary(query_medra=['10006190'])
@@ -868,7 +867,7 @@ class MatchData(object):
             no_disease=False):
         """
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
-        are defined as being only Passed and can not be Failed, No Biopsy or
+        are defined as being only `Passed` and can not be `Failed`, `No Biopsy` or
         outside assay biopsies at this time.
 
         Args:
@@ -878,13 +877,13 @@ class MatchData(object):
                 to filter data.
             msn (str): Optional MSN or comma separated list of MSNs on which 
                 to filter data.
-            outside (bool): Also include outside assay data. False by default.
+            outside (bool): Also include outside assay data. Default: ``False``
             no_disease (bool): Return all data, even if there is no disease 
-                indicated for the patient specimen. Default: False
+                indicated for the patient specimen. Default: ``False``
 
         Returns:
-            dict: Dict of ID : Disease mappings. If no match for input ID, 
-                returns None.
+            dict: Dict of ID \: Disease mappings. If no match for input ID, 
+            returns ``None``.
 
         Examples: 
             >>> data.get_histology(psn='11352')
@@ -971,12 +970,14 @@ class MatchData(object):
         duplicate variants will not be output.  This will preven the hit rate from 
         getting over inflated.  Also, there is no sequence specific information 
         output in this version (i.e. no VAF, Coverage, etc.).  Sequence level 
-        information for a call can be obtained from the `get_variant_report()` 
-        method below.
+        information for a call can be obtained from the method get_variant_report_
+
 
         Args:
-            query (dict): Dictionary of variant_type: gene mappings where:
-                -  variant type is one or more of 'snvs','indels','fusions','cnvs'
+            query (dict): Dictionary of variant_type: gene mappings where: ::
+
+                -  variant type is one or more of 'snvs', 'indels', 'fusions',
+                    'cnvs'
                 -  gene is a list of genes to query.
 
             query_patients (list): List of patients for which we want to obtain 
@@ -984,8 +985,8 @@ class MatchData(object):
 
         Returns:
             dict: Return a dict of matching data with disease and MOI information, 
-                along with a count of the number of patients queried and the 
-                number of biopsies queried.
+            along with a count of the number of patients queried and the 
+            number of biopsies queried.
         
         Examples:
             >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
@@ -1033,7 +1034,8 @@ class MatchData(object):
         results = {} 
         plist = [] 
 
-        # Queue up a patient's list in case you just want to find data for one patient.
+        # Queue up a patient's list in case you just want to find data for one 
+        # patient.
         if query_patients:
             if type(query_patients) is not list:
                 sys.stderr.write('ERROR: You must input the query patients as a '
@@ -1044,8 +1046,9 @@ class MatchData(object):
             pt_list = self.data.keys()
 
         for patient in pt_list:
-            # Skip no biopsy and all outside biospy cases.  For outside assay cases, we 
-            # don't want to consider any of it since the confirmation data will skew results.
+            # Skip no biopsy and all outside biospy cases.  For outside assay 
+            # cases, we don't want to consider any of it since the confirmation 
+            # data will skew results.
             if self.data[patient]['biopsies'] != 'No_Biopsy' and 'OUTSIDE' not in self.data[patient]['source']:
                 matches = []
                 for biopsy in self.data[patient]['biopsies']:
@@ -1099,7 +1102,9 @@ class MatchData(object):
 
     def get_variant_report(self, psn=None, msn=None):
         """
-        Input a PSN or MSN (preferred!) and return a list of dicts of variant 
+        .. _get_variant_report:
+
+        Input a PSN or MSN **(preferred!)** and return a list of dicts of variant 
         call data.
 
         Since there can be more than one MSN per patient, one will get a more 
@@ -1114,8 +1119,12 @@ class MatchData(object):
            psn (str):  PSN for which the variant reports should be returned.
 
         Returns:
-           dict: List of dicts of variant results.
-           ``msn: { 'singleNucleotideVariants' : [{var_data}], 'copyNumberVariants' : [{var_data},{var_data}], etc. }``
+           dict: List of dicts of variant results. ::
+
+           msn: { 
+               'singleNucleotideVariants' : [{var_data}], 
+               'copyNumberVariants' : [{var_data},{var_data}], etc. 
+           }
 
         Examples:
 
@@ -1244,6 +1253,30 @@ class MatchData(object):
         return results
 
     def get_patients_by_arm(self, arm):
+        """
+        Input an official NCI-MATCH arm identifier (e.g. `EAY131-A`) and return
+        a set of patients that have ever qualified for the arm based on variant
+        level data.  This not only includes patients `ON_TREATMENT_ARM`, but also
+        `FORMERLY_ON_ARM_OFF_TRIAL` and even `COMPASSIONATE_CARE`. 
+
+        Args:
+            arm (str): One of the official NCI-MATCH arm identifiers.
+
+        Returns:
+            list: List of tuples of patient, arm, and arm_status.
+
+        Examples:
+            >>> print(self.get_patients_by_arm(arm='EAY131-E'))
+            [
+                (u'11476', 'EAY131-E', u'OFF_TRIAL_DECEASED'), 
+                (u'14343', 'EAY131-E', u'FORMERLY_ON_ARM_OFF_TRIAL'), 
+                (u'10626', 'EAY131-E', u'ON_TREATMENT_ARM'), 
+                (u'14256', 'EAY131-E', u'ON_TREATMENT_ARM'), 
+                (u'16472', 'EAY131-E', u'FORMERLY_ON_ARM_OFF_TRIAL')
+            ]
+
+        """
+            
         results = []
         
         if arm not in self.arm_data.data:
@@ -1267,6 +1300,9 @@ class MatchData(object):
         """
         Get the IHC results for a patient.
 
+        Input a PSN, MSN, or BSN and / or a set of IHC assays, and return a dict
+        of data. 
+
         Args:
             psn (str):  Query the data by PSN. 
             
@@ -1280,8 +1316,8 @@ class MatchData(object):
             one MSN / PSN.
 
         Returns:
-            dict: Dict of lists containing the MSN and all IHC assays available for 
-            the specimen.
+            dict: Dict of lists containing the MSN and all IHC assays available 
+            for the specimen.
 
         Examples:
             >>> self.get_ihc_results(msn='MSN30791')
