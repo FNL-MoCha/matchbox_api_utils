@@ -1,0 +1,408 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>3. MATCHBox API Utils Helper Scripts &mdash; MATCHBox API Utils 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="MATCHBox API Utils 1.0.0 documentation" href="index.html"/>
+        <link rel="next" title="4. MATCHBox API Utils API Documentation" href="matchbox_api_utils.html"/>
+        <link rel="prev" title="2. MATCHBox API Utils Tutorial" href="tutorial.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> MATCHBox API Utils
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. MATCHBox API Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#introduction">1.1. Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation">1.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#requirements">1.3. Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#using-matchbox-api-utils">1.4. Using MATCHBox API Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. MATCHBox API Utils Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#module-matchbox">2.1. Module: Matchbox()</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#module-matchdata">2.2. Module: MatchData()</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#toy-example-1">2.2.1. Toy Example #1</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#module-treatmentarms">2.3. Module TreatmentArms()</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. MATCHBox API Utils Helper Scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#matchbox-json-dump-matchbox-json-dump-py">3.1. MATCHBox JSON Dump (matchbox_json_dump.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#matchbox-json-dump-help-doc">3.1.1. MATCHBox JSON Dump Help Doc</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#map-msn-psn-map-msn-psn-py">3.2. MAP MSN PSN (map_msn_psn.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#map-msn-psn-help-doc">3.2.1. MAP MSN PSN Help Doc</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#match-variant-frequency-match-variant-frequency-py">3.3. MATCH Variant Frequency (match_variant_frequency.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#match-variant-frequency-help-docs">3.3.1. MATCH Variant Frequency Help Docs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#matchbox-patient-summary-matchbox-patient-summary-py">3.4. MATCHBox Patient Summary (matchbox_patient_summary.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#matchbox-patient-summary-help-docs">3.4.1. MATCHBox Patient Summary Help Docs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matchbox_api_utils.html">4. MATCHBox API Utils API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matchbox_api_utils.html#module-matchbox_api_utils.matchbox">4.1. matchbox_api_utils.matchbox module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matchbox_api_utils.html#module-matchbox_api_utils.match_data">4.2. matchbox_api_utils.match_data module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matchbox_api_utils.html#module-matchbox_api_utils.match_arms">4.3. matchbox_api_utils.match_arms module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MATCHBox API Utils</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>3. MATCHBox API Utils Helper Scripts</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/helper_scripts.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="matchbox-api-utils-helper-scripts">
+<h1>3. MATCHBox API Utils Helper Scripts<a class="headerlink" href="#matchbox-api-utils-helper-scripts" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="matchbox-json-dump-matchbox-json-dump-py">
+<h2>3.1. MATCHBox JSON Dump (matchbox_json_dump.py)<a class="headerlink" href="#matchbox-json-dump-matchbox-json-dump-py" title="Permalink to this headline">¶</a></h2>
+<p>Get parsed dataset from MATCHBox and dump as a JSON object that we can use
+later on to speed up development and periodic searching for data.</p>
+<p>This is the script that is run during the post installer, and something that
+should be run on a periodic basis to take advantage of new MATCHBox data entered
+into the system (at least until lockdown occurs).  This will put the resultant
+JSON file into the current directory, where it should probably be migrated into
+<code class="docutils literal notranslate"><span class="pre">$HOME/.mb_utils/</span></code> to be picked up by the rest of the system.</p>
+<div class="section" id="matchbox-json-dump-help-doc">
+<h3>3.1.1. MATCHBox JSON Dump Help Doc<a class="headerlink" href="#matchbox-json-dump-help-doc" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span>
+    <span class="n">matchbox_json_dump</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span> <span class="o">&lt;</span><span class="n">raw_mb_datafile</span><span class="o">.</span><span class="n">json</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">r</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">psn</span><span class="o">&gt;</span><span class="p">]</span>
+    <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="o">&lt;</span><span class="n">ta_obj</span><span class="o">.</span><span class="n">json</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span> <span class="o">&lt;</span><span class="n">amoi_obj</span><span class="o">.</span><span class="n">json</span><span class="o">&gt;</span><span class="p">]</span>
+    <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="o">&lt;</span><span class="n">mb_obj</span><span class="o">.</span><span class="n">json</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span>
+
+<span class="n">Optional</span> <span class="n">Arguments</span><span class="p">:</span>
+    <span class="o">-</span><span class="n">r</span><span class="p">,</span> <span class="o">--</span><span class="n">raw</span>        <span class="n">Generate</span> <span class="n">a</span> <span class="n">raw</span> <span class="n">dump</span> <span class="n">of</span> <span class="n">MATCHBox</span> <span class="k">for</span> <span class="n">debugging</span> <span class="ow">and</span> <span class="n">dev</span>
+                     <span class="n">purposes</span><span class="o">.</span>
+                     <span class="n">No</span> <span class="n">filtering</span> <span class="ow">or</span> <span class="n">condensing</span> <span class="n">of</span> <span class="n">data</span> <span class="n">at</span> <span class="nb">all</span><span class="o">.</span>
+    <span class="o">-</span><span class="n">d</span><span class="p">,</span> <span class="o">--</span><span class="n">data</span>       <span class="n">Load</span> <span class="n">a</span> <span class="n">raw</span> <span class="n">MATCHBox</span> <span class="n">database</span> <span class="nb">file</span> <span class="p">(</span><span class="n">usually</span> <span class="n">after</span> <span class="n">running</span>
+                     <span class="k">with</span> <span class="n">the</span> <span class="o">-</span><span class="n">r</span> <span class="n">option</span><span class="o">.</span>
+    <span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="o">--</span><span class="n">patient</span>    <span class="n">Patient</span> <span class="n">sequence</span> <span class="n">number</span> <span class="n">used</span> <span class="n">to</span> <span class="n">limit</span> <span class="n">output</span> <span class="k">for</span> <span class="n">testing</span>
+                     <span class="ow">and</span> <span class="n">dev</span> <span class="n">purposes</span>
+    <span class="o">-</span><span class="n">t</span><span class="p">,</span> <span class="o">--</span><span class="n">ta_json</span>    <span class="n">Treatment</span> <span class="n">Arms</span> <span class="n">obj</span> <span class="n">JSON</span> <span class="n">filename</span><span class="o">.</span> <span class="n">DEFAULT</span><span class="p">:</span>
+                     <span class="n">ta_obj_</span><span class="o">&lt;</span><span class="n">datestring</span><span class="o">&gt;.</span><span class="n">json</span>
+    <span class="o">-</span><span class="n">a</span><span class="p">,</span> <span class="o">--</span><span class="n">amoi_json</span>  <span class="n">aMOIs</span> <span class="n">lookup</span> <span class="n">filename</span><span class="o">.</span> <span class="n">DEFAULT</span><span class="p">:</span>
+                     <span class="s2">&quot;amois_lookup_&lt;datestring&gt;.json&quot;</span><span class="o">.</span>
+    <span class="o">-</span><span class="n">m</span><span class="p">,</span> <span class="o">--</span><span class="n">mb_json</span>    <span class="n">Name</span> <span class="n">of</span> <span class="n">Match</span> <span class="n">Data</span> <span class="n">obj</span> <span class="n">JSON</span> <span class="nb">file</span><span class="o">.</span> <span class="n">DEFAULT</span><span class="p">:</span>
+                     <span class="s2">&quot;mb_obj_&lt;datestring&gt;.json&quot;</span><span class="o">.</span>
+
+<span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>           <span class="n">Show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="nb">exit</span>
+<span class="o">-</span><span class="n">v</span><span class="p">,</span> <span class="o">--</span><span class="n">version</span>        <span class="n">Show</span> <span class="n">program</span><span class="s1">&#39;s version number and exit</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="map-msn-psn-map-msn-psn-py">
+<h2>3.2. MAP MSN PSN (map_msn_psn.py)<a class="headerlink" href="#map-msn-psn-map-msn-psn-py" title="Permalink to this headline">¶</a></h2>
+<p>Input a MSN, BSN, or PSN, and return the other identifiers. Useful when trying
+to retrieve the correct dataset and you only know one piece of information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">We are only working with internal BSN, MSN, and PSN numbers for now and
+can not return Outside Assay identifiers at this time.</p>
+</div>
+<div class="section" id="map-msn-psn-help-doc">
+<h3>3.2.1. MAP MSN PSN Help Doc<a class="headerlink" href="#map-msn-psn-help-doc" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span>
+    <span class="n">map_msn_psn</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">mb_json_file</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">-</span><span class="n">t</span> <span class="p">{</span><span class="n">psn</span><span class="p">,</span><span class="n">msn</span><span class="p">,</span><span class="n">bsn</span><span class="p">}</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="o">&lt;</span><span class="n">input_file</span><span class="o">&gt;</span><span class="p">]</span>
+    <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="o">&lt;</span><span class="n">outfile</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">IDs</span><span class="o">&gt;</span><span class="p">]</span>
+
+<span class="n">Positional</span> <span class="n">Arguments</span><span class="p">:</span>
+<span class="n">IDs</span>    <span class="n">MATCH</span> <span class="n">IDs</span> <span class="n">to</span> <span class="n">query</span><span class="o">.</span> <span class="n">Can</span> <span class="n">be</span> <span class="n">single</span> <span class="ow">or</span> <span class="n">comma</span> <span class="n">separated</span> <span class="nb">list</span><span class="o">.</span> <span class="n">Must</span> <span class="n">be</span> <span class="n">used</span>
+       <span class="k">with</span> <span class="n">PSN</span> <span class="ow">or</span> <span class="n">MSN</span> <span class="n">option</span><span class="o">.</span>
+
+<span class="n">Optional</span> <span class="n">Arguments</span><span class="p">:</span>
+<span class="o">-</span><span class="n">j</span><span class="p">,</span> <span class="o">--</span><span class="n">json</span>     <span class="n">Load</span> <span class="n">a</span> <span class="n">MATCHBox</span> <span class="n">JSON</span> <span class="nb">file</span> <span class="n">derived</span> <span class="kn">from</span> <span class="s2">&quot;matchbox_json_dump.py&quot;</span>
+               <span class="n">instead</span> <span class="n">of</span> <span class="n">a</span> <span class="n">live</span> <span class="n">query</span><span class="o">.</span> <span class="n">By</span> <span class="n">default</span> <span class="n">will</span> <span class="n">load</span> <span class="n">the</span> <span class="s2">&quot;sys_default&quot;</span>
+               <span class="n">created</span> <span class="n">during</span> <span class="n">package</span> <span class="n">installation</span><span class="o">.</span> <span class="n">If</span> <span class="n">you</span> <span class="n">wish</span> <span class="n">to</span> <span class="n">do</span> <span class="n">a</span> <span class="n">live</span>
+               <span class="n">query</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">e</span><span class="o">.</span> <span class="ow">not</span> <span class="n">load</span> <span class="n">a</span> <span class="n">previously</span> <span class="n">downloaded</span> <span class="n">JSON</span> <span class="n">dump</span><span class="p">),</span> <span class="nb">set</span>
+               <span class="o">-</span><span class="n">j</span> <span class="n">to</span> <span class="s2">&quot;None&quot;</span><span class="o">.</span>
+<span class="o">-</span><span class="n">t</span><span class="p">,</span> <span class="o">--</span><span class="nb">type</span>     <span class="n">Type</span> <span class="n">of</span> <span class="n">query</span> <span class="n">string</span> <span class="nb">input</span><span class="o">.</span> <span class="n">Can</span> <span class="n">only</span> <span class="n">be</span> <span class="n">MSN</span><span class="p">,</span> <span class="n">PSN</span><span class="p">,</span> <span class="ow">or</span> <span class="n">BSN</span>
+<span class="o">-</span><span class="n">f</span><span class="p">,</span> <span class="o">--</span><span class="nb">file</span>     <span class="n">Load</span> <span class="n">a</span> <span class="n">batch</span> <span class="nb">file</span> <span class="n">of</span> <span class="nb">all</span> <span class="n">MSNs</span> <span class="ow">or</span> <span class="n">PSNs</span> <span class="n">to</span> <span class="n">proc</span>
+<span class="o">-</span><span class="n">o</span><span class="p">,</span> <span class="o">--</span><span class="n">outfile</span>  <span class="n">File</span> <span class="n">to</span> <span class="n">which</span> <span class="n">output</span> <span class="n">should</span> <span class="n">be</span> <span class="n">written</span><span class="o">.</span> <span class="n">Default</span><span class="p">:</span> <span class="n">STDOUT</span><span class="o">.</span>
+<span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>     <span class="n">Show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="nb">exit</span>
+<span class="o">-</span><span class="n">v</span><span class="p">,</span> <span class="o">--</span><span class="n">version</span>  <span class="n">Show</span> <span class="n">program</span><span class="s1">&#39;s version number and exit</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="match-variant-frequency-match-variant-frequency-py">
+<h2>3.3. MATCH Variant Frequency (match_variant_frequency.py)<a class="headerlink" href="#match-variant-frequency-match-variant-frequency-py" title="Permalink to this headline">¶</a></h2>
+<p>Input a list of genes by variant type and get back a table of NCI-MATCH hits
+that can be further analyzed in Excel or some other tool. Can either input a patient
+(or comma separated list of patients) to query, or query the entire dataset. Will
+limit the patient set to the non-outside assay results only, as the Outside Assay
+data is very unreliable.</p>
+<div class="section" id="match-variant-frequency-help-docs">
+<h3>3.3.1. MATCH Variant Frequency Help Docs<a class="headerlink" href="#match-variant-frequency-help-docs" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span>
+<span class="n">match_variant_frequency</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">mb_json_file</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">PSN</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="o">&lt;</span><span class="n">gene_list</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="p">[</span><span class="o">-</span><span class="n">c</span> <span class="o">&lt;</span><span class="n">gene_list</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="o">&lt;</span><span class="n">gene_list</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">i</span> <span class="o">&lt;</span><span class="n">gene_list</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">style</span> <span class="o">&lt;</span><span class="n">pp</span><span class="p">,</span><span class="n">csv</span><span class="p">,</span><span class="n">tsv</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="o">&lt;</span><span class="n">output_file</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span>
+
+<span class="n">Optional</span> <span class="n">Arguments</span><span class="p">:</span>
+<span class="o">-</span><span class="n">j</span><span class="p">,</span> <span class="o">--</span><span class="n">json</span>     <span class="n">Load</span> <span class="n">a</span> <span class="n">MATCHBox</span> <span class="n">JSON</span> <span class="nb">file</span> <span class="n">derived</span> <span class="kn">from</span> <span class="s2">&quot;matchbox_json_dump.py&quot;</span>
+               <span class="n">instead</span> <span class="n">of</span> <span class="n">a</span> <span class="n">live</span> <span class="n">query</span>
+<span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="o">--</span><span class="n">psn</span>      <span class="n">Only</span> <span class="n">output</span> <span class="n">data</span> <span class="k">for</span> <span class="n">a</span> <span class="n">specific</span> <span class="n">patient</span> <span class="ow">or</span> <span class="n">comma</span> <span class="n">separated</span> <span class="nb">list</span>
+               <span class="n">of</span> <span class="n">patients</span>
+<span class="o">-</span><span class="n">s</span><span class="p">,</span> <span class="o">--</span><span class="n">snv</span>      <span class="n">Comma</span> <span class="n">separated</span> <span class="nb">list</span> <span class="n">of</span> <span class="n">SNVs</span> <span class="n">to</span> <span class="n">look</span> <span class="n">up</span> <span class="ow">in</span> <span class="n">MATCHBox</span> <span class="n">data</span><span class="o">.</span>
+<span class="o">-</span><span class="n">c</span><span class="p">,</span> <span class="o">--</span><span class="n">cnv</span>      <span class="n">Comma</span> <span class="n">separated</span> <span class="nb">list</span> <span class="n">of</span> <span class="n">CNVs</span> <span class="n">to</span> <span class="n">look</span> <span class="n">up</span> <span class="ow">in</span> <span class="n">MATCHBox</span> <span class="n">data</span><span class="o">.</span>
+<span class="o">-</span><span class="n">f</span><span class="p">,</span> <span class="o">--</span><span class="n">fusion</span>   <span class="n">Comma</span> <span class="n">separated</span> <span class="nb">list</span> <span class="n">of</span> <span class="n">Fusions</span> <span class="n">to</span> <span class="n">look</span> <span class="n">up</span> <span class="ow">in</span> <span class="n">MATCHBox</span> <span class="n">data</span><span class="o">.</span>
+<span class="o">-</span><span class="n">i</span><span class="p">,</span> <span class="o">--</span><span class="n">indel</span>    <span class="n">Comma</span> <span class="n">separated</span> <span class="nb">list</span> <span class="n">of</span> <span class="n">Fusions</span> <span class="n">to</span> <span class="n">look</span> <span class="n">up</span> <span class="ow">in</span> <span class="n">MATCHBox</span> <span class="n">data</span><span class="o">.</span>
+
+<span class="o">--</span><span class="n">style</span>        <span class="n">Format</span> <span class="k">for</span> <span class="n">output</span><span class="o">.</span> <span class="n">Can</span> <span class="n">choose</span> <span class="n">pretty</span> <span class="k">print</span> <span class="p">(</span><span class="n">pp</span><span class="p">),</span> <span class="n">CSV</span><span class="p">,</span> <span class="ow">or</span> <span class="n">TSV</span>
+<span class="o">-</span><span class="n">o</span><span class="p">,</span> <span class="o">--</span><span class="n">output</span>   <span class="n">Output</span> <span class="nb">file</span> <span class="n">to</span> <span class="n">which</span> <span class="n">to</span> <span class="n">write</span> <span class="n">data</span><span class="o">.</span> <span class="n">Default</span> <span class="ow">is</span> <span class="n">stdout</span>
+<span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>     <span class="n">Show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="nb">exit</span>
+<span class="o">-</span><span class="n">v</span><span class="p">,</span> <span class="o">--</span><span class="n">version</span>  <span class="n">Show</span> <span class="n">program</span><span class="s1">&#39;s version number and exit</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="matchbox-patient-summary-matchbox-patient-summary-py">
+<h2>3.4. MATCHBox Patient Summary (matchbox_patient_summary.py)<a class="headerlink" href="#matchbox-patient-summary-matchbox-patient-summary-py" title="Permalink to this headline">¶</a></h2>
+<p>Get patient or disease summary statistics and data from the MATCH dataset.</p>
+<div class="section" id="matchbox-patient-summary-help-docs">
+<h3>3.4.1. MATCHBox Patient Summary Help Docs<a class="headerlink" href="#matchbox-patient-summary-help-docs" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Usage</span><span class="p">:</span>
+<span class="n">matchbox_patient_summary</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">mb_json_file</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">PSN</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="o">&lt;</span><span class="n">tumor_type</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="o">&lt;</span><span class="n">medra_code</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">O</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="o">&lt;</span><span class="n">results</span><span class="o">.</span><span class="n">txt</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">{</span><span class="n">patient</span><span class="p">,</span><span class="n">disease</span><span class="p">}</span>
+
+<span class="n">Positional</span> <span class="n">Arguments</span><span class="p">:</span>
+<span class="n">patient</span><span class="p">,</span> <span class="n">disease</span>    <span class="n">Category</span> <span class="n">of</span> <span class="n">data</span> <span class="n">to</span> <span class="n">output</span><span class="o">.</span> <span class="n">Can</span> <span class="n">either</span> <span class="n">be</span> <span class="n">patient</span> <span class="ow">or</span> <span class="n">disease</span>
+<span class="n">level</span><span class="o">.</span>
+
+<span class="n">Optional</span> <span class="n">Arguments</span><span class="p">:</span>
+<span class="o">-</span><span class="n">j</span><span class="p">,</span> <span class="o">--</span><span class="n">json</span>     <span class="n">MATCHBox</span> <span class="n">JSON</span> <span class="nb">file</span> <span class="n">containing</span> <span class="n">patient</span> <span class="n">data</span><span class="p">,</span> <span class="n">usually</span> <span class="kn">from</span>
+               <span class="nn">matchbox_json_dump.py</span>
+<span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="o">--</span><span class="n">psn</span>      <span class="n">Filter</span> <span class="n">patient</span> <span class="n">summary</span> <span class="n">to</span> <span class="n">only</span> <span class="n">these</span> <span class="n">patients</span><span class="o">.</span> <span class="n">Can</span> <span class="n">be</span> <span class="n">a</span> <span class="n">comma</span>
+               <span class="n">separated</span> <span class="nb">list</span>
+<span class="o">-</span><span class="n">t</span><span class="p">,</span> <span class="o">--</span><span class="n">tumor</span>    <span class="n">Retrieve</span> <span class="n">data</span> <span class="k">for</span> <span class="n">only</span> <span class="n">this</span> <span class="n">tumor</span> <span class="nb">type</span> <span class="ow">or</span> <span class="n">comma</span> <span class="n">separate</span> <span class="nb">list</span> <span class="n">of</span>
+               <span class="n">tumors</span><span class="o">.</span> <span class="n">Note</span> <span class="n">that</span> <span class="n">you</span> <span class="n">must</span> <span class="n">quote</span> <span class="n">tumors</span> <span class="k">with</span> <span class="n">names</span> <span class="n">containing</span>
+               <span class="n">spaces</span><span class="o">.</span>
+<span class="o">-</span><span class="n">m</span><span class="p">,</span> <span class="o">--</span><span class="n">medra</span>    <span class="n">MEDRA</span> <span class="n">Code</span> <span class="ow">or</span> <span class="n">comma</span> <span class="n">separated</span> <span class="nb">list</span> <span class="n">of</span> <span class="n">codes</span> <span class="n">to</span> <span class="n">search</span><span class="o">.</span>
+<span class="o">-</span><span class="n">O</span><span class="p">,</span> <span class="o">--</span><span class="n">Outside</span>  <span class="n">Include</span> <span class="n">Outside</span> <span class="n">Assay</span> <span class="n">study</span> <span class="n">data</span> <span class="p">(</span><span class="n">DEFAULT</span><span class="p">:</span> <span class="bp">False</span><span class="p">)</span><span class="o">.</span>
+<span class="o">-</span><span class="n">o</span><span class="p">,</span> <span class="o">--</span><span class="n">outfile</span>  <span class="n">Name</span> <span class="n">of</span> <span class="n">output</span> <span class="nb">file</span><span class="o">.</span> <span class="n">DEFAULT</span><span class="p">:</span> <span class="n">STDOUT</span><span class="o">.</span>
+
+<span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>     <span class="n">Show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="nb">exit</span>
+<span class="o">-</span><span class="n">v</span><span class="p">,</span> <span class="o">--</span><span class="n">version</span>  <span class="n">Show</span> <span class="n">program</span><span class="s1">&#39;s version number and exit</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="matchbox_api_utils.html" class="btn btn-neutral float-right" title="4. MATCHBox API Utils API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tutorial.html" class="btn btn-neutral" title="2. MATCHBox API Utils Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Dave Sims.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

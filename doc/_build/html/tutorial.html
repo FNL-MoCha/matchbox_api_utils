@@ -1,0 +1,515 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>2. MATCHBox API Utils Tutorial &mdash; MATCHBox API Utils 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="MATCHBox API Utils 1.0.0 documentation" href="index.html"/>
+        <link rel="next" title="3. MATCHBox API Utils Helper Scripts" href="helper_scripts.html"/>
+        <link rel="prev" title="1. MATCHBox API Utils" href="intro.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> MATCHBox API Utils
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. MATCHBox API Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#introduction">1.1. Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation">1.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#requirements">1.3. Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#using-matchbox-api-utils">1.4. Using MATCHBox API Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. MATCHBox API Utils Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-matchbox">2.1. Module: Matchbox()</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-matchdata">2.2. Module: MatchData()</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#toy-example-1">2.2.1. Toy Example #1</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-treatmentarms">2.3. Module TreatmentArms()</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="helper_scripts.html">3. MATCHBox API Utils Helper Scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="helper_scripts.html#matchbox-json-dump-matchbox-json-dump-py">3.1. MATCHBox JSON Dump (matchbox_json_dump.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="helper_scripts.html#matchbox-json-dump-help-doc">3.1.1. MATCHBox JSON Dump Help Doc</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="helper_scripts.html#map-msn-psn-map-msn-psn-py">3.2. MAP MSN PSN (map_msn_psn.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="helper_scripts.html#map-msn-psn-help-doc">3.2.1. MAP MSN PSN Help Doc</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="helper_scripts.html#match-variant-frequency-match-variant-frequency-py">3.3. MATCH Variant Frequency (match_variant_frequency.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="helper_scripts.html#match-variant-frequency-help-docs">3.3.1. MATCH Variant Frequency Help Docs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="helper_scripts.html#matchbox-patient-summary-matchbox-patient-summary-py">3.4. MATCHBox Patient Summary (matchbox_patient_summary.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="helper_scripts.html#matchbox-patient-summary-help-docs">3.4.1. MATCHBox Patient Summary Help Docs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="matchbox_api_utils.html">4. MATCHBox API Utils API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matchbox_api_utils.html#module-matchbox_api_utils.matchbox">4.1. matchbox_api_utils.matchbox module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matchbox_api_utils.html#module-matchbox_api_utils.match_data">4.2. matchbox_api_utils.match_data module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matchbox_api_utils.html#module-matchbox_api_utils.match_arms">4.3. matchbox_api_utils.match_arms module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MATCHBox API Utils</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>2. MATCHBox API Utils Tutorial</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/tutorial.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="matchbox-api-utils-tutorial">
+<h1>2. MATCHBox API Utils Tutorial<a class="headerlink" href="#matchbox-api-utils-tutorial" title="Permalink to this headline">¶</a></h1>
+<p>Working with MATCHBox API Utils is very easy.  It is simply a matter of loading one
+(or all) of the available modules:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Matchbox</li>
+<li>MatchData</li>
+<li>TreatmentArms</li>
+</ol>
+</div></blockquote>
+<p>Most often one will be using the <code class="docutils literal notranslate"><span class="pre">MatchData()</span></code> module, as that deals directly
+with the majority of the MATCH data that needs to be dealt with.  It directly pulls
+data from <code class="docutils literal notranslate"><span class="pre">Matchbox</span></code> and <code class="docutils literal notranslate"><span class="pre">TreatmentArms</span></code> where need be, and it allows for the
+most flexible parsing and reporting of data.  That’s not to say that the other
+modules are not useful.  Far from it!  As we’ll see a little later down, there are
+a number of useful things that one can do with those as well.</p>
+<p>By default modules will load the most recent dataset available in
+<code class="docutils literal notranslate"><span class="pre">$HOME/.mb_utils</span></code> (see API documentation for specifics), and be ready for use.
+However, if one wanted to get a live dataset, or one wanted to get data from an
+older snapshot of the database, that is all possible too.</p>
+<div class="section" id="module-matchbox">
+<h2>2.1. Module: Matchbox()<a class="headerlink" href="#module-matchbox" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Matchbox</span></code> module is a basic data connector to the live instance of the
+MATCHBox system.  Apart from a URL to query and credentials, there are not a
+whole lot of options.</p>
+<p>In general this module is called by MatchData and TreatmentArms to make the
+connection to the live system and pull data.  I’ve included some documentation of
+this module, though, in the event that one needs to call on it at some point.</p>
+<p>For example, on occassion one might want to get a complete raw MATCHBox dataset,
+which has not been parse and filtered, and can be accepted into the other modules
+as if they were making a live call.  In this case, one could run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matchbox_api_utils</span> <span class="k">import</span> <span class="n">Matchbox</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Matchbox</span><span class="p">(</span><span class="n">make_raw</span><span class="o">=</span><span class="s1">&#39;raw_mb_dataset.json&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will create a raw complete JSON dump of MATCHBox.</p>
+<p>Without dumping that data to a JSON file, one could assign a variable to the
+Matchbox obj, and then pass it around.  However, MatchData is better for an
+entry point here.</p>
+</div>
+<div class="section" id="module-matchdata">
+<h2>2.2. Module: MatchData()<a class="headerlink" href="#module-matchdata" title="Permalink to this headline">¶</a></h2>
+<p>This is by far the workhorse module of the package.  In its most basic form, one
+needs only load the object into a variable, and then run the host of methods
+available</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matchbox_api_utils</span> <span class="k">import</span> <span class="n">MatchData</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">MatchData</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="o">.</span><span class="n">get_biopsy_summary</span><span class="p">(</span><span class="n">category</span><span class="o">=</span><span class="s1">&#39;progression&#39;</span><span class="p">,</span> <span class="n">ret_type</span><span class="o">=</span><span class="s1">&#39;counts&#39;</span><span class="p">)</span>
+<span class="go">{&#39;progression&#39;: 16}</span>
+</pre></div>
+</div>
+<p>This simply works by loading a processed version of MATCHBox, which has been
+optimized to be smaller and more efficient than the raw MATCHBox dataset, and
+then having a set of methods to extract portions of the data for cohort type
+analysis.</p>
+<p>As mentioned above, one can either choose to use the <cite>system_default</cite> JSON option
+for <code class="docutils literal notranslate"><span class="pre">MatchData</span></code>, in which case the latest version of the MATCHBox JSON dump will
+be loaded, or one can load their own custom file (e.g. if one wanted to load an old
+version of the data to see how things changed).  Alternatively (and with the same
+warning as above), one can make a live query at the cost of a long load time.</p>
+<p>There is also the possibility of loading just one or more patient IDs into the API
+and limiting data to that cohort.  However, this is usually only meant for
+debugging purposes and filtering on a patient identifier is usually best done at
+each method call.</p>
+<div class="section" id="toy-example-1">
+<h3>2.2.1. Toy Example #1<a class="headerlink" href="#toy-example-1" title="Permalink to this headline">¶</a></h3>
+<p>You would like to know the disease state of the progression biopsies indicated
+above.  You don’t have any identifiers or other information to go on.</p>
+<dl class="docutils">
+<dt>Here’s a way one might work through it ::</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matchbox_api_utils</span> <span class="k">import</span> <span class="n">MatchData</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pprint</span> <span class="k">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">MatchData</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Let&#39;s create a dict to put the results in.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">biopsies</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_biopsy_summary</span><span class="p">(</span><span class="n">category</span><span class="o">=</span><span class="s1">&#39;progression&#39;</span><span class="p">,</span> <span class="n">ret_type</span><span class="o">=</span><span class="s1">&#39;ids&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pp</span><span class="p">(</span><span class="n">biopsies</span><span class="p">)</span>
+<span class="go">{&#39;progression&#39;: [u&#39;T-17-002064&#39;,</span>
+<span class="go">                 u&#39;T-17-002755&#39;,</span>
+<span class="go">                 u&#39;T-18-000071&#39;,</span>
+<span class="go">                 u&#39;T-17-002680&#39;,</span>
+<span class="go">                 u&#39;T-17-000787&#39;,</span>
+<span class="go">                 u&#39;T-17-002621&#39;,</span>
+<span class="go">                 u&#39;T-17-002657&#39;,</span>
+<span class="go">                 u&#39;T-17-001275&#39;,</span>
+<span class="go">                 u&#39;T-17-001175&#39;,</span>
+<span class="go">                 u&#39;T-17-002564&#39;,</span>
+<span class="go">                 u&#39;T-17-002556&#39;,</span>
+<span class="go">                 u&#39;T-17-002730&#39;,</span>
+<span class="go">                 u&#39;T-17-002600&#39;,</span>
+<span class="go">                 u&#39;T-18-000005&#39;,</span>
+<span class="go">                 u&#39;T-17-000333&#39;,</span>
+<span class="go">                 u&#39;T-18-000031&#39;]}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>Notice that we changed the return type of the <code class="docutils literal notranslate"><span class="pre">get_biopsy_summary()</span></code> call to
+<cite>ids</cite>, which allows us to get ids rather than counts.  Now that we have those
+biopsy IDs, we can get some PSNs , which will be helpful in getting the disease
+data ultimately</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">bsn</span> <span class="ow">in</span> <span class="n">biopsies</span><span class="p">[</span><span class="s1">&#39;progression&#39;</span><span class="p">]:</span>
+<span class="gp">... </span>    <span class="n">psn</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_psn</span><span class="p">(</span><span class="n">bsn</span><span class="o">=</span><span class="n">bsn</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">msn</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_msn</span><span class="p">(</span><span class="n">bsn</span><span class="o">=</span><span class="n">bsn</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">psn</span><span class="p">,</span> <span class="n">msn</span><span class="p">))</span>
+<span class="go">PSN13070: [u&#39;MSN59774&#39;]</span>
+<span class="go">PSN13670: [u&#39;MSN62646&#39;]</span>
+<span class="go">PSN15436: None</span>
+<span class="go">PSN15362: [u&#39;MSN62489&#39;]</span>
+<span class="go">PSN10955: [u&#39;MSN46367&#39;]</span>
+<span class="go">PSN13948: [u&#39;MSN62208&#39;]</span>
+<span class="go">PSN11347: [u&#39;MSN62398&#39;]</span>
+<span class="go">PSN10818: [u&#39;MSN51268&#39;]</span>
+<span class="go">PSN11083: [u&#39;MSN50799&#39;]</span>
+<span class="go">PSN11707: [u&#39;MSN62042&#39;]</span>
+<span class="go">PSN11769: [u&#39;MSN62018&#39;]</span>
+<span class="go">PSN11127: [u&#39;MSN62547&#39;]</span>
+<span class="go">PSN12471: [u&#39;MSN62109&#39;]</span>
+<span class="go">PSN14705: [u&#39;MSN62687&#39;]</span>
+<span class="go">PSN11583: [u&#39;MSN41897&#39;]</span>
+<span class="go">PSN15971: None</span>
+</pre></div>
+</div>
+<p>Looks like there are a couple issues here.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>First, results from the <code class="docutils literal notranslate"><span class="pre">get_msn()</span></code> method are always lists.  We can have
+multiple MSNs per BSN unfortunately, and so we need to output more than one
+on occassion.  In this case, for what we want to do, we can just output them
+all as a comma separated list.</li>
+<li>Second some results to not have a MSN returned!  This can happen.  In this
+case, there was a progression biopsy collected, but no valid MSN was yet
+generated for the case.  Since we would prefer to only work with complete
+data for now, we’ll skip those cases.</li>
+</ol>
+</div></blockquote>
+<p>So, now that we know which are progression cases from the whole dataset, and know
+their PSN, BSN, and MSN identifiers, let’s get the disease for each, and store it
+in our <code class="docutils literal notranslate"><span class="pre">results</span></code> dict above.  We’ll rewrite a little bit of the code above to
+help with some of the processing</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">bsn</span> <span class="ow">in</span> <span class="n">biopsies</span><span class="p">[</span><span class="s1">&#39;progression&#39;</span><span class="p">]:</span>
+<span class="gp">... </span>    <span class="n">psn</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_psn</span><span class="p">(</span><span class="n">bsn</span><span class="o">=</span><span class="n">bsn</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">msn</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_msn</span><span class="p">(</span><span class="n">bsn</span><span class="o">=</span><span class="n">bsn</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">if</span> <span class="n">msn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="n">results</span><span class="p">[</span><span class="n">psn</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">bsn</span><span class="p">,</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msn</span><span class="p">)]</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pp</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="go">{&#39;PSN10818&#39;: [u&#39;T-17-001275&#39;, u&#39;MSN51268&#39;],</span>
+<span class="go"> &#39;PSN10955&#39;: [u&#39;T-17-000787&#39;, u&#39;MSN46367&#39;],</span>
+<span class="go"> &#39;PSN11083&#39;: [u&#39;T-17-001175&#39;, u&#39;MSN50799&#39;],</span>
+<span class="go"> &#39;PSN11127&#39;: [u&#39;T-17-002730&#39;, u&#39;MSN62547&#39;],</span>
+<span class="go"> &#39;PSN11347&#39;: [u&#39;T-17-002657&#39;, u&#39;MSN62398&#39;],</span>
+<span class="go"> &#39;PSN11583&#39;: [u&#39;T-17-000333&#39;, u&#39;MSN41897&#39;],</span>
+<span class="go"> &#39;PSN11707&#39;: [u&#39;T-17-002564&#39;, u&#39;MSN62042&#39;],</span>
+<span class="go"> &#39;PSN11769&#39;: [u&#39;T-17-002556&#39;, u&#39;MSN62018&#39;],</span>
+<span class="go"> &#39;PSN12471&#39;: [u&#39;T-17-002600&#39;, u&#39;MSN62109&#39;],</span>
+<span class="go"> &#39;PSN13070&#39;: [u&#39;T-17-002064&#39;, u&#39;MSN59774&#39;],</span>
+<span class="go"> &#39;PSN13670&#39;: [u&#39;T-17-002755&#39;, u&#39;MSN62646&#39;],</span>
+<span class="go"> &#39;PSN13948&#39;: [u&#39;T-17-002621&#39;, u&#39;MSN62208&#39;],</span>
+<span class="go"> &#39;PSN14705&#39;: [u&#39;T-18-000005&#39;, u&#39;MSN62687&#39;],</span>
+<span class="go"> &#39;PSN15362&#39;: [u&#39;T-17-002680&#39;, u&#39;MSN62489&#39;]}</span>
+</pre></div>
+</div>
+<p>Much better!  Now, let’s leverage another method <code class="docutils literal notranslate"><span class="pre">get_hisology()</span></code> to get the
+patient’s disease and add it to the data</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get_histology</span><span class="p">(</span><span class="n">psn</span><span class="o">=</span><span class="n">p</span><span class="p">))</span>
+<span class="go">{&#39;PSN15362&#39;: u&#39;Salivary gland cancer&#39;}</span>
+<span class="go">{&#39;PSN11583&#39;: u&#39;Salivary gland cancer&#39;}</span>
+<span class="go">{&#39;PSN13070&#39;: u&#39;Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)&#39;}</span>
+<span class="go">{&#39;PSN10955&#39;: u&#39;Squamous cell carcinoma of the anus&#39;}</span>
+<span class="go">{&#39;PSN12471&#39;: u&#39;Carcinosarcoma of the uterus&#39;}</span>
+<span class="go">{&#39;PSN10818&#39;: u&#39;Colorectal cancer, NOS&#39;}</span>
+<span class="go">{&#39;PSN11769&#39;: u&#39;Renal cell carcinoma, clear cell adenocarcinoma&#39;}</span>
+<span class="go">{&#39;PSN11347&#39;: u&#39;Salivary gland cancer&#39;}</span>
+<span class="go">{&#39;PSN13948&#39;: u&#39;Adenocarcinoma of the rectum&#39;}</span>
+<span class="go">{&#39;PSN13670&#39;: u&#39;Ovarian epithelial cancer&#39;}</span>
+<span class="go">{&#39;PSN11707&#39;: u&#39;Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)&#39;}</span>
+<span class="go">{&#39;PSN11083&#39;: u&#39;Adenocarcinoma of the colon&#39;}</span>
+<span class="go">{&#39;PSN14705&#39;: u&#39;Laryngeal squamous cell carcinoma&#39;}</span>
+<span class="go">{&#39;PSN11127&#39;: u&#39;Invasive breast carcinoma&#39;}</span>
+</pre></div>
+</div>
+<p>As we can see the results for this method call are all dicts of <cite>PSN : Disease</cite>
+mappings.  So, we can use the PSN to pull the disease and add it to the results</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">results</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get_histology</span><span class="p">(</span><span class="n">psn</span><span class="o">=</span><span class="n">p</span><span class="p">)[</span><span class="n">p</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pp</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="go">{&#39;PSN10818&#39;: [u&#39;T-17-001275&#39;, u&#39;MSN51268&#39;, u&#39;Colorectal cancer, NOS&#39;],</span>
+<span class="go"> &#39;PSN10955&#39;: [u&#39;T-17-000787&#39;,</span>
+<span class="go">              u&#39;MSN46367&#39;,</span>
+<span class="go">              u&#39;Squamous cell carcinoma of the anus&#39;],</span>
+<span class="go">&#39;PSN11083&#39;: [u&#39;T-17-001175&#39;, u&#39;MSN50799&#39;, u&#39;Adenocarcinoma of the colon&#39;],</span>
+<span class="go">&#39;PSN11127&#39;: [u&#39;T-17-002730&#39;, u&#39;MSN62547&#39;, u&#39;Invasive breast carcinoma&#39;],</span>
+<span class="go">&#39;PSN11347&#39;: [u&#39;T-17-002657&#39;, u&#39;MSN62398&#39;, u&#39;Salivary gland cancer&#39;],</span>
+<span class="go">&#39;PSN11583&#39;: [u&#39;T-17-000333&#39;, u&#39;MSN41897&#39;, u&#39;Salivary gland cancer&#39;],</span>
+<span class="go">&#39;PSN11707&#39;: [u&#39;T-17-002564&#39;,</span>
+<span class="go">             u&#39;MSN62042&#39;,</span>
+<span class="go">             u&#39;Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)&#39;],</span>
+<span class="go">&#39;PSN11769&#39;: [u&#39;T-17-002556&#39;,</span>
+<span class="go">             u&#39;MSN62018&#39;,</span>
+<span class="go">             u&#39;Renal cell carcinoma, clear cell adenocarcinoma&#39;],</span>
+<span class="go">&#39;PSN12471&#39;: [u&#39;T-17-002600&#39;, u&#39;MSN62109&#39;, u&#39;Carcinosarcoma of the uterus&#39;],</span>
+<span class="go">&#39;PSN13070&#39;: [u&#39;T-17-002064&#39;,</span>
+<span class="go">             u&#39;MSN59774&#39;,</span>
+<span class="go">             u&#39;Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)&#39;],</span>
+<span class="go">&#39;PSN13670&#39;: [u&#39;T-17-002755&#39;, u&#39;MSN62646&#39;, u&#39;Ovarian epithelial cancer&#39;],</span>
+<span class="go">&#39;PSN13948&#39;: [u&#39;T-17-002621&#39;, u&#39;MSN62208&#39;, u&#39;Adenocarcinoma of the rectum&#39;],</span>
+<span class="go">&#39;PSN14705&#39;: [u&#39;T-18-000005&#39;,</span>
+<span class="go">             u&#39;MSN62687&#39;,</span>
+<span class="go">             u&#39;Laryngeal squamous cell carcinoma&#39;],</span>
+<span class="go">&#39;PSN15362&#39;: [u&#39;T-17-002680&#39;, u&#39;MSN62489&#39;, u&#39;Salivary gland cancer&#39;]}</span>
+</pre></div>
+</div>
+<p>And finally we have a nice list of collected data for each progression case, which
+is ready to print out for downstream use</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">patient</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">patient</span><span class="p">]</span> <span class="o">+</span> <span class="n">results</span><span class="p">[</span><span class="n">patient</span><span class="p">]))</span>
+<span class="go">PSN15362    T-17-002680    MSN62489    Salivary gland cancer</span>
+<span class="go">PSN11583    T-17-000333    MSN41897    Salivary gland cancer</span>
+<span class="go">PSN13070    T-17-002064    MSN59774    Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)</span>
+<span class="go">PSN10955    T-17-000787    MSN46367    Squamous cell carcinoma of the anus</span>
+<span class="go">PSN12471    T-17-002600    MSN62109    Carcinosarcoma of the uterus</span>
+<span class="go">PSN10818    T-17-001275    MSN51268    Colorectal cancer, NOS</span>
+<span class="go">PSN11769    T-17-002556    MSN62018    Renal cell carcinoma, clear cell adenocarcinoma</span>
+<span class="go">PSN11347    T-17-002657    MSN62398    Salivary gland cancer</span>
+<span class="go">PSN13948    T-17-002621    MSN62208    Adenocarcinoma of the rectum</span>
+<span class="go">PSN13670    T-17-002755    MSN62646    Ovarian epithelial cancer</span>
+<span class="go">PSN11707    T-17-002564    MSN62042    Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)</span>
+<span class="go">PSN11083    T-17-001175    MSN50799    Adenocarcinoma of the colon</span>
+<span class="go">PSN14705    T-18-000005    MSN62687    Laryngeal squamous cell carcinoma</span>
+<span class="go">PSN11127    T-17-002730    MSN62547    Invasive breast carcinoma</span>
+</pre></div>
+</div>
+<p>So, there you have it.  Very simple toy case, but hopefully one that highlights
+some of the features of the MatchData module.  See the API documentation section
+for more information about the included modules and their usage.</p>
+</div>
+</div>
+<div class="section" id="module-treatmentarms">
+<h2>2.3. Module TreatmentArms()<a class="headerlink" href="#module-treatmentarms" title="Permalink to this headline">¶</a></h2>
+<p>&lt;&lt;Documentation to be written&gt;&gt;</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="helper_scripts.html" class="btn btn-neutral float-right" title="3. MATCHBox API Utils Helper Scripts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="intro.html" class="btn btn-neutral" title="1. MATCHBox API Utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Dave Sims.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
