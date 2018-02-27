@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# TODO:
-#    - get arm by gene lookup.
 import sys
 import json
 from collections import defaultdict
@@ -14,50 +12,52 @@ from matchbox_api_utils.matchbox import Matchbox
 class TreatmentArms(object):
     """
 
-    NCI-MATCH Treatment Arms and aMOIs Class
+    **NCI-MATCH Treatment Arms and aMOIs Class**
+
+    Generate a MATCHBox treatment arms object that can be parsed and queried 
+    downstream. 
+    
+    Can instantiate with either a config JSON file, which contains the url, 
+    username, and password information needed to access the resource, or by 
+    supplying the individual arguments to make the connection.  This class
+    will call the Matchbox class in order to make the connection and deploy 
+    the data.
+
+    Can do a live query to get data in real time, or load a MATCHBox JSON file 
+    derived from the matchbox_json_dump.py script that is a part of the package. 
+    Since data in MATCHBox is relatively static these days, it's preferred to 
+    use an existing JSON DB and only periodically update the DB with a call 
+    to the aforementioned script.
+
+    Args:
+        config_file (file): Custom config file to use if not using system default.
+
+        url (str): MATCHBox API URL to use.
+
+        creds (dict): MATCHBox credentials to use. Needs to be in the form of: ::
+
+            { 'username':<username>, 'password':<password> }
+
+        json_db (file):     MATCHbox processed JSON file containing the whole 
+            dataset. This is usually generated from ``'matchbox_json_dump.py'``. 
+            The default value is ``'sys_default'`` which loads the default package 
+            data. If you wish you get a live call, set this
+            variable to `"None"`.
+
+        load_raw (file): Load a raw API dataset rather than making a fresh call 
+            to the API. This is intended for dev purpose only and will be 
+            disabled in production.
+
+        make_raw (bool): Make a raw API JSON dataset for dev purposes only.
+
+    Returns:
+        MATCH Treatment Arms object of data and methods.
 
     """
 
-    def __init__(self, config_file=None, url=None, creds=None, json_db='sys_default',
-            load_raw=None, make_raw=False):
-        """
+    def __init__(self, config_file=None, url=None, creds=None, 
+        json_db='sys_default', load_raw=None, make_raw=False):
 
-        Generate a MATCHBox treatment arms object that can be parsed and queried 
-        downstream. 
-        
-        Can instantiate with either a config JSON file, which contains the url, 
-        username, and password information needed to access the resource, or by 
-        supplying the individual arguments to make the connection.  This class
-        will call the Matchbox class in order to make the connection and deploy 
-        the data.
-
-        Can do a live query to get data in real time, or load a MATCHBox JSON file 
-        derived from the matchbox_json_dump.py script that is a part of the package. 
-        Since data in MATCHBox is relatively static these days, it's preferred to 
-        use an existing JSON DB and only periodically update the DB with a call 
-        to the aforementioned script.
-
-         Args:
-               config_file (file): Custom config file to use if not using system 
-                                   default.
-               url (str):          MATCHBox API URL to use.
-               creds (dict):       MATCHBox credentials to use. Needs to be in the 
-                                   form of:
-
-                            {'username':<username>,'password':<password>}
-
-               json_db (file):     MATCHbox processed JSON file containing the 
-                                   whole dataset. This is usually generated from 
-                                   'matchbox_json_dump.py'. The default value is 
-                                   'sys_default' which loads the default package 
-                                   data. If you wish you get a live call, set this
-                                   variable to "None".
-               load_raw (file):    Load a raw API dataset rather than making a fresh
-                                   call to the API. This is intended for dev purpose
-                                   only and will be disabled.
-               make_raw (bool):    Make a raw API JSON dataset for dev purposes only.
-
-        """
         self._url = url
         self._creds = creds
         self._json_db = json_db
@@ -106,17 +106,17 @@ class TreatmentArms(object):
         amois lookup table object.
 
         Args:
-            amois_filename (str): Name of aMOI lookup JSON file. Default: 
-                amoi_lookup_<datestring>.json
-            ta_filename (str): Name of TA object JSON file Default: 
-                ta_obj_<datestring>.json
+            amois_filename (str): Name of aMOI lookup JSON file. **Default:**
+                `amoi_lookup_<datestring>.json`
+            ta_filename (str): Name of TA object JSON file **Default:**  
+                `ta_obj_<datestring>.json`
 
         Returns:
-            ta_obj_<date>.json
-            amois_lookup_<date>.json
+            json: 
+                ta_obj_<date>.json
+                amois_lookup_<date>.json
 
         """
-        # sys.stdout.write('Writing MATCH aMOIs and Arms to JSON file.\n')
         if not amois_filename:
             amois_filename = 'amoi_lookup_' + utils.get_today('short') + '.json'
         if not ta_filename:
@@ -134,7 +134,7 @@ class TreatmentArms(object):
         else:
             return None
 
-    def __gen_rules_table(self,arm_id = None):
+    def __gen_rules_table(self, arm_id = None):
         # wanted data struct:
             # 'hotspots' : {
                 # 'hs_id' : [arm1, arm2, arm3],
@@ -179,7 +179,7 @@ class TreatmentArms(object):
                             arm,ie_flag[str(flag)]))
         return rules_table
 
-    def __parse_amois(self,amoi_data):
+    def __parse_amois(self, amoi_data):
         # Getting a dict of amois with keys:
             # copyNumberVariants
             # geneFusions
@@ -221,12 +221,18 @@ class TreatmentArms(object):
                 parsed_amois[i] = None
         return parsed_amois
 
-    def make_match_arms_db(self,api_data):
+    def make_match_arms_db(self, api_data):
         """
-        Make a database of MATCH Treatment Arms.
+        **Make a database of MATCH Treatment Arms** 
 
         Read in raw API data and create pared down JSON structure that can be 
         easily parsed later one.  
+
+        Args:
+            api_data (json): Entire raw MATCHBox API retrieved dataset.
+
+        Returns:
+            json: All Arm data.
 
         """
         arm_data = defaultdict(dict)
@@ -268,33 +274,43 @@ class TreatmentArms(object):
             sys.stderr.write('\n')
             sys.exit(1)
 
-    def map_amoi(self,variant):
+    def map_amoi(self, variant):
         """
         Input a variant dict derived from some kind and return either an aMOI id 
-        in the form of Arm(i|e). If variant is not an aMOI, returns 'None'.
+        in the form of Arm(i|e). If variant is not an aMOI, returns ``'None'``.
 
         Args:
-            variant (dict):  Variant dict to annotate.  Dict must have the following 
-                             keys in order to be valid:
+            variant (dict):  Variant dict to annotate.  Dict must have the 
+                following keys in order to be valid: ::
 
-                                    - type : [snvs_indels, cnvs, fusions]
-                                    - oncomineVariantClass
-                                    - gene
-                                    - identifier (i.e. variant ID (COSM476))
-                                    - exon
-                                    - function
+                    - type : [snvs_indels, cnvs, fusions]
+                    - oncomineVariantClass
+                    - gene
+                    - identifier (i.e. variant ID (COSM476))
+                    - exon
+                    - function
 
-                            Not all variant types will have meaningful data for 
-                            these fields, and so fields may be padded with a null 
-                            char (e.g. '.', '-', 'NA', etc.).
+                Not all variant types will have meaningful data for these fields,
+                and so fields may be padded with a null char (e.g. '.', '-', 'NA', 
+                etc.).
 
         Returns
-            results (list):  Arm ID(s) with (i)nclusion or (e)xclusion information.
+            list:  Arm ID(s) with (i)nclusion or (e)xclusion information.
 
-        Example:
-            >>> variant = { 'type' : 'snvs_indels', 'gene' : 'BRAF', 'identifier' : 'COSM476', 'exon' : '15', 'function' : 'missense' , 'oncominevariantclass' : 'Hotspot' }
+        Examples:
+            >>> variant = { 
+                'type' : 'snvs_indels', 
+                'gene' : 'BRAF', 
+                'identifier' : 'COSM476', 
+                'exon' : '15', 
+                'function' : 'missense' , 
+                'oncominevariantclass' : 'Hotspot' 
+            }
+            self.map_amoi(variant)
             ['EAY131-Y(e)', 'EAY131-P(e)', 'EAY131-N(e)', 'EAY131-H(i)']
 
+        Todo:
+           Check the examples work.
 
         """
         self.__validate_variant_dict(variant)
@@ -334,23 +350,29 @@ class TreatmentArms(object):
         arm data.
 
         Args:
-            armid (str): Offcial NCI-MATCH Arm ID in the form of EAY131-xxx (e.g. 
-                EAY131-Z1A).
+            armid (str): Offcial NCI-MATCH Arm ID in the form of `EAY131-xxx` (e.g. 
+                'EAY131-Z1A').
             drugname (str): Drug name as registered in the NCI-MATCH subprotocols.  
                 Right now, required to have the full string (e.g. 'MLN0128(TAK-228)' 
                 or, unfortunately, 'Sunitinib malate (SU011248 L-malate)'), but 
                 will work on a regex to help make this easier later on.
 
         Returns:
-            List of tuples or None.
+            list: List of tuples or ``None``.
 
-        Example:
+        Examples:
             >>> map_drug_arm(armid='EAY131-Z1A')
             (u'EAY131-Z1A', 'Binimetinib', u'788187')
 
+        Todo:
+            Write regex for drug name mapping so that we don't need to deal with 
+            long, cryptic strings.
+
         """
+
         if all(x is None for x in [armid,drugname]):
-            return [(arm, self.data[arm]['drug_name'], self.data[arm]['drug_id']) for arm in sorted(self.data)]
+            return [(arm, self.data[arm]['drug_name'], 
+                self.data[arm]['drug_id']) for arm in sorted(self.data)]
         elif armid:
             if armid in self.data:     
                 return (armid, self.data[armid]['drug_name'], 
@@ -365,13 +387,14 @@ class TreatmentArms(object):
     def get_exclusion_disease(self,armid):
         """
         Input an arm ID and return a list of exclusionary diseases for the arm, 
-        if there are any. Otherwise return None.
+        if there are any. Otherwise return ``None``.
 
         Args:
             armid (str): Full identifier of the arm to be queried.
 
         Returns:
-            List of exclusionary diseases for the arm, or None if there aren't any.
+            list: List of exclusionary diseases for the arm, or ``None`` if there 
+            aren't any.
 
         Example:
             >>> get_exclusion_disease('EAY131-Z1A')
@@ -399,6 +422,10 @@ class TreatmentArms(object):
             arm (str):  Arm identifier to query
 
         Returns:
+
+        Todo:
+            Need to finish implementing this method.  Currently only dumping a 
+            dict.
             
         """
 
