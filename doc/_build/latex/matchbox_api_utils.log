@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017) (preloaded format=pdflatex 2017.5.23)  27 FEB 2018 15:29
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017) (preloaded format=pdflatex 2017.5.23)  27 FEB 2018 16:48
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1158,78 +1158,88 @@ LaTeX Font Info:    Try loading font information for TS1+pcr on input line 95.
 File: ts1pcr.fd 2001/06/04 font definitions for TS1/pcr.
 ) [1
 
-] [2]
-Chapter 2.
-[3
-
-] [4] [5] [6
-
 ]
-Chapter 3.
-LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10> not available
-(Font)              Font shape `T1/pcr/b/n' tried instead on input line 311.
-LaTeX Font Info:    Try loading font information for TS1+ptm on input line 326.
+LaTeX Font Info:    Try loading font information for TS1+ptm on input line 155.
+
 
 (/usr/local/texlive/2017/texmf-dist/tex/latex/psnfss/ts1ptm.fd
 File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
-)
+) [2]
+Chapter 2.
+[3
+
+]
+LaTeX Font Info:    Font shape `T1/pcr/m/it' in size <9> not available
+(Font)              Font shape `T1/pcr/m/sl' tried instead on input line 269.
+LaTeX Font Info:    Font shape `TS1/pcr/m/it' in size <9> not available
+(Font)              Font shape `TS1/pcr/m/sl' tried instead on input line 269.
+ [4] [5] [6] [7] [8
+
+]
+Chapter 3.
+[9] [10] [11] [12
+
+]
+Chapter 4.
+LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10> not available
+(Font)              Font shape `T1/pcr/b/n' tried instead on input line 614.
 LaTeX Font Info:    Font shape `T1/pcr/m/it' in size <10> not available
 (Font)              Font shape `T1/pcr/m/sl' tried instead on input line 2.
 
-Underfull \hbox (badness 10000) in paragraph at lines 363--363
+Underfull \hbox (badness 10000) in paragraph at lines 666--666
 []\T1/ptm/m/it/10 config_file=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 url=None\T1/
 ptm/m/n/10 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 363--363
+Underfull \hbox (badness 10000) in paragraph at lines 666--666
 \T1/ptm/m/it/10 creds=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 pa-tient=None\T1/ptm
 /m/n/10 ,
  []
 
-[7] [8] [9] [10] [11] [12] [13] [14] [15]
-Underfull \hbox (badness 10000) in paragraph at lines 1162--1162
+[13] [14] [15] [16] [17] [18] [19] [20] [21]
+Underfull \hbox (badness 10000) in paragraph at lines 1465--1465
 []\T1/ptm/m/it/10 config_file=None\T1/ptm/m/n/10 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 1162--1162
+Underfull \hbox (badness 10000) in paragraph at lines 1465--1465
 \T1/ptm/m/it/10 url=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 creds=None\T1/ptm/m/n/
 10 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 1162--1162
+Underfull \hbox (badness 10000) in paragraph at lines 1465--1465
 \T1/ptm/m/it/10 json_db='sys_default'\T1/ptm/m/n/10 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 1162--1162
+Underfull \hbox (badness 10000) in paragraph at lines 1465--1465
 \T1/ptm/m/it/10 load_raw=None\T1/ptm/m/n/10 ,
  []
 
-[16]
-Underfull \hbox (badness 5607) in paragraph at lines 1230--1232
+[22]
+Underfull \hbox (badness 5607) in paragraph at lines 1533--1535
 []\T1/pcr/b/n/10 amois_filename \T1/ptm/m/n/10 ([][]\T1/pcr/m/sl/10 str[][]\T1/
 ptm/m/n/10 ) ^^U Name of aMOI lookup JSON file. \T1/ptm/b/n/10 De-fault:
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 1234--1236
+Underfull \hbox (badness 10000) in paragraph at lines 1537--1539
 []\T1/pcr/b/n/10 ta_filename \T1/ptm/m/n/10 ([][]\T1/pcr/m/sl/10 str[][]\T1/ptm
 /m/n/10 ) ^^U Name of TA ob-ject JSON file \T1/ptm/b/n/10 De-fault:
  []
 
-[17] [18] [19] [20
+[23] [24] [25] [26
 
 ]
-Chapter 4.
-[21] [22
+Chapter 5.
+[27] [28
 
-] [23
+] [29
 
 
-] (./matchbox_api_utils.ind [24
+] (./matchbox_api_utils.ind [30
 
 
 ]
@@ -1362,25 +1372,25 @@ Underfull \hbox (badness 10000) in paragraph at lines 46--47
 []\T1/ptm/m/n/10 TreatmentArms (class in match-
  []
 
-[25
+[31
 
 ])
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1455.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1455.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1758.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1758.
  (./matchbox_api_utils.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1455.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1455.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1758.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1758.
 
 Package rerunfilecheck Info: File `matchbox_api_utils.out' has not changed.
-(rerunfilecheck)             Checksum: 945BB29C1460CB1D53873F860DE6A10E;4138.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1455.
+(rerunfilecheck)             Checksum: 26603C3DA43EAC9684AC8CC3903B608F;5069.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1758.
  ) 
 Here is how much of TeX's memory you used:
- 13746 strings out of 492995
- 192781 string characters out of 6132704
- 439442 words of memory out of 5000000
- 16898 multiletter control sequences out of 15000+600000
- 57117 words of font info for 79 fonts, out of 8000000 for 9000
+ 13783 strings out of 492995
+ 193287 string characters out of 6132704
+ 439787 words of memory out of 5000000
+ 16915 multiletter control sequences out of 15000+600000
+ 58166 words of font info for 82 fonts, out of 8000000 for 9000
  1142 hyphenation exceptions out of 8191
  37i,12n,45p,627b,766s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2017/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
@@ -1394,10 +1404,10 @@ s/type1/urw/helvetic/uhvb8a.pfb></usr/local/texlive/2017/texmf-dist/fonts/type1
 elvetic/uhvr8a.pfb></usr/local/texlive/2017/texmf-dist/fonts/type1/urw/times/ut
 mb8a.pfb></usr/local/texlive/2017/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><
 /usr/local/texlive/2017/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on matchbox_api_utils.pdf (29 pages, 180420 bytes).
+Output written on matchbox_api_utils.pdf (35 pages, 197061 bytes).
 PDF statistics:
- 427 PDF objects out of 1000 (max. 8388607)
- 376 compressed objects within 4 object streams
- 88 named destinations out of 1000 (max. 500000)
- 181 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 491 PDF objects out of 1000 (max. 8388607)
+ 433 compressed objects within 5 object streams
+ 105 named destinations out of 1000 (max. 500000)
+ 229 words of extra memory for PDF output out of 10000 (max. 10000000)
 

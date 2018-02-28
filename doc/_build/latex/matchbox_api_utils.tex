@@ -143,12 +143,315 @@ inputting the custom JSON into the MatchData object (see: \sphinxcode{\sphinxupq
 API documentation for details).
 
 
+\section{Requirements}
+\label{\detokenize{intro:requirements}}
+These modules are run under Python 2.7.  However, all coding (where possible) is
+done with Python 3 in mind, and should be easily portable. This is especially the
+case with the main library modules and classes.  Your mileage may vary with the
+helper scripts somewhat.
+
+In addition to the above, the package requires the installation of:
+\begin{itemize}
+\item {} 
+\sphinxtitleref{requests \textless{}http://docs.python-requests.org/en/master/\textgreater{}}
+
+\end{itemize}
+
+The setup script should take care of this dependency upon installation.
+
+
 \section{Using MATCHBox API Utils}
 \label{\detokenize{intro:using-matchbox-api-utils}}
 Once the installation is run, one can either use the pre-built scripts available
 in your systems binary directory (see Helper Scripts documentation), or write
 your own scripts using any one of the included methods (see the MATCHBox API Utils
 API documentation).
+
+
+\chapter{MATCHBox API Utils Tutorial}
+\label{\detokenize{tutorial:matchbox-api-utils-tutorial}}\label{\detokenize{tutorial::doc}}
+Working with MATCHBox API Utils is very easy.  It is simply a matter of loading one
+(or all) of the available modules:
+\begin{enumerate}
+\item {} 
+Matchbox
+
+\item {} 
+MatchData
+
+\item {} 
+TreatmentArms
+
+\end{enumerate}
+
+Most often one will be using the \sphinxcode{\sphinxupquote{MatchData()}} module, as that deals directly
+with the majority of the MATCH data that needs to be dealt with.  It directly pulls
+data from \sphinxcode{\sphinxupquote{Matchbox}} and \sphinxcode{\sphinxupquote{TreatmentArms}} where need be, and it allows for the
+most flexible parsing and reporting of data.  That’s not to say that the other
+modules are not useful.  Far from it!  As we’ll see a little later down, there are
+a number of useful things that one can do with those as well.
+
+By default modules will load the most recent dataset available in
+\sphinxcode{\sphinxupquote{\$HOME/.mb\_utils}} (see API documentation for specifics), and be ready for use.
+However, if one wanted to get a live dataset, or one wanted to get data from an
+older snapshot of the database, that is all possible too.
+
+
+\section{Module: Matchbox()}
+\label{\detokenize{tutorial:module-matchbox}}
+The \sphinxcode{\sphinxupquote{Matchbox}} module is a basic data connector to the live instance of the
+MATCHBox system.  Apart from a URL to query and credentials, there are not a
+whole lot of options.
+
+In general this module is called by MatchData and TreatmentArms to make the
+connection to the live system and pull data.  I’ve included some documentation of
+this module, though, in the event that one needs to call on it at some point.
+
+For example, on occassion one might want to get a complete raw MATCHBox dataset,
+which has not been parse and filtered, and can be accepted into the other modules
+as if they were making a live call.  In this case, one could run
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{matchbox\PYGZus{}api\PYGZus{}utils} \PYG{k}{import} \PYG{n}{Matchbox}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{Matchbox}\PYG{p}{(}\PYG{n}{make\PYGZus{}raw}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{raw\PYGZus{}mb\PYGZus{}dataset.json}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+This will create a raw complete JSON dump of MATCHBox.
+
+Without dumping that data to a JSON file, one could assign a variable to the
+Matchbox obj, and then pass it around.  However, MatchData is better for an
+entry point here.
+
+
+\section{Module: MatchData()}
+\label{\detokenize{tutorial:module-matchdata}}
+This is by far the workhorse module of the package.  In its most basic form, one
+needs only load the object into a variable, and then run the host of methods
+available
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{matchbox\PYGZus{}api\PYGZus{}utils} \PYG{k}{import} \PYG{n}{MatchData}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{data} \PYG{o}{=} \PYG{n}{MatchData}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{data}\PYG{o}{.}\PYG{n}{get\PYGZus{}biopsy\PYGZus{}summary}\PYG{p}{(}\PYG{n}{category}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{progression}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{n}{ret\PYGZus{}type}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{counts}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}progression\PYGZsq{}: 16\PYGZcb{}}
+\end{sphinxVerbatim}
+
+This simply works by loading a processed version of MATCHBox, which has been
+optimized to be smaller and more efficient than the raw MATCHBox dataset, and
+then having a set of methods to extract portions of the data for cohort type
+analysis.
+
+As mentioned above, one can either choose to use the \sphinxtitleref{system\_default} JSON option
+for \sphinxcode{\sphinxupquote{MatchData}}, in which case the latest version of the MATCHBox JSON dump will
+be loaded, or one can load their own custom file (e.g. if one wanted to load an old
+version of the data to see how things changed).  Alternatively (and with the same
+warning as above), one can make a live query at the cost of a long load time.
+
+There is also the possibility of loading just one or more patient IDs into the API
+and limiting data to that cohort.  However, this is usually only meant for
+debugging purposes and filtering on a patient identifier is usually best done at
+each method call.
+
+
+\subsection{Toy Example \#1}
+\label{\detokenize{tutorial:toy-example-1}}
+You would like to know the disease state of the progression biopsies indicated
+above.  You don’t have any identifiers or other information to go on.
+\begin{description}
+\item[{Here’s a way one might work through it ::}] \leavevmode
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{matchbox\PYGZus{}api\PYGZus{}utils} \PYG{k}{import} \PYG{n}{MatchData}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{pprint} \PYG{k}{import} \PYG{n}{pprint} \PYG{k}{as} \PYG{n}{pp}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{data} \PYG{o}{=} \PYG{n}{MatchData}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{results} \PYG{o}{=} \PYG{p}{\PYGZob{}}\PYG{p}{\PYGZcb{}}  \PYG{c+c1}{\PYGZsh{} Let\PYGZsq{}s create a dict to put the results in.}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{biopsies} \PYG{o}{=} \PYG{n}{data}\PYG{o}{.}\PYG{n}{get\PYGZus{}biopsy\PYGZus{}summary}\PYG{p}{(}\PYG{n}{category}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{progression}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{n}{ret\PYGZus{}type}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{ids}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{pp}\PYG{p}{(}\PYG{n}{biopsies}\PYG{p}{)}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}progression\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002064\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002755\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}18\PYGZhy{}000071\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002680\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}000787\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002621\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002657\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}001275\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}001175\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002564\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002556\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002730\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002600\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}18\PYGZhy{}000005\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}000333\PYGZsq{},}
+\PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}18\PYGZhy{}000031\PYGZsq{}]\PYGZcb{}}
+\end{sphinxVerbatim}
+
+\end{description}
+
+Notice that we changed the return type of the \sphinxcode{\sphinxupquote{get\_biopsy\_summary()}} call to
+\sphinxtitleref{ids}, which allows us to get ids rather than counts.  Now that we have those
+biopsy IDs, we can get some PSNs , which will be helpful in getting the disease
+data ultimately
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k}{for} \PYG{n}{bsn} \PYG{o+ow}{in} \PYG{n}{biopsies}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{progression}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{]}\PYG{p}{:}
+\PYG{g+gp}{... }    \PYG{n}{psn} \PYG{o}{=} \PYG{n}{data}\PYG{o}{.}\PYG{n}{get\PYGZus{}psn}\PYG{p}{(}\PYG{n}{bsn}\PYG{o}{=}\PYG{n}{bsn}\PYG{p}{)}
+\PYG{g+gp}{... }    \PYG{n}{msn} \PYG{o}{=} \PYG{n}{data}\PYG{o}{.}\PYG{n}{get\PYGZus{}msn}\PYG{p}{(}\PYG{n}{bsn}\PYG{o}{=}\PYG{n}{bsn}\PYG{p}{)}
+\PYG{g+gp}{... }    \PYG{n+nb}{print}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+si}{\PYGZpc{}s}\PYG{l+s+s1}{: }\PYG{l+s+si}{\PYGZpc{}s}\PYG{l+s+s1}{\PYGZsq{}} \PYG{o}{\PYGZpc{}} \PYG{p}{(}\PYG{n}{psn}\PYG{p}{,} \PYG{n}{msn}\PYG{p}{)}\PYG{p}{)}
+\PYG{g+go}{PSN13070: [u\PYGZsq{}MSN59774\PYGZsq{}]}
+\PYG{g+go}{PSN13670: [u\PYGZsq{}MSN62646\PYGZsq{}]}
+\PYG{g+go}{PSN15436: None}
+\PYG{g+go}{PSN15362: [u\PYGZsq{}MSN62489\PYGZsq{}]}
+\PYG{g+go}{PSN10955: [u\PYGZsq{}MSN46367\PYGZsq{}]}
+\PYG{g+go}{PSN13948: [u\PYGZsq{}MSN62208\PYGZsq{}]}
+\PYG{g+go}{PSN11347: [u\PYGZsq{}MSN62398\PYGZsq{}]}
+\PYG{g+go}{PSN10818: [u\PYGZsq{}MSN51268\PYGZsq{}]}
+\PYG{g+go}{PSN11083: [u\PYGZsq{}MSN50799\PYGZsq{}]}
+\PYG{g+go}{PSN11707: [u\PYGZsq{}MSN62042\PYGZsq{}]}
+\PYG{g+go}{PSN11769: [u\PYGZsq{}MSN62018\PYGZsq{}]}
+\PYG{g+go}{PSN11127: [u\PYGZsq{}MSN62547\PYGZsq{}]}
+\PYG{g+go}{PSN12471: [u\PYGZsq{}MSN62109\PYGZsq{}]}
+\PYG{g+go}{PSN14705: [u\PYGZsq{}MSN62687\PYGZsq{}]}
+\PYG{g+go}{PSN11583: [u\PYGZsq{}MSN41897\PYGZsq{}]}
+\PYG{g+go}{PSN15971: None}
+\end{sphinxVerbatim}
+
+Looks like there are a couple issues here.
+\begin{enumerate}
+\item {} 
+First, results from the \sphinxcode{\sphinxupquote{get\_msn()}} method are always lists.  We can have
+multiple MSNs per BSN unfortunately, and so we need to output more than one
+on occassion.  In this case, for what we want to do, we can just output them
+all as a comma separated list.
+
+\item {} 
+Second some results to not have a MSN returned!  This can happen.  In this
+case, there was a progression biopsy collected, but no valid MSN was yet
+generated for the case.  Since we would prefer to only work with complete
+data for now, we’ll skip those cases.
+
+\end{enumerate}
+
+So, now that we know which are progression cases from the whole dataset, and know
+their PSN, BSN, and MSN identifiers, let’s get the disease for each, and store it
+in our \sphinxcode{\sphinxupquote{results}} dict above.  We’ll rewrite a little bit of the code above to
+help with some of the processing
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k}{for} \PYG{n}{bsn} \PYG{o+ow}{in} \PYG{n}{biopsies}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{progression}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{]}\PYG{p}{:}
+\PYG{g+gp}{... }    \PYG{n}{psn} \PYG{o}{=} \PYG{n}{data}\PYG{o}{.}\PYG{n}{get\PYGZus{}psn}\PYG{p}{(}\PYG{n}{bsn}\PYG{o}{=}\PYG{n}{bsn}\PYG{p}{)}
+\PYG{g+gp}{... }    \PYG{n}{msn} \PYG{o}{=} \PYG{n}{data}\PYG{o}{.}\PYG{n}{get\PYGZus{}msn}\PYG{p}{(}\PYG{n}{bsn}\PYG{o}{=}\PYG{n}{bsn}\PYG{p}{)}
+\PYG{g+gp}{... }    \PYG{k}{if} \PYG{n}{msn} \PYG{o+ow}{is} \PYG{o+ow}{not} \PYG{k+kc}{None}\PYG{p}{:}
+\PYG{g+gp}{... }        \PYG{n}{results}\PYG{p}{[}\PYG{n}{psn}\PYG{p}{]} \PYG{o}{=} \PYG{p}{[}\PYG{n}{bsn}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{,}\PYG{l+s+s1}{\PYGZsq{}}\PYG{o}{.}\PYG{n}{join}\PYG{p}{(}\PYG{n}{msn}\PYG{p}{)}\PYG{p}{]}
+\PYG{g+gp}{...}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{pp}\PYG{p}{(}\PYG{n}{results}\PYG{p}{)}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN10818\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}001275\PYGZsq{}, u\PYGZsq{}MSN51268\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN10955\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}000787\PYGZsq{}, u\PYGZsq{}MSN46367\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN11083\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}001175\PYGZsq{}, u\PYGZsq{}MSN50799\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN11127\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002730\PYGZsq{}, u\PYGZsq{}MSN62547\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN11347\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002657\PYGZsq{}, u\PYGZsq{}MSN62398\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN11583\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}000333\PYGZsq{}, u\PYGZsq{}MSN41897\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN11707\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002564\PYGZsq{}, u\PYGZsq{}MSN62042\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN11769\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002556\PYGZsq{}, u\PYGZsq{}MSN62018\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN12471\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002600\PYGZsq{}, u\PYGZsq{}MSN62109\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN13070\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002064\PYGZsq{}, u\PYGZsq{}MSN59774\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN13670\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002755\PYGZsq{}, u\PYGZsq{}MSN62646\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN13948\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002621\PYGZsq{}, u\PYGZsq{}MSN62208\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN14705\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}18\PYGZhy{}000005\PYGZsq{}, u\PYGZsq{}MSN62687\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN15362\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002680\PYGZsq{}, u\PYGZsq{}MSN62489\PYGZsq{}]\PYGZcb{}}
+\end{sphinxVerbatim}
+
+Much better!  Now, let’s leverage another method \sphinxcode{\sphinxupquote{get\_hisology()}} to get the
+patient’s disease and add it to the data
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k}{for} \PYG{n}{p} \PYG{o+ow}{in} \PYG{n}{results}\PYG{p}{:}
+\PYG{g+gp}{... }    \PYG{n+nb}{print}\PYG{p}{(}\PYG{n}{data}\PYG{o}{.}\PYG{n}{get\PYGZus{}histology}\PYG{p}{(}\PYG{n}{psn}\PYG{o}{=}\PYG{n}{p}\PYG{p}{)}\PYG{p}{)}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN15362\PYGZsq{}: u\PYGZsq{}Salivary gland cancer\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN11583\PYGZsq{}: u\PYGZsq{}Salivary gland cancer\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN13070\PYGZsq{}: u\PYGZsq{}Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN10955\PYGZsq{}: u\PYGZsq{}Squamous cell carcinoma of the anus\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN12471\PYGZsq{}: u\PYGZsq{}Carcinosarcoma of the uterus\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN10818\PYGZsq{}: u\PYGZsq{}Colorectal cancer, NOS\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN11769\PYGZsq{}: u\PYGZsq{}Renal cell carcinoma, clear cell adenocarcinoma\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN11347\PYGZsq{}: u\PYGZsq{}Salivary gland cancer\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN13948\PYGZsq{}: u\PYGZsq{}Adenocarcinoma of the rectum\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN13670\PYGZsq{}: u\PYGZsq{}Ovarian epithelial cancer\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN11707\PYGZsq{}: u\PYGZsq{}Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN11083\PYGZsq{}: u\PYGZsq{}Adenocarcinoma of the colon\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN14705\PYGZsq{}: u\PYGZsq{}Laryngeal squamous cell carcinoma\PYGZsq{}\PYGZcb{}}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN11127\PYGZsq{}: u\PYGZsq{}Invasive breast carcinoma\PYGZsq{}\PYGZcb{}}
+\end{sphinxVerbatim}
+
+As we can see the results for this method call are all dicts of \sphinxtitleref{PSN : Disease}
+mappings.  So, we can use the PSN to pull the disease and add it to the results
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k}{for} \PYG{n}{p} \PYG{o+ow}{in} \PYG{n}{results}\PYG{p}{:}
+\PYG{g+gp}{... }    \PYG{n}{results}\PYG{p}{[}\PYG{n}{p}\PYG{p}{]}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{data}\PYG{o}{.}\PYG{n}{get\PYGZus{}histology}\PYG{p}{(}\PYG{n}{psn}\PYG{o}{=}\PYG{n}{p}\PYG{p}{)}\PYG{p}{[}\PYG{n}{p}\PYG{p}{]}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{pp}\PYG{p}{(}\PYG{n}{results}\PYG{p}{)}
+\PYG{g+go}{\PYGZob{}\PYGZsq{}PSN10818\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}001275\PYGZsq{}, u\PYGZsq{}MSN51268\PYGZsq{}, u\PYGZsq{}Colorectal cancer, NOS\PYGZsq{}],}
+\PYG{g+go}{ \PYGZsq{}PSN10955\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}000787\PYGZsq{},}
+\PYG{g+go}{              u\PYGZsq{}MSN46367\PYGZsq{},}
+\PYG{g+go}{              u\PYGZsq{}Squamous cell carcinoma of the anus\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN11083\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}001175\PYGZsq{}, u\PYGZsq{}MSN50799\PYGZsq{}, u\PYGZsq{}Adenocarcinoma of the colon\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN11127\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002730\PYGZsq{}, u\PYGZsq{}MSN62547\PYGZsq{}, u\PYGZsq{}Invasive breast carcinoma\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN11347\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002657\PYGZsq{}, u\PYGZsq{}MSN62398\PYGZsq{}, u\PYGZsq{}Salivary gland cancer\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN11583\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}000333\PYGZsq{}, u\PYGZsq{}MSN41897\PYGZsq{}, u\PYGZsq{}Salivary gland cancer\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN11707\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002564\PYGZsq{},}
+\PYG{g+go}{             u\PYGZsq{}MSN62042\PYGZsq{},}
+\PYG{g+go}{             u\PYGZsq{}Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN11769\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002556\PYGZsq{},}
+\PYG{g+go}{             u\PYGZsq{}MSN62018\PYGZsq{},}
+\PYG{g+go}{             u\PYGZsq{}Renal cell carcinoma, clear cell adenocarcinoma\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN12471\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002600\PYGZsq{}, u\PYGZsq{}MSN62109\PYGZsq{}, u\PYGZsq{}Carcinosarcoma of the uterus\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN13070\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002064\PYGZsq{},}
+\PYG{g+go}{             u\PYGZsq{}MSN59774\PYGZsq{},}
+\PYG{g+go}{             u\PYGZsq{}Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN13670\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002755\PYGZsq{}, u\PYGZsq{}MSN62646\PYGZsq{}, u\PYGZsq{}Ovarian epithelial cancer\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN13948\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002621\PYGZsq{}, u\PYGZsq{}MSN62208\PYGZsq{}, u\PYGZsq{}Adenocarcinoma of the rectum\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN14705\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}18\PYGZhy{}000005\PYGZsq{},}
+\PYG{g+go}{             u\PYGZsq{}MSN62687\PYGZsq{},}
+\PYG{g+go}{             u\PYGZsq{}Laryngeal squamous cell carcinoma\PYGZsq{}],}
+\PYG{g+go}{\PYGZsq{}PSN15362\PYGZsq{}: [u\PYGZsq{}T\PYGZhy{}17\PYGZhy{}002680\PYGZsq{}, u\PYGZsq{}MSN62489\PYGZsq{}, u\PYGZsq{}Salivary gland cancer\PYGZsq{}]\PYGZcb{}}
+\end{sphinxVerbatim}
+
+And finally we have a nice list of collected data for each progression case, which
+is ready to print out for downstream use
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k}{for} \PYG{n}{patient} \PYG{o+ow}{in} \PYG{n}{results}\PYG{p}{:}
+\PYG{g+gp}{... }    \PYG{n+nb}{print}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}t}\PYG{l+s+s1}{\PYGZsq{}}\PYG{o}{.}\PYG{n}{join}\PYG{p}{(}\PYG{p}{[}\PYG{n}{patient}\PYG{p}{]} \PYG{o}{+} \PYG{n}{results}\PYG{p}{[}\PYG{n}{patient}\PYG{p}{]}\PYG{p}{)}\PYG{p}{)}
+\PYG{g+go}{PSN15362    T\PYGZhy{}17\PYGZhy{}002680    MSN62489    Salivary gland cancer}
+\PYG{g+go}{PSN11583    T\PYGZhy{}17\PYGZhy{}000333    MSN41897    Salivary gland cancer}
+\PYG{g+go}{PSN13070    T\PYGZhy{}17\PYGZhy{}002064    MSN59774    Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)}
+\PYG{g+go}{PSN10955    T\PYGZhy{}17\PYGZhy{}000787    MSN46367    Squamous cell carcinoma of the anus}
+\PYG{g+go}{PSN12471    T\PYGZhy{}17\PYGZhy{}002600    MSN62109    Carcinosarcoma of the uterus}
+\PYG{g+go}{PSN10818    T\PYGZhy{}17\PYGZhy{}001275    MSN51268    Colorectal cancer, NOS}
+\PYG{g+go}{PSN11769    T\PYGZhy{}17\PYGZhy{}002556    MSN62018    Renal cell carcinoma, clear cell adenocarcinoma}
+\PYG{g+go}{PSN11347    T\PYGZhy{}17\PYGZhy{}002657    MSN62398    Salivary gland cancer}
+\PYG{g+go}{PSN13948    T\PYGZhy{}17\PYGZhy{}002621    MSN62208    Adenocarcinoma of the rectum}
+\PYG{g+go}{PSN13670    T\PYGZhy{}17\PYGZhy{}002755    MSN62646    Ovarian epithelial cancer}
+\PYG{g+go}{PSN11707    T\PYGZhy{}17\PYGZhy{}002564    MSN62042    Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)}
+\PYG{g+go}{PSN11083    T\PYGZhy{}17\PYGZhy{}001175    MSN50799    Adenocarcinoma of the colon}
+\PYG{g+go}{PSN14705    T\PYGZhy{}18\PYGZhy{}000005    MSN62687    Laryngeal squamous cell carcinoma}
+\PYG{g+go}{PSN11127    T\PYGZhy{}17\PYGZhy{}002730    MSN62547    Invasive breast carcinoma}
+\end{sphinxVerbatim}
+
+So, there you have it.  Very simple toy case, but hopefully one that highlights
+some of the features of the MatchData module.  See the API documentation section
+for more information about the included modules and their usage.
+
+
+\section{Module TreatmentArms()}
+\label{\detokenize{tutorial:module-treatmentarms}}
+\textless{}\textless{}Documentation to be written\textgreater{}\textgreater{}
 
 
 \chapter{MATCHBox API Utils Helper Scripts}
