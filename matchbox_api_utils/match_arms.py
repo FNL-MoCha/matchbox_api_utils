@@ -263,7 +263,7 @@ class TreatmentArms(object):
             'oncominevariantclass')
         if 'type' in variant:
             if variant['type'] == 'cnvs':
-                acceptable_keys = ('type','gene')
+                acceptable_keys = ('type', 'gene')
             elif variant['type'] == 'fusions':
                 acceptable_keys = ('type', 'identifier')
 
@@ -272,7 +272,7 @@ class TreatmentArms(object):
                 "input all keys:\n")
             sys.stderr.write("\t%s" % ', '.join(acceptable_keys))
             sys.stderr.write('\n')
-            sys.exit(1)
+            return None
 
     def map_amoi(self, variant):
         """
@@ -284,7 +284,7 @@ class TreatmentArms(object):
                 following keys in order to be valid: ::
 
                     - type : [snvs_indels, cnvs, fusions]
-                    - oncomineVariantClass
+                    - oncominevariantclass
                     - gene
                     - identifier (i.e. variant ID (COSM476))
                     - exon
