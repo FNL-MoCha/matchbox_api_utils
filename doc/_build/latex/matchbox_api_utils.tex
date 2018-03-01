@@ -54,7 +54,7 @@
 
 
 \title{MATCHBox API Utils Documentation}
-\date{Feb 27, 2018}
+\date{Mar 01, 2018}
 \release{1.0.0}
 \author{Dave Sims}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -153,7 +153,7 @@ helper scripts somewhat.
 In addition to the above, the package requires the installation of:
 \begin{itemize}
 \item {} 
-\sphinxtitleref{requests \textless{}http://docs.python-requests.org/en/master/\textgreater{}}
+\sphinxhref{http://docs.python-requests.org/en/master/}{requests}
 
 \end{itemize}
 
@@ -174,13 +174,13 @@ Working with MATCHBox API Utils is very easy.  It is simply a matter of loading 
 (or all) of the available modules:
 \begin{enumerate}
 \item {} 
-Matchbox
+\sphinxcode{\sphinxupquote{Matchbox()}}
 
 \item {} 
-MatchData
+\sphinxcode{\sphinxupquote{MatchData()}}
 
 \item {} 
-TreatmentArms
+\sphinxcode{\sphinxupquote{TreatmentArms()}}
 
 \end{enumerate}
 
@@ -197,7 +197,7 @@ However, if one wanted to get a live dataset, or one wanted to get data from an
 older snapshot of the database, that is all possible too.
 
 
-\section{Module: Matchbox()}
+\section{Module: Matchbox}
 \label{\detokenize{tutorial:module-matchbox}}
 The \sphinxcode{\sphinxupquote{Matchbox}} module is a basic data connector to the live instance of the
 MATCHBox system.  Apart from a URL to query and credentials, there are not a
@@ -209,7 +209,7 @@ this module, though, in the event that one needs to call on it at some point.
 
 For example, on occassion one might want to get a complete raw MATCHBox dataset,
 which has not been parse and filtered, and can be accepted into the other modules
-as if they were making a live call.  In this case, one could run
+as if they were making a live call.  In this case, one could run:
 
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
@@ -224,11 +224,11 @@ Matchbox obj, and then pass it around.  However, MatchData is better for an
 entry point here.
 
 
-\section{Module: MatchData()}
+\section{Module: MatchData}
 \label{\detokenize{tutorial:module-matchdata}}
 This is by far the workhorse module of the package.  In its most basic form, one
 needs only load the object into a variable, and then run the host of methods
-available
+available:
 
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
@@ -259,8 +259,9 @@ each method call.
 \label{\detokenize{tutorial:toy-example-1}}
 You would like to know the disease state of the progression biopsies indicated
 above.  You don’t have any identifiers or other information to go on.
-\begin{description}
-\item[{Here’s a way one might work through it ::}] \leavevmode
+
+Here’s a way one might work through it:
+
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{matchbox\PYGZus{}api\PYGZus{}utils} \PYG{k}{import} \PYG{n}{MatchData}
@@ -287,12 +288,10 @@ above.  You don’t have any identifiers or other information to go on.
 \PYG{g+go}{                 u\PYGZsq{}T\PYGZhy{}18\PYGZhy{}000031\PYGZsq{}]\PYGZcb{}}
 \end{sphinxVerbatim}
 
-\end{description}
-
 Notice that we changed the return type of the \sphinxcode{\sphinxupquote{get\_biopsy\_summary()}} call to
 \sphinxtitleref{ids}, which allows us to get ids rather than counts.  Now that we have those
 biopsy IDs, we can get some PSNs , which will be helpful in getting the disease
-data ultimately
+data ultimately:
 
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
@@ -337,7 +336,7 @@ data for now, we’ll skip those cases.
 So, now that we know which are progression cases from the whole dataset, and know
 their PSN, BSN, and MSN identifiers, let’s get the disease for each, and store it
 in our \sphinxcode{\sphinxupquote{results}} dict above.  We’ll rewrite a little bit of the code above to
-help with some of the processing
+help with some of the processing:
 
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
@@ -365,7 +364,7 @@ help with some of the processing
 \end{sphinxVerbatim}
 
 Much better!  Now, let’s leverage another method \sphinxcode{\sphinxupquote{get\_hisology()}} to get the
-patient’s disease and add it to the data
+patient’s disease and add it to the data:
 
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
@@ -388,7 +387,7 @@ patient’s disease and add it to the data
 \end{sphinxVerbatim}
 
 As we can see the results for this method call are all dicts of \sphinxtitleref{PSN : Disease}
-mappings.  So, we can use the PSN to pull the disease and add it to the results
+mappings.  So, we can use the PSN to pull the disease and add it to the results:
 
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
@@ -422,7 +421,7 @@ mappings.  So, we can use the PSN to pull the disease and add it to the results
 \end{sphinxVerbatim}
 
 And finally we have a nice list of collected data for each progression case, which
-is ready to print out for downstream use
+is ready to print out for downstream use:
 
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
@@ -449,9 +448,160 @@ some of the features of the MatchData module.  See the API documentation section
 for more information about the included modules and their usage.
 
 
-\section{Module TreatmentArms()}
+\section{Module: TreatmentArms}
 \label{\detokenize{tutorial:module-treatmentarms}}
-\textless{}\textless{}Documentation to be written\textgreater{}\textgreater{}
+The \sphinxcode{\sphinxupquote{TreatmentArms}} module will handle all NCI-MATCH treatment arm related data,
+including the handling of a “rules engine” to categorize mutations of interest
+(MOIs) as being actionable (aMOIs) or not.  At the time of this writing, there are
+not a lot of public methods available for the module, and it’s main use will be
+directly (really behind the scenes) from \sphinxcode{\sphinxupquote{MatchData}}.  However, there are a few
+methods that one will (hopefully) find handy.
+
+As with the other modules, one can either make a live query to MATCHBox to generate
+a dataset:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{matchbox\PYGZus{}api\PYGZus{}utils} \PYG{k}{import} \PYG{n}{TreatmentArms}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{ta\PYGZus{}data} \PYG{o}{=} \PYG{n}{TreatmentArms}\PYG{p}{(}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+As with \sphinxcode{\sphinxupquote{MatchData}}, not specifying a JSON database will result in loading the
+\sphinxtitleref{sys\_default} database which is built at the same time as the \sphinxcode{\sphinxupquote{MatchData}} JSON
+database.  You’ll see this file in \sphinxcode{\sphinxupquote{\$HOME/.mb\_utils/ta\_obj\_\textless{}date\textgreater{}.json}}.
+
+One you have object loaded, then you can run one of the public methods available,
+including \sphinxcode{\sphinxupquote{map\_amoi()}}, \sphinxcode{\sphinxupquote{map\_drug\_arm()}}, or \sphinxcode{\sphinxupquote{get\_exclusion\_disease()}}.
+
+
+\subsection{Toy Example \#2}
+\label{\detokenize{tutorial:toy-example-2}}
+Let’s say you have a \sphinxstyleemphasis{{}`BRAF p.V600E{}`} mutation that you discovered in a patient
+diagnosed with \sphinxstyleemphasis{{}`Melanoma{}`} , but you are not sure whether or not any arms cover the
+patient, and if there is a qualifying arm, whether or not the patient has an
+exclusionary disease (i.e. a histological subtype that is excluded from arm
+eligibility).
+
+The first step is to try to map that aMOI to the study arms.  You need to have a
+of aMOI level data since there are some extra rules to map.  We always need to know
+the following ( dict\_key: accepted\_values):
+\begin{quote}
+
+
+\begin{savenotes}\sphinxattablestart
+\centering
+\begin{tabular}[t]{|*{2}{\X{1}{2}|}}
+\hline
+\sphinxstyletheadfamily 
+Variant Key
+&\sphinxstyletheadfamily 
+Acceptable Values
+\\
+\hline
+type
+&
+\begin{DUlineblock}{0em}
+\item[] \{ snvs\_indels, cnvs, fusions \}
+\end{DUlineblock}
+\\
+\hline
+oncomineVariantClass
+&
+\begin{DUlineblock}{0em}
+\item[] \{ Hotspot, Deleterious \}
+\end{DUlineblock}
+\\
+\hline
+gene
+&
+\begin{DUlineblock}{0em}
+\item[] Any acceptable HUGO gene name (e.g. BRAF)
+\end{DUlineblock}
+\\
+\hline
+identifier
+&
+\begin{DUlineblock}{0em}
+\item[] Any variant identifier, usually from COSMIC
+\item[] (e.g. COSM476)
+\end{DUlineblock}
+\\
+\hline
+exon
+&
+\begin{DUlineblock}{0em}
+\item[] The numeric value for the exon in which the variant
+\item[] is found. For example, if the variant is in Exon 15,
+\item[] you would indicate 15 in this field.
+\end{DUlineblock}
+\\
+\hline
+function
+&
+\begin{DUlineblock}{0em}
+\item[] \{‘missense’, ‘nonsense’, ‘frameshiftInsertion’,
+\item[] ‘frameshiftDeletion’, ‘nonframeshiftDeletion’,
+\item[] ‘nonframeshiftInsertion’,
+\item[] ‘frameshiftBlockSubstitution’\}
+\end{DUlineblock}
+\\
+\hline
+\end{tabular}
+\par
+\sphinxattableend\end{savenotes}
+\end{quote}
+
+In the case of a typical BRAF p.V600E variant, we would set up our environment as
+follows:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{matchbox\PYGZus{}api\PYGZus{}utils} \PYG{k}{import} \PYG{n}{TreatmentArms}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{pprint} \PYG{k}{import} \PYG{n}{pprint} \PYG{k}{as} \PYG{n}{pp}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{ta\PYGZus{}data} \PYG{o}{=} \PYG{n}{TreatmentArms}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{variant} \PYG{o}{=} \PYG{p}{\PYGZob{}}
+\PYG{g+gp}{... }   \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{type}\PYG{l+s+s1}{\PYGZsq{}} \PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{snvs\PYGZus{}indels}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,}
+\PYG{g+gp}{... }   \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{gene}\PYG{l+s+s1}{\PYGZsq{}} \PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{BRAF}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,}
+\PYG{g+gp}{... }   \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{identifier}\PYG{l+s+s1}{\PYGZsq{}} \PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{COSM476}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,}
+\PYG{g+gp}{... }   \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{exon}\PYG{l+s+s1}{\PYGZsq{}} \PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{15}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,}
+\PYG{g+gp}{... }   \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{function}\PYG{l+s+s1}{\PYGZsq{}} \PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{missense}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,}
+\PYG{g+gp}{... }   \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{oncominevariantclass}\PYG{l+s+s1}{\PYGZsq{}} \PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{Hotspot}\PYG{l+s+s1}{\PYGZsq{}} \PYG{p}{\PYGZcb{}}
+\end{sphinxVerbatim}
+
+Now to find out if our variant would qualify for any arms, we’ll run \sphinxcode{\sphinxupquote{map\_amoi()}}
+to check:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{v600e\PYGZus{}arms} \PYG{o}{=} \PYG{n}{ta\PYGZus{}data}\PYG{o}{.}\PYG{n}{map\PYGZus{}amoi}\PYG{p}{(}\PYG{n}{variant}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{pp}\PYG{p}{(}\PYG{n}{v600e\PYGZus{}arms}\PYG{p}{)}
+\PYG{g+go}{[\PYGZsq{}EAY131\PYGZhy{}Y(e)\PYGZsq{}, \PYGZsq{}EAY131\PYGZhy{}P(e)\PYGZsq{}, \PYGZsq{}EAY131\PYGZhy{}N(e)\PYGZsq{}, \PYGZsq{}EAY131\PYGZhy{}H(i)\PYGZsq{}]}
+\end{sphinxVerbatim}
+
+So we see that there are 4 arms that have identified this variant as being an aMOI.
+But, based on the notation in parenthesis (e.g. \sphinxtitleref{‘(e)’}), we can see that Arms Y, P,
+and N consider this aMOI to be exclusionary, while arm H consider this aMOI to be
+inclusionary.  So, it looks like so far the patient is a potential match for Arm H
+only.  Now, let’s see if their disease would qualify them for this arm:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{pp}\PYG{p}{(}\PYG{n}{ta\PYGZus{}data}\PYG{o}{.}\PYG{n}{get\PYGZus{}exclusion\PYGZus{}disease}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{EAY131\PYGZhy{}H}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{)}
+\PYG{g+go}{[u\PYGZsq{}Papillary thyroid carcinoma\PYGZsq{},}
+\PYG{g+go}{ u\PYGZsq{}Melanoma\PYGZsq{},}
+\PYG{g+go}{ u\PYGZsq{}Acral Lentiginous Melanoma\PYGZsq{},}
+\PYG{g+go}{ u\PYGZsq{}Adenocarcinoma \PYGZhy{} colon\PYGZsq{},}
+\PYG{g+go}{ u\PYGZsq{}Malignant Melanoma of sites other than skin or eye\PYGZsq{},}
+\PYG{g+go}{ u\PYGZsq{}Adenocarcinoma \PYGZhy{} rectum\PYGZsq{},}
+\PYG{g+go}{ u\PYGZsq{}Colorectal cancer, NOS\PYGZsq{}]}
+\end{sphinxVerbatim}
+
+Well, that’s bad news!  Based on the fact that the patient has \sphinxtitleref{Melanoma} and it is
+an exclusionary disease for Arm H, the patient would not currently qualify for any
+MATCH Arm.
+
+For more detailed descriptions of the methods in the module and their use, see the
+TreatmentArms API documention section.
 
 
 \chapter{MATCHBox API Utils Helper Scripts}
@@ -1587,7 +1737,7 @@ following keys in order to be valid:
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
 \PYG{o}{\PYGZhy{}} \PYG{n+nb}{type} \PYG{p}{:} \PYG{p}{[}\PYG{n}{snvs\PYGZus{}indels}\PYG{p}{,} \PYG{n}{cnvs}\PYG{p}{,} \PYG{n}{fusions}\PYG{p}{]}
-\PYG{o}{\PYGZhy{}} \PYG{n}{oncomineVariantClass}
+\PYG{o}{\PYGZhy{}} \PYG{n}{oncominevariantclass}
 \PYG{o}{\PYGZhy{}} \PYG{n}{gene}
 \PYG{o}{\PYGZhy{}} \PYG{n}{identifier} \PYG{p}{(}\PYG{n}{i}\PYG{o}{.}\PYG{n}{e}\PYG{o}{.} \PYG{n}{variant} \PYG{n}{ID} \PYG{p}{(}\PYG{n}{COSM476}\PYG{p}{)}\PYG{p}{)}
 \PYG{o}{\PYGZhy{}} \PYG{n}{exon}

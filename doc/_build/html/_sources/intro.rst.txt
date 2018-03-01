@@ -79,7 +79,7 @@ helper scripts somewhat.
 
 In addition to the above, the package requires the installation of:
 
-    - `requests <http://docs.python-requests.org/en/master/>`
+    - `requests <http://docs.python-requests.org/en/master/>`_
 
 The setup script should take care of this dependency upon installation.  
 

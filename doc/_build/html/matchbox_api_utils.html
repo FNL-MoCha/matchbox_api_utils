@@ -98,12 +98,15 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. MATCHBox API Utils Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#module-matchbox">2.1. Module: Matchbox()</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#module-matchdata">2.2. Module: MatchData()</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#module-matchbox">2.1. Module: Matchbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#module-matchdata">2.2. Module: MatchData</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="tutorial.html#toy-example-1">2.2.1. Toy Example #1</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#module-treatmentarms">2.3. Module TreatmentArms()</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#module-treatmentarms">2.3. Module: TreatmentArms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#toy-example-2">2.3.1. Toy Example #2</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="helper_scripts.html">3. MATCHBox API Utils Helper Scripts</a><ul>
@@ -1028,7 +1031,7 @@ in the form of Arm(i|e). If variant is not an aMOI, returns <code class="docutil
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>variant</strong> (<a class="reference external" href="https://docs.python.org/2.7/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) – <p>Variant dict to annotate.  Dict must have the
 following keys in order to be valid:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="nb">type</span> <span class="p">:</span> <span class="p">[</span><span class="n">snvs_indels</span><span class="p">,</span> <span class="n">cnvs</span><span class="p">,</span> <span class="n">fusions</span><span class="p">]</span>
-<span class="o">-</span> <span class="n">oncomineVariantClass</span>
+<span class="o">-</span> <span class="n">oncominevariantclass</span>
 <span class="o">-</span> <span class="n">gene</span>
 <span class="o">-</span> <span class="n">identifier</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">e</span><span class="o">.</span> <span class="n">variant</span> <span class="n">ID</span> <span class="p">(</span><span class="n">COSM476</span><span class="p">))</span>
 <span class="o">-</span> <span class="n">exon</span>

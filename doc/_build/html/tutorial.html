@@ -99,12 +99,15 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">2. MATCHBox API Utils Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-matchbox">2.1. Module: Matchbox()</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-matchdata">2.2. Module: MatchData()</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-matchbox">2.1. Module: Matchbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-matchdata">2.2. Module: MatchData</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#toy-example-1">2.2.1. Toy Example #1</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#module-treatmentarms">2.3. Module TreatmentArms()</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-treatmentarms">2.3. Module: TreatmentArms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#toy-example-2">2.3.1. Toy Example #2</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="helper_scripts.html">3. MATCHBox API Utils Helper Scripts</a><ul>
@@ -201,9 +204,9 @@
 (or all) of the available modules:</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li>Matchbox</li>
-<li>MatchData</li>
-<li>TreatmentArms</li>
+<li><code class="docutils literal notranslate"><span class="pre">Matchbox()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">MatchData()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">TreatmentArms()</span></code></li>
 </ol>
 </div></blockquote>
 <p>Most often one will be using the <code class="docutils literal notranslate"><span class="pre">MatchData()</span></code> module, as that deals directly
@@ -217,7 +220,7 @@ a number of useful things that one can do with those as well.</p>
 However, if one wanted to get a live dataset, or one wanted to get data from an
 older snapshot of the database, that is all possible too.</p>
 <div class="section" id="module-matchbox">
-<h2>2.1. Module: Matchbox()<a class="headerlink" href="#module-matchbox" title="Permalink to this headline">¶</a></h2>
+<h2>2.1. Module: Matchbox<a class="headerlink" href="#module-matchbox" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">Matchbox</span></code> module is a basic data connector to the live instance of the
 MATCHBox system.  Apart from a URL to query and credentials, there are not a
 whole lot of options.</p>
@@ -226,7 +229,7 @@ connection to the live system and pull data.  I’ve included some documentation
 this module, though, in the event that one needs to call on it at some point.</p>
 <p>For example, on occassion one might want to get a complete raw MATCHBox dataset,
 which has not been parse and filtered, and can be accepted into the other modules
-as if they were making a live call.  In this case, one could run</p>
+as if they were making a live call.  In this case, one could run:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matchbox_api_utils</span> <span class="k">import</span> <span class="n">Matchbox</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Matchbox</span><span class="p">(</span><span class="n">make_raw</span><span class="o">=</span><span class="s1">&#39;raw_mb_dataset.json&#39;</span><span class="p">)</span>
 </pre></div>
@@ -237,10 +240,10 @@ Matchbox obj, and then pass it around.  However, MatchData is better for an
 entry point here.</p>
 </div>
 <div class="section" id="module-matchdata">
-<h2>2.2. Module: MatchData()<a class="headerlink" href="#module-matchdata" title="Permalink to this headline">¶</a></h2>
+<h2>2.2. Module: MatchData<a class="headerlink" href="#module-matchdata" title="Permalink to this headline">¶</a></h2>
 <p>This is by far the workhorse module of the package.  In its most basic form, one
 needs only load the object into a variable, and then run the host of methods
-available</p>
+available:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matchbox_api_utils</span> <span class="k">import</span> <span class="n">MatchData</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">MatchData</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="o">.</span><span class="n">get_biopsy_summary</span><span class="p">(</span><span class="n">category</span><span class="o">=</span><span class="s1">&#39;progression&#39;</span><span class="p">,</span> <span class="n">ret_type</span><span class="o">=</span><span class="s1">&#39;counts&#39;</span><span class="p">)</span>
@@ -264,9 +267,8 @@ each method call.</p>
 <h3>2.2.1. Toy Example #1<a class="headerlink" href="#toy-example-1" title="Permalink to this headline">¶</a></h3>
 <p>You would like to know the disease state of the progression biopsies indicated
 above.  You don’t have any identifiers or other information to go on.</p>
-<dl class="docutils">
-<dt>Here’s a way one might work through it ::</dt>
-<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matchbox_api_utils</span> <span class="k">import</span> <span class="n">MatchData</span>
+<p>Here’s a way one might work through it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matchbox_api_utils</span> <span class="k">import</span> <span class="n">MatchData</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pprint</span> <span class="k">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">MatchData</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Let&#39;s create a dict to put the results in.</span>
@@ -290,12 +292,10 @@ above.  You don’t have any identifiers or other information to go on.</p>
 <span class="go">                 u&#39;T-18-000031&#39;]}</span>
 </pre></div>
 </div>
-</dd>
-</dl>
 <p>Notice that we changed the return type of the <code class="docutils literal notranslate"><span class="pre">get_biopsy_summary()</span></code> call to
 <cite>ids</cite>, which allows us to get ids rather than counts.  Now that we have those
 biopsy IDs, we can get some PSNs , which will be helpful in getting the disease
-data ultimately</p>
+data ultimately:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">bsn</span> <span class="ow">in</span> <span class="n">biopsies</span><span class="p">[</span><span class="s1">&#39;progression&#39;</span><span class="p">]:</span>
 <span class="gp">... </span>    <span class="n">psn</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_psn</span><span class="p">(</span><span class="n">bsn</span><span class="o">=</span><span class="n">bsn</span><span class="p">)</span>
 <span class="gp">... </span>    <span class="n">msn</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_msn</span><span class="p">(</span><span class="n">bsn</span><span class="o">=</span><span class="n">bsn</span><span class="p">)</span>
@@ -334,7 +334,7 @@ data for now, we’ll skip those cases.</li>
 <p>So, now that we know which are progression cases from the whole dataset, and know
 their PSN, BSN, and MSN identifiers, let’s get the disease for each, and store it
 in our <code class="docutils literal notranslate"><span class="pre">results</span></code> dict above.  We’ll rewrite a little bit of the code above to
-help with some of the processing</p>
+help with some of the processing:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">bsn</span> <span class="ow">in</span> <span class="n">biopsies</span><span class="p">[</span><span class="s1">&#39;progression&#39;</span><span class="p">]:</span>
 <span class="gp">... </span>    <span class="n">psn</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_psn</span><span class="p">(</span><span class="n">bsn</span><span class="o">=</span><span class="n">bsn</span><span class="p">)</span>
 <span class="gp">... </span>    <span class="n">msn</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_msn</span><span class="p">(</span><span class="n">bsn</span><span class="o">=</span><span class="n">bsn</span><span class="p">)</span>
@@ -359,7 +359,7 @@ help with some of the processing</p>
 </pre></div>
 </div>
 <p>Much better!  Now, let’s leverage another method <code class="docutils literal notranslate"><span class="pre">get_hisology()</span></code> to get the
-patient’s disease and add it to the data</p>
+patient’s disease and add it to the data:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
 <span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get_histology</span><span class="p">(</span><span class="n">psn</span><span class="o">=</span><span class="n">p</span><span class="p">))</span>
 <span class="go">{&#39;PSN15362&#39;: u&#39;Salivary gland cancer&#39;}</span>
@@ -379,7 +379,7 @@ patient’s disease and add it to the data</p>
 </pre></div>
 </div>
 <p>As we can see the results for this method call are all dicts of <cite>PSN : Disease</cite>
-mappings.  So, we can use the PSN to pull the disease and add it to the results</p>
+mappings.  So, we can use the PSN to pull the disease and add it to the results:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
 <span class="gp">... </span>    <span class="n">results</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get_histology</span><span class="p">(</span><span class="n">psn</span><span class="o">=</span><span class="n">p</span><span class="p">)[</span><span class="n">p</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pp</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
@@ -410,7 +410,7 @@ mappings.  So, we can use the PSN to pull the disease and add it to the results<
 </pre></div>
 </div>
 <p>And finally we have a nice list of collected data for each progression case, which
-is ready to print out for downstream use</p>
+is ready to print out for downstream use:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">patient</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
 <span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">patient</span><span class="p">]</span> <span class="o">+</span> <span class="n">results</span><span class="p">[</span><span class="n">patient</span><span class="p">]))</span>
 <span class="go">PSN15362    T-17-002680    MSN62489    Salivary gland cancer</span>
@@ -435,8 +435,133 @@ for more information about the included modules and their usage.</p>
 </div>
 </div>
 <div class="section" id="module-treatmentarms">
-<h2>2.3. Module TreatmentArms()<a class="headerlink" href="#module-treatmentarms" title="Permalink to this headline">¶</a></h2>
-<p>&lt;&lt;Documentation to be written&gt;&gt;</p>
+<h2>2.3. Module: TreatmentArms<a class="headerlink" href="#module-treatmentarms" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">TreatmentArms</span></code> module will handle all NCI-MATCH treatment arm related data,
+including the handling of a “rules engine” to categorize mutations of interest
+(MOIs) as being actionable (aMOIs) or not.  At the time of this writing, there are
+not a lot of public methods available for the module, and it’s main use will be
+directly (really behind the scenes) from <code class="docutils literal notranslate"><span class="pre">MatchData</span></code>.  However, there are a few
+methods that one will (hopefully) find handy.</p>
+<p>As with the other modules, one can either make a live query to MATCHBox to generate
+a dataset:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matchbox_api_utils</span> <span class="k">import</span> <span class="n">TreatmentArms</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ta_data</span> <span class="o">=</span> <span class="n">TreatmentArms</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>As with <code class="docutils literal notranslate"><span class="pre">MatchData</span></code>, not specifying a JSON database will result in loading the
+<cite>sys_default</cite> database which is built at the same time as the <code class="docutils literal notranslate"><span class="pre">MatchData</span></code> JSON
+database.  You’ll see this file in <code class="docutils literal notranslate"><span class="pre">$HOME/.mb_utils/ta_obj_&lt;date&gt;.json</span></code>.</p>
+<p>One you have object loaded, then you can run one of the public methods available,
+including <code class="docutils literal notranslate"><span class="pre">map_amoi()</span></code>, <code class="docutils literal notranslate"><span class="pre">map_drug_arm()</span></code>, or <code class="docutils literal notranslate"><span class="pre">get_exclusion_disease()</span></code>.</p>
+<div class="section" id="toy-example-2">
+<h3>2.3.1. Toy Example #2<a class="headerlink" href="#toy-example-2" title="Permalink to this headline">¶</a></h3>
+<p>Let’s say you have a <em>`BRAF p.V600E`</em> mutation that you discovered in a patient
+diagnosed with <em>`Melanoma`</em> , but you are not sure whether or not any arms cover the
+patient, and if there is a qualifying arm, whether or not the patient has an
+exclusionary disease (i.e. a histological subtype that is excluded from arm
+eligibility).</p>
+<p>The first step is to try to map that aMOI to the study arms.  You need to have a
+of aMOI level data since there are some extra rules to map.  We always need to know
+the following ( dict_key: accepted_values):</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="73%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Variant Key</th>
+<th class="head">Acceptable Values</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>type</td>
+<td><div class="first last line-block">
+<div class="line">{ snvs_indels, cnvs, fusions }</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>oncomineVariantClass</td>
+<td><div class="first last line-block">
+<div class="line">{ Hotspot, Deleterious }</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>gene</td>
+<td><div class="first last line-block">
+<div class="line">Any acceptable HUGO gene name (e.g. BRAF)</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>identifier</td>
+<td><div class="first last line-block">
+<div class="line">Any variant identifier, usually from COSMIC</div>
+<div class="line">(e.g. COSM476)</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>exon</td>
+<td><div class="first last line-block">
+<div class="line">The numeric value for the exon in which the variant</div>
+<div class="line">is found. For example, if the variant is in Exon 15,</div>
+<div class="line">you would indicate 15 in this field.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>function</td>
+<td><div class="first last line-block">
+<div class="line">{‘missense’, ‘nonsense’, ‘frameshiftInsertion’,</div>
+<div class="line">‘frameshiftDeletion’, ‘nonframeshiftDeletion’,</div>
+<div class="line">‘nonframeshiftInsertion’,</div>
+<div class="line">‘frameshiftBlockSubstitution’}</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>In the case of a typical BRAF p.V600E variant, we would set up our environment as
+follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matchbox_api_utils</span> <span class="k">import</span> <span class="n">TreatmentArms</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pprint</span> <span class="k">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ta_data</span> <span class="o">=</span> <span class="n">TreatmentArms</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">variant</span> <span class="o">=</span> <span class="p">{</span>
+<span class="gp">... </span>   <span class="s1">&#39;type&#39;</span> <span class="p">:</span> <span class="s1">&#39;snvs_indels&#39;</span><span class="p">,</span>
+<span class="gp">... </span>   <span class="s1">&#39;gene&#39;</span> <span class="p">:</span> <span class="s1">&#39;BRAF&#39;</span><span class="p">,</span>
+<span class="gp">... </span>   <span class="s1">&#39;identifier&#39;</span> <span class="p">:</span> <span class="s1">&#39;COSM476&#39;</span><span class="p">,</span>
+<span class="gp">... </span>   <span class="s1">&#39;exon&#39;</span> <span class="p">:</span> <span class="s1">&#39;15&#39;</span><span class="p">,</span>
+<span class="gp">... </span>   <span class="s1">&#39;function&#39;</span> <span class="p">:</span> <span class="s1">&#39;missense&#39;</span><span class="p">,</span>
+<span class="gp">... </span>   <span class="s1">&#39;oncominevariantclass&#39;</span> <span class="p">:</span> <span class="s1">&#39;Hotspot&#39;</span> <span class="p">}</span>
+</pre></div>
+</div>
+<p>Now to find out if our variant would qualify for any arms, we’ll run <code class="docutils literal notranslate"><span class="pre">map_amoi()</span></code>
+to check:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">v600e_arms</span> <span class="o">=</span> <span class="n">ta_data</span><span class="o">.</span><span class="n">map_amoi</span><span class="p">(</span><span class="n">variant</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pp</span><span class="p">(</span><span class="n">v600e_arms</span><span class="p">)</span>
+<span class="go">[&#39;EAY131-Y(e)&#39;, &#39;EAY131-P(e)&#39;, &#39;EAY131-N(e)&#39;, &#39;EAY131-H(i)&#39;]</span>
+</pre></div>
+</div>
+<p>So we see that there are 4 arms that have identified this variant as being an aMOI.
+But, based on the notation in parenthesis (e.g. <cite>‘(e)’</cite>), we can see that Arms Y, P,
+and N consider this aMOI to be exclusionary, while arm H consider this aMOI to be
+inclusionary.  So, it looks like so far the patient is a potential match for Arm H
+only.  Now, let’s see if their disease would qualify them for this arm:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pp</span><span class="p">(</span><span class="n">ta_data</span><span class="o">.</span><span class="n">get_exclusion_disease</span><span class="p">(</span><span class="s1">&#39;EAY131-H&#39;</span><span class="p">))</span>
+<span class="go">[u&#39;Papillary thyroid carcinoma&#39;,</span>
+<span class="go"> u&#39;Melanoma&#39;,</span>
+<span class="go"> u&#39;Acral Lentiginous Melanoma&#39;,</span>
+<span class="go"> u&#39;Adenocarcinoma - colon&#39;,</span>
+<span class="go"> u&#39;Malignant Melanoma of sites other than skin or eye&#39;,</span>
+<span class="go"> u&#39;Adenocarcinoma - rectum&#39;,</span>
+<span class="go"> u&#39;Colorectal cancer, NOS&#39;]</span>
+</pre></div>
+</div>
+<p>Well, that’s bad news!  Based on the fact that the patient has <cite>Melanoma</cite> and it is
+an exclusionary disease for Arm H, the patient would not currently qualify for any
+MATCH Arm.</p>
+<p>For more detailed descriptions of the methods in the module and their use, see the
+TreatmentArms API documention section.</p>
+</div>
 </div>
 </div>
 

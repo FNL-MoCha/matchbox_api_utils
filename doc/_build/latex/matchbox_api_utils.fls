@@ -292,6 +292,8 @@ INPUT /usr/local/texlive/2017/texmf-dist/fonts/tfm/adobe/courier/pcrro8c.tfm
 INPUT /usr/local/texlive/2017/texmf-dist/fonts/vf/adobe/courier/pcrro8t.vf
 INPUT /usr/local/texlive/2017/texmf-dist/fonts/tfm/adobe/courier/pcrro8r.tfm
 INPUT /usr/local/texlive/2017/texmf-dist/fonts/vf/adobe/courier/pcrro8c.vf
+INPUT /usr/local/texlive/2017/texmf-dist/fonts/vf/adobe/helvetic/phvr8t.vf
+INPUT /usr/local/texlive/2017/texmf-dist/fonts/tfm/adobe/helvetic/phvr8r.tfm
 INPUT /usr/local/texlive/2017/texmf-dist/fonts/tfm/adobe/times/ptmr8t.tfm
 INPUT /usr/local/texlive/2017/texmf-dist/fonts/vf/adobe/times/ptmr8t.vf
 INPUT /usr/local/texlive/2017/texmf-dist/fonts/tfm/adobe/times/ptmr8r.tfm
