@@ -13,10 +13,12 @@ def load_dumped_json(json_file):
     # Load in a JSON DB file (raw or proc) and return JSON obj and file ctime.
     try:
         date_string = re.search(r'.*?([0-9]+).json$',json_file).group(1)
-        formatted_date=datetime.datetime.strptime(date_string,'%m%d%y').strftime('%m/%d/%Y')
+        formatted_date=datetime.datetime.strptime(
+            date_string,'%m%d%y').strftime('%m/%d/%Y')
     except (AttributeError,ValueError):
         creation_date = os.path.getctime(json_file)
-        formatted_date=datetime.datetime.fromtimestamp(creation_date).strftime('%m/%d/%Y')
+        formatted_date=datetime.datetime.fromtimestamp(
+                creation_date).strftime('%m/%d/%Y')
     with open(json_file) as fh:
         return formatted_date,json.load(fh)
 
@@ -32,4 +34,4 @@ def get_config_data(config_file,item):
 
 def make_json(outfile,data):
     with open(outfile,'w') as fh:
-        json.dump(data,fh,sort_keys=True,indent=4)
+        json.dump(data, fh, sort_keys=True, indent=4)
