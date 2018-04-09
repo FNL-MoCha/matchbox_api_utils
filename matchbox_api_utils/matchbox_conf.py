@@ -7,13 +7,16 @@ import matchbox_api_utils
 
 
 class Config(object):
-    def __init__(self,mb_config_file=None,mb_json_data=None,ta_json_data=None,amois_lookup=None):
-        """MATCHBox Configuration Class
+    def __init__(self, mb_config_file=None, mb_json_data=None, ta_json_data=None,
+            amois_lookup=None):
+        """
+        MATCHBox Configuration Class
 
         Allow for import of custon configuration and mb.json data, or else just
         load the standard dataset deployed during package installation.
 
         """
+
         if mb_config_file:
             self.config_file = mb_config_file
         else:
@@ -51,7 +54,8 @@ class Config(object):
             with open(config_file) as fh:
                 data = json.load(fh)
         except IOError:
-            sys.stderr.write('ERROR: No configuration file found. You must either run the package configuration '
-                'tools or provide a config file using the "config" option. Can not continue!\n')
+            sys.stderr.write('ERROR: No configuration file found. You must either '
+                'run the package configuration tools or provide a config file '
+                'using the "config" option. Can not continue!\n')
             sys.exit(1)
         return data
