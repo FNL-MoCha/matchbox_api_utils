@@ -57,6 +57,7 @@ class Matchbox(object):
         self._password = password
         self._client_name = client_name
         self._client_id = client_id
+
         self._params = params
         self._quiet = quiet
         self._method = method
@@ -106,9 +107,8 @@ class Matchbox(object):
         # loop.
         if page is not None:
             self._params['page'] = page 
+
         response = requests.get(self._url, params=self._params, headers=header)
-        if not self._quiet:
-            sys.stderr.write('Formatted URL: %s\n' % response.url)
         try: 
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
