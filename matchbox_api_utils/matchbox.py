@@ -2,7 +2,11 @@
 import os
 import sys
 import json
+import asyncio
+import concurrent.futures
+import requests
 
+from pprint import pprint as pp
 from matchbox_api_utils import utils
 
 
@@ -20,14 +24,21 @@ class Matchbox(object):
     one.  Requires credentials, generally acquired from the config file generated 
     upon package setup.
 
+    # TODO: need to update docs.
     Args:
         url (str): API URL for MATCHbox. Generally only using one at the moment,
             but possible to add others later.
+
         creds (dict): Username and Password credentials obtained from the config
             file generated upon setup. Can also just input a dict in the form 
             of: :: 
 
-            { 'username' : <username>, 'password' : <password> }
+                { 'username' : <username>, 'password' : <password> }
+
+        connection (dict): Auth0 client ID  and connection name for the system you 
+            are trying to access. This should match the input URL and is system 
+            specific (i.e. there is a different one for Adult-MATCHbox, 
+            Adult-MATCHbox-UAT, Ped-MATCHBox, etc.).
 
         make_raw (str): Make a raw, unprocessed MATCHBox API JSON file. Default
             filename will be raw_mb_obj (raw MB patient dataset) or raw_ta_obj (
@@ -39,10 +50,33 @@ class Matchbox(object):
 
     """
 
-    def __init__(self, url, creds, make_raw=None):
-        self.url   = url
-        self.creds = creds
-        self.api_data = self.__api_call()
+    def __init__(self, url, username, password, client_name, client_id, 
+            method='sync', params=None, make_raw=None, quiet=False):
+        self._url = url
+        self._username = username
+        self._password = password
+        self._client_name = client_name
+        self._client_id = client_id
+        self._params = params
+        self._quiet = quiet
+        self._method = method
+
+        self._token = self.__get_token()
+
+        if self._method == 'sync':
+            if not self._quiet:
+                sys.stderr.write("** DEBUG: Making synchronous HTTP request. **\n")
+            self.api_data = self.__api_call()
+        elif self._method == 'async':
+            if not self._quiet:
+                sys.stderr.write("** DEBUG: Making an asynchronous HTTP request. "
+                    "**\n")
+            loop = asyncio.get_event_loop()
+            self.api_data = loop.run_until_complete(self.__async_caller())
+
+        if not self._quiet:
+            sys.stdout.write("Completed the call successfully!\n")
+            sys.stdout.write('    -> return len: %s\n' % str(len(self.api_data)))
 
         # For debugging purposes, we may want to dump the whole raw dataset out 
         # to see what keys / vals are availble.  
@@ -64,21 +98,68 @@ class Matchbox(object):
             sys.exit()
 
     def __str__(self):
-        return json.dumps(self.api_data, sort_keys=True, indent=4)
+        return utils.print_json(self.api_data)
 
-    def __api_call(self):
-        # Call to API to retrienve data. Using cURL rather than requests since 
-        # requests takes bloody forever!
-        curl_cmd = 'curl -u {}:{} -s "{}"'.format(
-            self.creds['username'],self.creds['password'],self.url
-        )
-        request = os.popen(curl_cmd).read()
-        return json.loads(request)
+    def __api_call(self, page=None):
+        header = {'Authorization' : 'bearer %s' % self._token}
+        # For async page requests, will need to update the page number for each 
+        # loop.
+        if page is not None:
+            self._params['page'] = page 
+        response = requests.get(self._url, params=self._params, headers=header)
+        if not self._quiet:
+            sys.stderr.write('Formatted URL: %s\n' % response.url)
+        try: 
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            sys.stderr.write('ERROR: Can not access MATCHBox data. Got error: '
+                '%s\n' % e)
+            sys.exit(1)
+        return response.json()
         
+    async def __async_caller(self):
+        # Set up an asynchronous method to make HTTP requests in order to get the 
+        # DB quicker. 
+        gathered_data = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=24) as executor:
+            loop = asyncio.get_event_loop()
+            futures = [
+                loop.run_in_executor(executor, self.__api_call, page)
+                for page in range(1, 20)
+            ]
+            for response in await asyncio.gather(*futures):
+                gathered_data.extend(response)
+        return gathered_data
+
+    def __get_token(self):
+        body = {
+            "client_id" : self._client_id,
+            "username" : self._username,
+            "password" : self._password,
+            "grant_type" : "password",
+            "scope" : "openid roles email",
+            "connection" : self._client_name,
+        }
+        url = 'https://ncimatch.auth0.com/oauth/ro'
+        response = requests.post(url, data = body)
+        # TODO: What kinds of errors do we need to handle and how should we handle
+        #       them?  Also, what about the fluke times when the request fails; can
+        #       we set up a few iterations just to make sure we get a token?
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            print("got an error!")
+            raise
+        except:
+            raise
+
+        json_data = response.json()
+        return json_data['id_token']
+
     @staticmethod
-    def __raw_dump(data,filename=None):
+    def __raw_dump(data, filename=None):
         # Dump a raw, unprocessed matchbox for dev purposes.
         if not filename:
             filename = 'raw_mb_dump.json'
-        with open(filename,'w') as fh:
-            json.dump(data,fh)
+        with open(filename, 'w') as fh:
+            json.dump(data, fh)
