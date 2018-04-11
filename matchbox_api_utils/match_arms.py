@@ -6,6 +6,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import utils
 from matchbox_api_utils import matchbox_conf
+
 from matchbox_api_utils.matchbox import Matchbox
 
 
@@ -55,36 +56,53 @@ class TreatmentArms(object):
 
     """
 
-    def __init__(self, config_file=None, url=None, creds=None, 
-        json_db='sys_default', load_raw=None, make_raw=False):
+    def __init__(self, matchbox='adult-matchbox-uat', config_file=None, 
+        username=None, password=None, json_db='sys_default', 
+        load_raw=None, make_raw=False, quiet=False):
 
-        self._url = url
-        self._creds = creds
+        self._matchbox = matchbox
+        self._config_data = matchbox_conf.Config(self._matchbox, config_file)
+        self._url = self._config_data.get_config_item('arms_url')
+        if username is None:
+            self._username = self._config_data.get_config_item('username')
+        if password is None:
+            self._password = self._config_data.get_config_item('password')
+        self._client_name = self._config_data.get_config_item('client_name')
+        self._client_id = self._config_data.get_config_item('client_id')
+
         self._json_db = json_db
         self._load_raw = load_raw
         self.db_date = utils.get_today('long')
-        self._config_file = config_file
-        
-        if not self._url:
-            self._url = utils.get_config_data(self._config_file, 'arms_url')
-        
-        if not self._creds:
-            self._creds = utils.get_config_data(self._config_file, 'creds')
+        self._quiet = quiet
         
         if self._json_db == 'sys_default':
-            self._json_db = utils.get_config_data(self._config_file, 
-                'ta_json_data')
+            self._json_db = self._config_data.get_config_item('ta_json_data')
 
-        if make_raw:
-            Matchbox(self._url,self._creds,make_raw='ta')
-        elif self._load_raw:
-            self.db_date,matchbox_data = utils.load_dumped_json(self._load_raw)
+        # Loading a pre-made Raw MB dump
+        if self._load_raw:
+            if self._quiet is False:
+                sys.stderr.write('\n  ->  Starting from a raw TA JSON Obj\n')
+            self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
             self.data = self.make_match_arms_db(matchbox_data)
+
+        # Loading a MB parsed DB
         elif self._json_db:
-            self.db_date,self.data = utils.load_dumped_json(self._json_db)
+            self.db_date, self.data = utils.load_dumped_json(self._json_db)
+            if self._quiet is False:
+                sys.stderr.write('\n  ->  Starting from a processed TA JSON Obj\n')
+                sys.stderr.write('\n  ->  JSON database object date: '
+                    '%s\n' % self.db_date)
+
+        # Making a live query
         else:
             # make api call to get json data; load and present to self.data.
-            matchbox_data = Matchbox(self._url,self._creds).api_data
+            if self._quiet is False:
+                sys.stderr.write('  ->  Starting from a live MB instance.\n')
+            params = {'active' : True}
+            matchbox_data = Matchbox(
+                self._url,self._username, self._password, self._client_name, 
+                self._client_id, 'sync', params=params, make_raw=make_raw
+            ).api_data
             self.data = self.make_match_arms_db(matchbox_data)
         
         # Make a condensed aMOI lookup table too for running aMOIs rules.
@@ -168,15 +186,17 @@ class TreatmentArms(object):
             amoi_data = self.data[arm]['amois']
             for var_type in rules_table:
                 # non_hs mois
-                if var_type in ('deleterious', 'positional') and amoi_data['non_hs'][var_type]:
-                    for var,flag in amoi_data['non_hs'][var_type].items():
-                        rules_table[var_type][var].append('{}({})'.format(
-                            arm,ie_flag[str(flag)]))
+                if var_type in ('deleterious', 'positional'):
+                    if amoi_data['non_hs'][var_type]:
+                        for var, flag in amoi_data['non_hs'][var_type].items():
+                            #rules_table[var_type][var].append('{}({})'.format(
+                            rules_table[var_type][var].append('{}({})'.format(
+                                arm, ie_flag[str(flag)]))
                 # All other mois
                 elif amoi_data[var_type]:
-                    for var,flag in amoi_data[var_type].items():
+                    for var, flag in amoi_data[var_type].items():
                         rules_table[var_type][var].append('{}({})'.format(
-                            arm,ie_flag[str(flag)]))
+                            arm, ie_flag[str(flag)]))
         return rules_table
 
     def __parse_amois(self, amoi_data):
@@ -205,14 +225,19 @@ class TreatmentArms(object):
                     'positional' : defaultdict(dict)
                 }
                 for elem in amoi_data[var]:
-                    if elem['oncominevariantclass'] == 'Deleterious':
-                        nhr_vars['deleterious'].update({elem['gene'] : elem['inclusion']})
+                    if 'oncominevariantclass' in elem:
+                        if elem['oncominevariantclass'] == 'Deleterious':
+                            nhr_vars['deleterious'].update(
+                                {elem['gene'] : elem['inclusion']}
+                            )
                     else:
-                        var_id = '|'.join([elem['gene'], elem['exon'], elem['function']])
+                        var_id = '|'.join(
+                            [elem['gene'], elem['exon'], elem['function']]
+                        )
                         nhr_vars['positional'].update({var_id : elem['inclusion']})
                 parsed_amois[wanted[var]] = nhr_vars
             elif amoi_data[var]:
-                results = { i['matchingId'] : i['inclusion'] for i in amoi_data[var]} 
+                results = {i['identifier'] : i['inclusion'] for i in amoi_data[var]} 
                 parsed_amois[wanted[var]].update(results)
 
         # Pad out data
@@ -237,20 +262,21 @@ class TreatmentArms(object):
         """
         arm_data = defaultdict(dict)
         for arm in api_data:
-            arm_id = arm['id']
-            # if arm_id != 'EAY131-Z1A':
-                # continue
+            arm_id = arm['treatmentArmId']
+            #if arm_id != 'EAY131-G':
+                 #continue
 
-            arm_data[arm_id]['name']          = arm['name']
-            arm_data[arm_id]['arm_id']        = arm['id']
-            arm_data[arm_id]['gene']          = arm['gene']
-            arm_data[arm_id]['drug_name']     = arm['targetName']
-            arm_data[arm_id]['drug_id']       = arm['treatmentArmDrugs'][0]['drugId']
+            arm_data[arm_id]['name']      = arm['name']
+            arm_data[arm_id]['arm_id']    = arm_id
+            arm_data[arm_id]['gene']      = arm['gene']
+            arm_data[arm_id]['drug_name'] = arm['targetName']
+            arm_data[arm_id]['drug_id']   = arm['treatmentArmDrugs'][0]['drugId']
             arm_data[arm_id]['assigned']      = arm['numPatientsAssigned']
-            arm_data[arm_id]['excl_diseases'] = self.__retrive_data_with_keys(arm['exclusionDiseases'],'shortName','medraCode')
-            arm_data[arm_id]['ihc']           = self.__retrive_data_with_keys(arm['assayResults'],'gene','assayResultStatus')
-            arm_data[arm_id]['amois']         = self.__parse_amois(arm['variantReport'])
-
+            arm_data[arm_id]['excl_diseases'] = self.__retrive_data_with_keys(
+                arm['exclusionDiseases'], 'shortName', '_id')
+            arm_data[arm_id]['ihc']           = self.__retrive_data_with_keys(
+                arm['assayResults'], 'gene', 'assayResultStatus')
+            arm_data[arm_id]['amois'] = self.__parse_amois(arm['variantReport'])
         return arm_data
     
     @staticmethod
