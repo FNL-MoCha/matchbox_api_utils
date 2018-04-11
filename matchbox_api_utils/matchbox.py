@@ -161,5 +161,4 @@ class Matchbox(object):
         # Dump a raw, unprocessed matchbox for dev purposes.
         if not filename:
             filename = 'raw_mb_dump.json'
-        with open(filename, 'w') as fh:
-            json.dump(data, fh)
+        utils.make_json(filename, data, sort=True)
