@@ -35,6 +35,7 @@ class MatchData(object):
     preferred to use an existing JSON DB and only periodically update the DB with 
     a call to the aforementioned script.
 
+    # TODO: Fix this!
     Args:
         config_file (file): Custom config file to use if not using system 
             default.
@@ -64,47 +65,49 @@ class MatchData(object):
             messages.
     """
 
-    def __init__(self, config_file=None, url=None, creds=None, patient=None, 
-            json_db='sys_default', load_raw=None, make_raw=None, quiet=True):
+    def __init__(self, matchbox='adult-matchbox-uat', config_file=None, 
+            username=None, password=None, patient=None, json_db='sys_default', 
+            load_raw=None, make_raw=None, quiet=False):
 
-        self._url = url
-        self._creds = creds
+        self._matchbox = matchbox
+        self._config_data = matchbox_conf.Config(self._matchbox, config_file)
+    
+        self._url = self._config_data.get_config_item('url')
+        if username is None:
+            self._username = self._config_data.get_config_item('username')
+        if password is None:
+            self._password = self._config_data.get_config_item('password')
+        self._client_name = self._config_data.get_config_item('client_name')
+        self._client_id = self._config_data.get_config_item('client_id')
+
         self._patient = patient
         self._json_db = json_db
         self._load_raw = load_raw
-        self._config_file = config_file
         self.db_date = utils.get_today('long')
         self._quiet = quiet
-        self._disease_db = {}
 
-        if not self._url:
-            self._url = utils.get_config_data(self._config_file,'url')
-
-        if not self._creds:
-            self._creds = utils.get_config_data(self._config_file, 'creds')
-
-        if self._patient:
-            self._patient = str(self._patient)
-            self._url += '?patientId=%s' % self._patient 
+        # TODO: remove this call?
+        #self._disease_db = {}
 
         # If json_db is 'sys_default', get json file from matchbox_conf.Config, 
         # which is from matchbox_api_util.__init__.mb_json_data.  Otherwise use 
         # the passed arg; if it's None, do a live call below, and if it's a 
         # custom file, load that.
         if self._json_db == 'sys_default':
-            self._json_db = utils.get_config_data(self._config_file, 
-                'mb_json_data')
+            self._json_db = self._config_data.get_config_data('mb_json_data')
 
-        ta_data = utils.get_config_data(self._config_file,'ta_json_data')
-        self.arm_data = TreatmentArms(json_db=ta_data)
+        ta_data = self._config_data.get_config_item('ta_json_data')
+        self.arm_data = TreatmentArms(self._matchbox, json_db=ta_data)
             
-        if make_raw:
-            Matchbox(self._url, self._creds, make_raw='mb')
-        elif self._load_raw:
+        # Load total MB dataset, in raw archived JSON format.
+        if self._load_raw:
             if self._quiet is False:
                 print('\n  ->  Starting from a raw MB JSON Obj')
             self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
             self.data = self.__gen_patients_list(matchbox_data, self._patient)
+
+        # Load parsed MB JSON dataset rather than a live query.
+        # TODO: Verify this works once we can make one of these!
         elif self._json_db:
             self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._quiet is False:
@@ -114,14 +117,38 @@ class MatchData(object):
                 if self._quiet is False:
                     print('filtering on patient: %s\n' % self._patient)
                 self.data = self.__filter_by_patient(self.data, self._patient)
+
+        # Make a live query to MB and either create a new raw_db or parse it out
+        # and work from there.
         else:
             if self._quiet is False:
                 print('\n  ->  Starting from a live MB instance')
-            matchbox_data = Matchbox(self._url, self._creds).api_data
+
+            if self._patient:
+                self._url += '/%s' % self._patient
+                __method='sync'
+            else:
+                __method='async'
+            
+            params = {
+                'page' : '20', 
+                'size' : '500', 
+                'sort' : 'patientSequenceNumber'
+            }
+
+            matchbox_data = Matchbox(self._url, self._username, self._password, 
+                self._client_name, self._client_id, method=__method, params=params,
+                make_raw=make_raw).api_data
+
+            # If we are filtering on a patient, then we don't get a list of dicts,
+            # so we need to convert the data before passing or else problems.
+            if self._patient:
+                matchbox_data = [matchbox_data]
             self.data = self.__gen_patients_list(matchbox_data, self._patient)
 
         # Load up a medra : ctep term db based on entries so that we can look
         # data up on the fly.
+        utils.__exit__(150, "Stopping after making pt db near end of init.")
         self._disease_db = self.__make_disease_db()
 
     def __str__(self):
@@ -216,7 +243,7 @@ class MatchData(object):
         # Figure out the arm to which the patient was assinged based on the flag 
         # message found in the TA Logic flow.
         try:
-            return [x['treatmentArmId'] for x in assignment_logic_list if x['reasonCategory'] == flag][0]
+            return [x['treatmentArmId'] for x in assignment_logic_list if x['patientAssignmentReasonCategory'] == flag][0]
         except:
             # There are exactly 4 cases (as of 9/19/2017) where the patient has 
             # PTEN IHC-, but was not assigned Arm P directly for some reason that 
@@ -232,7 +259,7 @@ class MatchData(object):
                 return 'UNK'
 
     @staticmethod
-    def __get_pt_hist(triggers,assignments,rejoin_triggers):
+    def __get_pt_hist(triggers, assignments, rejoin_triggers):
         # Read the trigger messages to determine the patient treatment and study 
         # arm history.
         arms = []
@@ -246,7 +273,7 @@ class MatchData(object):
             return (triggers[0]['patientStatus'], triggers[0]['message'], {}, False)
 
         counter = 0
-        for i,msg in enumerate(triggers):
+        for i, msg in enumerate(triggers):
             # On a rare occassion, we get two of the same messages in a row. Just
             # skip the redundant message?
             if triggers[i-1]['patientStatus'] == msg['patientStatus']:
@@ -256,12 +283,14 @@ class MatchData(object):
                 counter += 1
 
             if msg['patientStatus'] == 'PENDING_APPROVAL':
-                curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],
-                        assignments[counter]['patientAssignmentLogic'], 'SELECTED')
-                arms.append(curr_arm)
+                curr_arm = MatchData.__get_curr_arm(
+                    msg['patientSequenceNumber'],
+                    assignments[counter]['patientAssignmentLogic'], 
+                    'SELECTED'
+                )
 
                 try:
-                    arm_hist[curr_arm] = assignments[counter]['patientAssignmentMessage'][0]['status']
+                    arm_hist[curr_arm] = assignments[counter]['patientAssignmentMessages'][0]['status']
                 except IndexError:
                     # We don't have a message because no actual assignment ever 
                     # made (i.e. OFF_TRIAL before assignment)
@@ -273,8 +302,11 @@ class MatchData(object):
                 arm_hist[curr_arm] = 'FORMERLY_ON_ARM_PROGRESSED'
 
             elif msg['patientStatus'] == 'COMPASSIONATE_CARE':
-                curr_arm = MatchData.__get_curr_arm(msg['patientSequenceNumber'],
-                        assignments[counter]['patientAssignmentLogic'], 'ARM_FULL')
+                curr_arm = MatchData.__get_curr_arm(
+                    msg['patientSequenceNumber'],
+                    assignments[counter]['patientAssignmentLogic'], 
+                    'ARM_FULL'
+                )
                 arm_hist[curr_arm] = 'COMPASSIONATE_CARE'
 
             # When we hit the last message, return what we've collected.
@@ -289,20 +321,13 @@ class MatchData(object):
                     if arm_hist[arms[-1]] == '.':
                         arm_hist[arms[-1]] = last_status
 
-                return last_status,last_msg,arm_hist,progressed
+                return last_status, last_msg, arm_hist, progressed
 
     def __gen_patients_list(self, matchbox_data, patient):
         #Process the MATCHBox API data (usually in JSON format from MongoDB) into 
         #a much more concise and easily parsable dict of data. This dict will be 
         #the main dataset used for later data analysis and queries and is the main 
         #structure for the MatchboxData class below.
-
-        #Args:
-            #matchbox_data (dict): Dict of MATCHBox JSON data to process.
-            #patient (str): Patient identifier (PSN) to filter data.
-
-        #Returns:
-            #dict: Dict of parsed MATCHBox API data.
         patients = defaultdict(dict)
         for record in matchbox_data:
             psn = record['patientSequenceNumber']       
@@ -312,7 +337,7 @@ class MatchData(object):
             patients[psn]['psn']         = psn
             patients[psn]['gender']      = record['gender']
             patients[psn]['ethnicity']   = record['ethnicity']
-            patients[psn]['source']      = record['patientTriggers'][0]['patientStatus']
+            patients[psn]['source']      = record['patientType']
             patients[psn]['concordance'] = record['concordance']
 
             try:
@@ -321,30 +346,31 @@ class MatchData(object):
                 race = '-'
             patients[psn]['race'] = race
 
-            try:
-                ctep_term   = record['diseases'][0]['ctepTerm']
-            except IndexError:
-                ctep_term = '-'
-            patients[psn]['ctep_term'] = ctep_term
+            # For diseases, we have a list, where the last element is the latest
+            # edit and the most correct data.  
+            latest_disease = record['diseases'][-1]
+            patients[psn]['ctep_term'] = latest_disease.get('ctepTerm', '-')
+            patients[psn]['medra_code'] = latest_disease.get('_id', '-')
 
-            try:
-                medra_code  = record['diseases'][0]['medraCode']
-            except IndexError:
-                medra_code = '-'
-            patients[psn]['medra_code'] = medra_code
             patients[psn]['all_msns']     = []
             patients[psn]['all_biopsies'] = []
 
             # Get treatment arm history. 
-            last_status, last_msg, arm_hist, progressed = self.__get_pt_hist(record['patientTriggers'],
-                    record['patientAssignments'], record['patientRejoinTriggers'])
+            # TODO: Right now just getting a dict of arm : status. Do we want to
+            # set this up as a list of dicts that include assignment date too, so
+            # that we can order them, and make length on arm calcs?
+            last_status, last_msg, arm_hist, progressed = self.__get_pt_hist(
+                    record['patientTriggers'],
+                    record['patientAssignments'], 
+                    record['patientRejoinTriggers']
+            )
 
             patients[psn]['current_trial_status']    = last_status
             patients[psn]['last_msg']                = last_msg
             patients[psn]['ta_arms']                 = arm_hist
             patients[psn]['progressed']              = progressed
+
             patients[psn]['biopsies'] = {}
-            
             if not record['biopsies']:
                 patients[psn]['biopsies'] = 'No_Biopsy'
             else:
@@ -361,50 +387,69 @@ class MatchData(object):
                         biopsy_data[bsn]['biopsy_status'] = 'Failed_Biopsy'
                     else:
                         biopsy_data[bsn]['biopsy_status'] = 'Pass'
-                        biopsy_data[bsn]['ihc'] = self.__get_ihc_results(biopsy['assayMessagesWithResult'])
+                        biopsy_data[bsn]['ihc'] = self.__get_ihc_results(
+                                biopsy['assayMessages']
+                        )
 
                         # Define biopsy type as Initial, Progression, or Outside. 
-                        if biopsy['associatedPatientStatus'] == 'REGISTRATION_OUTSIDE_ASSAY':
-                            if bsn.startswith('T-'):
-                                biopsy_data[bsn]['biopsy_source'] = 'Outside_Confirmation'
-                            else:
-                                biopsy_data[bsn]['biopsy_source'] = 'Outside'
-                        elif biopsy['associatedPatientStatus'] == 'PROGRESSION_REBIOPSY':
-                            biopsy_data[bsn]['biopsy_source'] = 'Progression'
-                        elif biopsy['associatedPatientStatus'] == 'REGISTRATION':
-                            biopsy_data[bsn]['biopsy_source'] = 'Initial'
+                        biopsy_type = biopsy['biopsyType']
+                        if biopsy_type == 'STANDARD':
+                            biopsy_type = biopsy['associatedPatientStatus']
 
-                        for result in biopsy['nextGenerationSequences']:
-                            # Skip all Failed and Pending reports.
-                            if result['status'] != 'CONFIRMED':  
-                                continue 
-                            msn = result['ionReporterResults']['molecularSequenceNumber']
-                            patients[psn]['all_msns'].append(msn)
+                        biopsy_sources = {
+                            'OUTSIDE' : 'Outside',
+                            'CONFIRMATION' : 'Confirmation',
+                            'PROGRESSION_REBIOPSY' : 'Progression',
+                            'REGISTRATION' : 'Initial'
+                        }
+                        status = biopsy_sources[biopsy_type]
+                        biopsy_data[bsn]['biopsy_source'] = status
 
-                            # Now patients are getting an MSN directly from outside assay and put into data like normal,
-                            # but of course no IR stuff. So, we have to filter this.
-                            try:
-                                biopsy_data[bsn]['ngs_data']['msn']          = msn
-                                biopsy_data[bsn]['ngs_data']['ir_runid']     = result['ionReporterResults']['jobName']
-                                biopsy_data[bsn]['ngs_data']['dna_bam_path'] = result['ionReporterResults']['dnaBamFilePath']
-                                biopsy_data[bsn]['ngs_data']['rna_bam_path'] = result['ionReporterResults']['rnaBamFilePath']
-                                biopsy_data[bsn]['ngs_data']['vcf_path']     = result['ionReporterResults']['vcfFilePath']
-                            except:
-                                continue
-                                # print('offending psn: %s' % psn)
+                        # Don't load up outside assay data as it's mish-mosh
+                        if status == 'Outside':
+                            biopsy_data[bsn]['ngs_data'] = 'NA'
+                        else:
+                            for result in biopsy['nextGenerationSequences']:
+                                # Skip all Failed and Pending reports.
+                                if result['status'] != 'CONFIRMED':  
+                                    continue 
+                                ir_data = result['ionReporterResults']
+                                msn, runid, dna, rna, vcf, vardata = utils.get_vals(
+                                    ir_data, 
+                                    'molecularSequenceNumber',
+                                    'jobName', 
+                                    'dnaBamFilePath',
+                                    'rnaBamFilePath',
+                                    'vcfFilePath',
+                                    'variantReport',
+                                )
+                                patients[psn]['all_msns'].append(msn)
+                                biopsy_data[bsn]['ngs_data']['msn'] = msn
+                                biopsy_data[bsn]['ngs_data']['ir_runid'] = runid
+                                biopsy_data[bsn]['ngs_data']['dna_bam_path'] = dna
+                                biopsy_data[bsn]['ngs_data']['rna_bam_path'] = rna
+                                biopsy_data[bsn]['ngs_data']['vcf_path'] = vcf
 
-                            # Get and add MOI data to patient record; might be from outside.
-                            variant_report     = result['ionReporterResults']['variantReport']
-                            biopsy_data[bsn]['ngs_data']['mois']  = dict(self.__proc_ngs_data(variant_report))
+                                biopsy_data[bsn]['ngs_data']['mois']  = dict(
+                                    self.__proc_ngs_data(vardata))
                     patients[psn]['biopsies'].update(dict(biopsy_data))
         # pp(dict(patients))
         # sys.exit()
         return patients
 
     @staticmethod
+    def __read_ir_results(ir_data, key):
+        return ir_data['']
+
+    @staticmethod
     def __get_ihc_results(ihc_data):
         # Get and load IHC results from dataset.
-        ihc_results = {result['biomarker'].rstrip('s').lstrip('ICC') : result['result'] for result in ihc_data}
+        ihc_results = {}
+        for assay in ihc_data:
+            if 'result' in assay:
+                assay_name = assay['biomarker'].rstrip('s').lstrip('ICC')
+                ihc_results[assay_name] = assay['result']
+
         # Won't always get RB IHC; depends on if we have other qualifying genomic 
         # event.  Fill in data anyway.
         if 'RB' not in ihc_results:
