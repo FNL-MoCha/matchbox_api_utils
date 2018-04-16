@@ -95,7 +95,7 @@ class Matchbox(object):
             sys.stdout.write('Making a raw MATCHBox API dump that can be loaded '
                 'for development purposes rather than a live call to MATCHBox '
                 'prior to parsing and filtering.\n')
-            self.__raw_dump(self.api_data, filename)
+            utils.make_json(outfile=filename, data=self.api_data, sort=True)
             sys.exit()
 
     def __str__(self):
@@ -155,10 +155,3 @@ class Matchbox(object):
 
         json_data = response.json()
         return json_data['id_token']
-
-    @staticmethod
-    def __raw_dump(data, filename=None):
-        # Dump a raw, unprocessed matchbox for dev purposes.
-        if not filename:
-            filename = 'raw_mb_dump.json'
-        utils.make_json(filename, data, sort=True)
