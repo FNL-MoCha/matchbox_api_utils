@@ -31,7 +31,11 @@ config = {
     'test_suite'             : 'nose.collector',
     'tests_require'          : ['nose'],
     'packages'               : ['matchbox_api_utils'],
-    'install_requires'       : ['requests'],
+    'python_requires'        : '>=3.6',
+    'install_requires'       : ['requests>=2.18.4',
+                                'asyncio',
+                                'termcolor>=1.1'
+                               ],
     'scripts'                : ['bin/map_msn_psn.py',
                                 'bin/matchbox_json_dump.py',
                                 'bin/match_specimen_tracking.py',
