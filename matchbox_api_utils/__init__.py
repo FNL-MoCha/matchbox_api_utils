@@ -8,13 +8,16 @@ from matchbox_api_utils.matchbox import Matchbox
 from matchbox_api_utils.match_data import MatchData
 from matchbox_api_utils.match_arms import TreatmentArms
 
-__version__ = '1.3.030118'
+__version__ = '1.6.041718'
 
 __all__ = ['Matchbox','MatchData','TreatmentArms','matchbox_conf']
 
 mb_utils_root = os.path.join(os.environ['HOME'], '.mb_utils')
 if not os.path.isdir(mb_utils_root):
-    os.mkdir(mb_utils_root)
+    # os.mkdir(mb_utils_root)
+    sys.stderr.write('ERROR: Can not find the MATCHBox API Utils root dir '
+        '"%s". You may need to reconfigure your package!\n')
+    sys.exit(1)
 
 
 def get_latest_data(dfiles):
@@ -31,7 +34,8 @@ def get_latest_data(dfiles):
             datestring = re.search('(mb|ta)_obj_([0-9]{6})\.json', 
                 filename).group(1)
         except AttributeError:
-            datestring = datetime.datetime.fromtimestamp(os.path.getctime(f)).strftime('%m%d%y')
+            datestring = datetime.datetime.fromtimestamp(
+                    os.path.getctime(f)).strftime('%m%d%y')
         indexed_files[datestring] = f
 
     try:
@@ -55,14 +59,14 @@ def get_files(string,file_list):
 json_files = [os.path.join(mb_utils_root, f) for f in os.listdir(mb_utils_root) if f.endswith('.json')]
 
 for f in json_files:
-    if 'config.json' in f:
+    if 'mb2.0_config.json' in f:
         mb_config_file = f
 
-mb_data_files = get_files('mb_obj',json_files)
+mb_data_files = get_files('mb_obj', json_files)
 mb_json_data = get_latest_data(mb_data_files)
 
-ta_data_files = get_files('ta_obj',json_files)
+ta_data_files = get_files('ta_obj', json_files)
 ta_json_data = get_latest_data(ta_data_files)
 
-amois_files = get_files('amoi_lookup',json_files)
+amois_files = get_files('amoi_lookup', json_files)
 amoi_json_data = get_latest_data(amois_files)
