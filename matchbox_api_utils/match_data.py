@@ -65,11 +65,13 @@ class MatchData(object):
             messages.
     """
 
-    def __init__(self, matchbox='adult-matchbox-uat', config_file=None, 
+    def __init__(self, matchbox='adult-matchbox', config_file=None, 
             username=None, password=None, patient=None, json_db='sys_default', 
             load_raw=None, make_raw=None, quiet=False):
 
         self._matchbox = matchbox
+        if not quiet:
+            sys.stderr.write('INFO: Loading MATCHBox: %s\n' % self._matchbox)
         self._config_data = matchbox_conf.Config(self._matchbox, config_file)
     
         self._url = self._config_data.get_config_item('url')
@@ -86,15 +88,12 @@ class MatchData(object):
         self.db_date = utils.get_today('long')
         self._quiet = quiet
 
-        # TODO: remove this call?
-        #self._disease_db = {}
-
         # If json_db is 'sys_default', get json file from matchbox_conf.Config, 
         # which is from matchbox_api_util.__init__.mb_json_data.  Otherwise use 
         # the passed arg; if it's None, do a live call below, and if it's a 
         # custom file, load that.
         if self._json_db == 'sys_default':
-            self._json_db = self._config_data.get_config_data('mb_json_data')
+            self._json_db = self._config_data.get_config_item('mb_json_data')
 
         ta_data = self._config_data.get_config_item('ta_json_data')
         self.arm_data = TreatmentArms(self._matchbox, json_db=ta_data)
@@ -107,7 +106,6 @@ class MatchData(object):
             self.data = self.__gen_patients_list(matchbox_data, self._patient)
 
         # Load parsed MB JSON dataset rather than a live query.
-        # TODO: Verify this works once we can make one of these!
         elif self._json_db:
             self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._quiet is False:
@@ -148,7 +146,6 @@ class MatchData(object):
 
         # Load up a medra : ctep term db based on entries so that we can look
         # data up on the fly.
-        utils.__exit__(150, "Stopping after making pt db near end of init.")
         self._disease_db = self.__make_disease_db()
 
     def __str__(self):
@@ -187,12 +184,6 @@ class MatchData(object):
             'partnerGene', 'driverReadCount', 'annotation', 
             'confidenceInterval95percent', 'confidenceInterval5percent',
             'copyNumber', 'alleleFrequency', 'copyNumber', 'driverReadCount')
-
-        # This is first iteration, and I can't remember why I don't just want 
-        # all variant level data any more.  
-        # Deleted bit: 
-        # return [elem for elem in data if elem['gene'] in gene_list ]
-        # return [{i:elem[i] for i in wanted if i in data} for elem in data if elem['gene'] in gene_list]
 
         results = []
         for rec in data:
@@ -312,7 +303,7 @@ class MatchData(object):
             # When we hit the last message, return what we've collected.
             if i+1 == tot_msgs:
                 last_status = msg['patientStatus']
-                last_msg = msg['message']
+                last_msg = msg.get('message', '---')
                 if arms:
                     if last_status.startswith('OFF_TRIAL'):
                         if arm_hist[arms[-1]] == 'ON_TREATMENT_ARM':
@@ -330,27 +321,33 @@ class MatchData(object):
         #structure for the MatchboxData class below.
         patients = defaultdict(dict)
         for record in matchbox_data:
-            psn = record['patientSequenceNumber']       
-            if patient and psn != patient:
+            psn = record['patientSequenceNumber']
+            # print('processing record: %s' % psn)
+            
+            if patient and psn != str(patient):
                 continue
             
             patients[psn]['psn']         = psn
-            patients[psn]['gender']      = record['gender']
-            patients[psn]['ethnicity']   = record['ethnicity']
-            patients[psn]['source']      = record['patientType']
-            patients[psn]['concordance'] = record['concordance']
+            patients[psn]['gender']      = record.get('gender', 'null')
+            patients[psn]['ethnicity']   = record.get('ethnicity', 'null')
+            patients[psn]['source']      = record.get('patientType', 'null')
+            patients[psn]['concordance'] = record.get('concordance', 'null')
 
-            try:
-                race = record['races'][0]
-            except IndexError:
-                race = '-'
-            patients[psn]['race'] = race
+            races = record.get('races', [])
+            if len(record.get('races', [])) > 0:
+                patients[psn]['race'] = races[0]
+            else: patients[psn]['race'] = 'null'
 
             # For diseases, we have a list, where the last element is the latest
-            # edit and the most correct data.  
-            latest_disease = record['diseases'][-1]
-            patients[psn]['ctep_term'] = latest_disease.get('ctepTerm', '-')
-            patients[psn]['medra_code'] = latest_disease.get('_id', '-')
+            # edit and the most correct data. But the list might be empty if no
+            # biopsy ever taken.
+            try:
+                latest_disease = record['diseases'][-1]
+            except IndexError:
+                latest_disease = {}
+
+            patients[psn]['ctep_term'] = latest_disease.get('ctepTerm', 'null')
+            patients[psn]['medra_code'] = latest_disease.get('_id', 'null')
 
             patients[psn]['all_msns']     = []
             patients[psn]['all_biopsies'] = []
@@ -359,10 +356,14 @@ class MatchData(object):
             # TODO: Right now just getting a dict of arm : status. Do we want to
             # set this up as a list of dicts that include assignment date too, so
             # that we can order them, and make length on arm calcs?
+            pt_triggers = record.get('patientTriggers', None)
+            pt_assignments = record.get('patientAssignments', None)
+            pt_rejoin_trigs = record.get('patientRejoinTriggers', None)
+
             last_status, last_msg, arm_hist, progressed = self.__get_pt_hist(
-                    record['patientTriggers'],
-                    record['patientAssignments'], 
-                    record['patientRejoinTriggers']
+                    pt_triggers, 
+                    pt_assignments, 
+                    pt_rejoin_trigs
             )
 
             patients[psn]['current_trial_status']    = last_status
@@ -438,10 +439,6 @@ class MatchData(object):
         return patients
 
     @staticmethod
-    def __read_ir_results(ir_data, key):
-        return ir_data['']
-
-    @staticmethod
     def __get_ihc_results(ihc_data):
         # Get and load IHC results from dataset.
         ihc_results = {}
@@ -456,7 +453,7 @@ class MatchData(object):
             ihc_results['RB'] = 'ND'
         return ihc_results
 
-    def __proc_ngs_data(self,ngs_results):
+    def __proc_ngs_data(self, ngs_results):
        # Create and return a dict of variant call data that can be stored in the 
        # patient's obj.
         variant_call_data = defaultdict(list)
@@ -466,20 +463,27 @@ class MatchData(object):
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
                 if variant['confirmed']:
-                    var_data = self.__gen_variant_dict(variant,var_type)
+                    # Still some non-conforming variants present!
+                    if var_type == 'unifiedGeneFusions':
+                        if 'Targeted' in variant['identifier']:
+                            continue
+                    var_data = self.__gen_variant_dict(variant, var_type)
                     var_data.update({'amoi' : self.arm_data.map_amoi(var_data)})
                     variant_call_data[var_type].append(var_data)
 
         # Remap the driver / partner genes so that we know they're correct, and 
         # add a 'gene' field to use later on.
         if 'unifiedGeneFusions' in variant_call_data:
-            variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(variant_call_data['unifiedGeneFusions'])
+            variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(
+                variant_call_data['unifiedGeneFusions']
+            )
 
         return variant_call_data
 
     @staticmethod
-    def __gen_variant_dict(vardata,vartype):
-        # Based on input variant call data, return a dict of variant type and wanted fields
+    def __gen_variant_dict(vardata, vartype):
+        # Based on input variant call data, return a dict of variant type and 
+        # wanted fields
         meta_key = {
             'singleNucleotideVariants' : 'snvs_indels',
             'indels'                   : 'snvs_indels',
@@ -488,19 +492,26 @@ class MatchData(object):
         }
 
         include_fields = { 
-                'snvs_indels' :  ['alleleFrequency', 'alternative', 
+                'snvs_indels' :  [
+                    'alleleFrequency', 'alternative', 
                     'alternativeAlleleObservationCount', 'chromosome', 'exon', 
                     'flowAlternativeAlleleObservationCount', 
                     'flowReferenceAlleleObservations', 'function', 'gene', 'hgvs', 
                     'identifier', 'oncominevariantclass', 'position', 'readDepth', 
                     'reference', 'referenceAlleleObservations', 'transcript', 
-                    'protein', 'confirmed'], 
-                'cnvs'        : ['chromosome', 'gene', 'confidenceInterval5percent', 
-                    'confidenceInterval95percent', 'copyNumber','confirmed'],
-                'fusions'     : ['annotation', 'identifier', 'driverReadCount', 
-                    'driverGene', 'partnerGene','confirmed']
+                    'protein', 'confirmed'
+                ], 
+                'cnvs' : [
+                    'chromosome', 'identifier', 'confidenceInterval5percent', 
+                    'confidenceInterval95percent', 'copyNumber','confirmed'
+                ],
+                'fusions' : [
+                    'annotation', 'identifier', 'driverReadCount', 'driverGene',
+                    'partnerGene','confirmed'
+                ]
         }
-        data = dict((key, vardata[key]) for key in include_fields[meta_key[vartype]])
+
+        data = dict((key, vardata.get(key, '.')) for key in include_fields[meta_key[vartype]])
         data['type'] = meta_key[vartype]
         return data
 
@@ -693,7 +704,7 @@ class MatchData(object):
         formatted_date = utils.get_today('short')
         if not filename:
             filename = 'mb_obj_' + formatted_date + '.json'
-        utils.make_json(filename,self.data)
+        utils.make_json(outfile=filename, data=self.data)
 
     def get_psn(self, msn=None, bsn=None):
         """
