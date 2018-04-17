@@ -140,8 +140,8 @@ class TreatmentArms(object):
         if not ta_filename:
             ta_filename = 'ta_obj_' + utils.get_today('short') + '.json'
 
-        utils.make_json(amois_filename, self.amoi_lookup_table)
-        utils.make_json(ta_filename, self.data)
+        utils.make_json(outfile=amois_filename, data=self.amoi_lookup_table)
+        utils.make_json(outfile=ta_filename, data=self.data)
 
     def __retrive_data_with_keys(self, data, k1, k2):
         results = {}
@@ -289,7 +289,7 @@ class TreatmentArms(object):
             'oncominevariantclass')
         if 'type' in variant:
             if variant['type'] == 'cnvs':
-                acceptable_keys = ('type', 'gene')
+                acceptable_keys = ('type', 'identifier')
             elif variant['type'] == 'fusions':
                 acceptable_keys = ('type', 'identifier')
 
@@ -357,8 +357,8 @@ class TreatmentArms(object):
                             result = self.amoi_lookup_table['positional'][v]
 
         elif variant['type'] == 'cnvs':
-            if variant['gene'] in self.amoi_lookup_table['cnv']:
-                result = self.amoi_lookup_table['cnv'][variant['gene']]
+            if variant['identifier'] in self.amoi_lookup_table['cnv']:
+                result = self.amoi_lookup_table['cnv'][variant['identifier']]
 
         elif variant['type'] == 'fusions':
             if variant['identifier'] in self.amoi_lookup_table['fusion']:
