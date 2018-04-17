@@ -5,7 +5,6 @@ import json
 
 import matchbox_api_utils
 
-from pprint import pprint as pp
 from matchbox_api_utils import utils
 
 
@@ -27,8 +26,6 @@ class Config(object):
             self._config_file = matchbox_api_utils.mb_config_file
         self.config_data = self.read_config()
 
-        # TODO: Fix this 
-        '''
         if mb_json_data:
             self.config_data['mb_json_data'] = mb_json_data
         else:
@@ -43,7 +40,6 @@ class Config(object):
             self.config_data['amois_lookup'] = amois_lookup
         else:
             self.config_data['amois_lookup'] = matchbox_api_utils.amoi_json_data
-        '''
 
     def __repr__(self):
         return '%s:%s' % (self.__class__, self.__dict__)
@@ -62,11 +58,10 @@ class Config(object):
 
     def read_config(self):
         try:
-            with open(self._config_file) as fh:
-                data = json.load(fh)
-        except IOError:
-            sys.stderr.write('ERROR: No configuration file found. You must either '
-                'run the package configuration tools or provide a config file '
-                'using the "config" option. Can not continue!\n')
+            data = utils.read_json(self._config_file)
+        except:
+            sys.stderr.write('ERROR: No configuration file found. You must '
+                'either run the package configuration tools or provide a config'
+                ' file using the "config" option. Can not continue!\n')
             sys.exit(1)
         return data[self._matchbox_name]
