@@ -221,7 +221,7 @@ class MatchData(object):
         return results
         
     @staticmethod
-    def __format_id(op, msn=None, psn=None):
+    def __format_id(op, *, msn=None, psn=None):
         if op not in ('add', 'rm'):
             sys.stderr.write('ERROR: operation "%s" is not valid.  Can only '
                 'choose from "add" or "rm"!\n')
@@ -1169,7 +1169,6 @@ class MatchData(object):
         else:
             pt_list = self.data.keys()
 
-        # XXX
         for patient in pt_list:
             # Skip no biopsy and all outside biospy cases.  For outside assay 
             # cases, we don't want to consider any of it since the confirmation 
@@ -1251,8 +1250,8 @@ class MatchData(object):
         """
         .. _get_variant_report:
 
-        Input a PSN or MSN **(preferred!)** and return a list of dicts of variant 
-        call data.
+        Input a PSN or MSN **(preferred!)** and return a list of dicts of 
+        variant call data.
 
         Since there can be more than one MSN per patient, one will get a more 
         robust result by querying on a MSN.  That is, only one variant report 
@@ -1274,44 +1273,99 @@ class MatchData(object):
            }
 
         Examples:
+            >>> data.get_variant_report(psn=10005)
+            {
+                'MSN3111': {
+                    'unifiedGeneFusions': [
+                        {
+                            'amoi': None, 
+                            'annotation': 'COSF1232', 
+                            'confirmed': True, 
+                            'driverGene': 'RET', 
+                            'driverReadCount': 7121, 
+                            'gene': 'RET', 
+                            'identifier': 'KIF5B-RET.K15R12.COSF1232', 
+                            'partnerGene': 'KIF5B', 'type': 'fusions'
+                        }
+                    ]
+                }
+            }
 
-        Todo:
-            Add examples here.
+            >>> data.get_variant_report(msn=35733)
+            {
+                'MSN35733': {
+                    'singleNucleotideVariants': [
+                        {
+                            'alleleFrequency': 0.570856,
+                            'alternative': 'T',
+                            'alternativeAlleleObservationCount': 3190,
+                            'amoi': ['EAY131-Z1I(i)'],
+                            'chromosome': 'chr13',
+                            'confirmed': True,
+                            'exon': '25',
+                            'flowAlternativeAlleleObservationCount': '1140',
+                            'flowReferenceAlleleObservations': '177',
+                            'function': 'nonsense',
+                            'gene': 'BRCA2',
+                            'hgvs': 'c.9382C>T',
+                            'identifier': '.',
+                            'oncominevariantclass': 'Deleterious',
+                            'position': '32968951',
+                            'protein': 'p.Arg3128Ter',
+                            'readDepth': 5551,
+                            'reference': 'C',
+                            'referenceAlleleObservations': 456,
+                            'transcript': 'NM_000059.3',
+                            'type': 'snvs_indels'
+                        }
+                    ]
+                }
+            }
 
         """
         if msn:
-            msn = self.__format_id('add',msn=msn)
-            psn=self.get_psn(msn=self.__format_id('rm',msn=msn))
+            msn = self.__format_id('add', msn=msn)
+            psn = self.__format_id('rm', psn=self.get_psn(msn=msn))
+
             for biopsy in self.data[psn]['biopsies'].values():
                 if 'ngs_data' in biopsy and biopsy['ngs_data']['msn'] == msn:
-                    return {self.__format_id('add',msn=msn) : biopsy['ngs_data']['mois']}
+                    formatted_msn = self.__format_id('add', msn=msn)
+                    return {formatted_msn : biopsy['ngs_data']['mois']}
                 else:
                     return None
         elif psn:
             # if we are searching by PSN, can get multiple reports. Print them 
             # all as a list.
+            sys.stderr.write('WARN: Using a PSN can result in multiple reports,'
+                ' especially in cases where\nthere is more than one valid MSN '
+                'per PSN (like as in progression cases. It\nis recommended to '
+                'use a MSN for this method.\n')
+
             results = {}  
-            psn = self.__format_id('rm',psn=psn)
+            psn = self.__format_id('rm', psn=psn)
             try:
                 if not len(self.data[psn]['all_msns']) > 0:
                     sys.stderr.write('No variant report available for patient: '
                         '%s.\n' % psn)
                     return None
-            except:
+            except KeyError:
                 sys.stderr.write('ERROR: Patient %s does not exist in the '
                     'database!\n')
                 return None
 
             for biopsy in self.data[psn]['biopsies'].values():
-                # Skip the outside assays biopsies since the variant reports are 
-                # unreliable for now. Maybe we'll take these later with an option? 
-                # Also have to skip outside confirmation cases now as the assay
-                # does not always cover the variants and now MATCHBox is including 
-                # calls that are outside of our reportable range....a real mess!
+                # Skip the outside assays biopsies since the variant reports 
+                # are unreliable. Also have to skip outside confirmation cases 
+                # now as the assay does not always cover the variants and now 
+                # MATCHBox is including calls that are outside of our 
+                # reportable range....a real mess!
                 if 'Outside' in biopsy['biopsy_source']:
                     continue
                 elif biopsy['ngs_data'] and 'mois' in biopsy['ngs_data']:
-                    identifier = self.__format_id('add', msn=biopsy['ngs_data']['msn'])
+                    identifier = self.__format_id(
+                        'add', 
+                        msn=biopsy['ngs_data']['msn']
+                    )
                     results[identifier] = biopsy['ngs_data']['mois']
             if results:
                 return results
