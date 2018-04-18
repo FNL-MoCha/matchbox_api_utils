@@ -874,7 +874,8 @@ class MatchData(object):
         sys.stderr.write('No result for id %s\n' % query_term)
         return None
 
-    def get_disease_summary(self, query_disease=None, query_medra=None):
+    def get_disease_summary(self, query_disease=None, query_medra=None, 
+            outside=False):
         """
         Return a summary of registered diseases and counts. With no args, will 
         return a list of all diseases and counts as a dict. One can also limit 
@@ -884,6 +885,8 @@ class MatchData(object):
         Args:
             query_disease (list): List of diseases to filter on.
             query_medra   (list): List of MEDRA codes to filter on.
+            outside (bool): Include patients registered under outside assay
+                initiative in counts. DEFAULT: False
 
         Returns:
             dict: Dictionary of disease(s) and counts in the form of: ::
@@ -912,6 +915,9 @@ class MatchData(object):
         results = defaultdict(list)
 
         for psn in self.data.values():
+            if outside is False and 'OUTSIDE' in psn['source']:
+                continue
+
             # Skip the registered but not yet biopsied patients.
             if psn['medra_code'] == 'null': 
                 continue
@@ -919,20 +925,20 @@ class MatchData(object):
 
         if query_medra:
             if isinstance(query_medra, list) is False:
-                sys.stderr.write('ERROR: arguments to get_disease_summary() must '
-                    'be lists!\n') 
+                sys.stderr.write('ERROR: arguments to get_disease_summary() '
+                    'must be lists!\n') 
                 return None
             for q in query_medra:
                 q = str(q)
                 if q in disease_counts:
                     results[q] = (self._disease_db[q], disease_counts[q])
                 else:
-                    sys.stderr.write('MEDRA code "%s" was not found in the MATCH '
-                        'study dataset.\n' % q)
+                    sys.stderr.write('MEDRA code "%s" was not found in the '
+                        'MATCH study dataset.\n' % q)
         elif query_disease:
             if isinstance(query_disease, list) is False:
-                sys.stderr.write('ERROR: arguments to get_disease_summary() must '
-                    'be lists!\n') 
+                sys.stderr.write('ERROR: arguments to get_disease_summary() '
+                    'must be lists!\n') 
                 return None
             for q in query_disease:
                     q = str(q)
@@ -940,11 +946,12 @@ class MatchData(object):
                     if medra is not None:
                         results[medra] = (q, disease_counts[medra])
                     else:
-                        sys.stderr.write('CTEP Term "%s" was not found in the MATCH '
-                            'study dataset.\n' % q)
+                        sys.stderr.write('CTEP Term "%s" was not found in the '
+                            'MATCH study dataset.\n' % q)
         else:
             for medra in self._disease_db:
-                results[medra] = (self._disease_db[medra], disease_counts[medra])
+                results[medra] = (self._disease_db[medra], 
+                    disease_counts[medra])
 
         if results:
             return dict(results)
