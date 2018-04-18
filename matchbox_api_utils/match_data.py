@@ -122,7 +122,7 @@ class MatchData(object):
             if self._patient:
                 if self._quiet is False:
                     print('filtering on patient: %s\n' % self._patient)
-                self.data = self.__filter_by_patient(self.data, self._patient)
+                self.data = self.__get_record(self._patient)
 
         # Make a live query to MB and either create a new raw_db or parse it out
         # and work from there.
@@ -160,6 +160,8 @@ class MatchData(object):
                 matchbox_data = [matchbox_data]
             self.data = self.__gen_patients_list(matchbox_data, self._patient)
 
+        if self.data is None:
+            return None
         # Load up a medra : ctep term db based on entries so that we can look
         # data up on the fly.
         self._disease_db = self.__make_disease_db()
@@ -188,9 +190,15 @@ class MatchData(object):
                 med_map.update({pt['medra_code'] : pt['ctep_term']})
         return med_map
 
-    @staticmethod
-    def __filter_by_patient(json, patient):
-        return dict(patient=json[patient])
+    def __get_record(self, psn):
+        # Get a patient record based on a PSN if it's in the DB. Return a dict
+        # of PSN : Record.
+        rec = self.data.get(psn, None)
+        if rec is None:
+            sys.stderr.write('ERROR: Can not filter on patient with id: %s! '
+                'No such patient in this version of the database.\n' % psn)
+            return None
+        return {psn : rec}
 
     @staticmethod
     def __get_var_data_by_gene(data, gene_list):
@@ -595,6 +603,10 @@ class MatchData(object):
 
         """
         psn = self.__format_id('rm', psn=psn)
+        pt_data = self.__get_record(psn)
+        if pt_data is None:
+            return None
+
         if val:
             try:
                 return {val:self.data[psn][val]}
@@ -603,7 +615,7 @@ class MatchData(object):
                     "this dataset.\n" % val)
                 return None
         else:
-            return dict(self.data[psn])
+            return utils.print_json(pt_data)
 
     def get_biopsy_summary(self, category=None, ret_type='counts'):
         """
@@ -901,7 +913,7 @@ class MatchData(object):
 
         for psn in self.data.values():
             # Skip the registered but not yet biopsied patients.
-            if psn['medra_code'] == '-': 
+            if psn['medra_code'] == 'null': 
                 continue
             disease_counts[psn['medra_code']] += 1
 
