@@ -961,40 +961,62 @@ class MatchData(object):
     def get_histology(self, psn=None, msn=None, bsn=None, outside=False, 
             no_disease=False):
         """
-        Return dict of PSN:Disease for valid biopsies.  Valid biopsies can 
-        are defined as being only `Passed` and can not be `Failed`, `No Biopsy` or
-        outside assay biopsies at this time.
+        Return dict of PSN:Disease for valid biopsies.  Valid biopsies are 
+        defined as being only `Passed`,  and can not be `Failed`, `No Biopsy`,
+        or outside assay biopsies at this time.
 
         Args:
             psn (str): Optional PSN or comma separated list of PSNs on which 
                 to filter data.
+
             bsn (str): Optional BSN or comma separated list of BSNs on which 
                 to filter data.
+                
             msn (str): Optional MSN or comma separated list of MSNs on which 
                 to filter data.
+
             outside (bool): Also include outside assay data. Default: ``False``
+
             no_disease (bool): Return all data, even if there is no disease 
                 indicated for the patient specimen. Default: ``False``
 
         Returns:
-            dict: Dict of ID \: Disease mappings. If no match for input ID, 
+            dict: Dict of ID : Disease mappings. If no match for input ID, 
             returns ``None``.
 
         Examples: 
             >>> data.get_histology(psn='11352')
             {'PSN11352': u'Serous endometrial adenocarcinoma'}
 
+            >>> data.get_histology(psn='12104,12724,12948,13367,15784')
+            {
+                'PSN12104': 'CNS primary tumor, NOS', 
+                'PSN12948': 'Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)', 
+                'PSN13367': 'Adenocarcinoma of the pancreas', 
+                'PSN15748': 'Follicular thyroid carcinoma'
+            }
+
+            >>> data.get_histology(msn='12104,12724,12948,13367,15784')
+            {
+                'MSN15748': None, 
+                'MSN12104': 'Colorectal cancer, NOS', 
+                'MSN12724': 'Squamous cell carcinoma of the anus', 
+                'MSN12948': 'Adenocarcinoma of the colon', 
+                'MSN13367': 'Invasive breast carcinoma'
+            }
+
             >>> data.get_histology(msn=3060)
             No result for id MSN3060
             {'MSN3060': None}
 
         """
+
         # Don't want to allow for mixed query types. So, number of None args 
         # must be > 2 or else user incorrectly entered more than one arg type.
-        count_none = sum((x is None for x in (psn,msn,bsn)))
+        count_none = sum((x is None for x in (psn, msn, bsn)))
         if count_none < 2:
-            sys.stderr.write('Error: Mixed query types detected. Please only use '
-                'one type of query ID in this function.\n')
+            sys.stderr.write('Error: Mixed query types detected. Please only '
+                'use one type of query ID in this function.\n')
             sys.exit(1)
 
         # Prepare an ID list dict if one is provided. Need some special mapping 
@@ -1003,14 +1025,18 @@ class MatchData(object):
         output_data = {}
 
         if psn:
+            # make set with and without IDs
             psn_list = [x.lstrip('PSN') for x in str(psn).split(',')]
-            query_list = dict(zip(psn_list,map(lambda x: self.__format_id('add',psn=x),psn_list)))
+            psn_list2 = map(lambda x: self.__format_id('add', psn=x), psn_list)
+            query_list = dict(zip(psn_list, psn_list2))
+
             for p in query_list:
                 if p not in self.data:
+                    print('got here')
                     output_data[query_list[p]] = None
         
         elif msn:
-            msn_list = [self.__format_id('add',msn=x) for x in str(msn).split(',')]
+            msn_list = [self.__format_id('add', msn=x) for x in str(msn).split(',')]
             for m in msn_list:
                 psn = self.get_psn(msn=m)
                 if psn is not None:
@@ -1028,27 +1054,28 @@ class MatchData(object):
                     output_data[b] = None
         else:
             psn_list = self.data.keys()
-            query_list = dict(zip(psn_list,map(lambda x: self.__format_id('add',psn=x),psn_list)))
+            psn_list2 = map(lambda x: self.__format_id('add', psn=x), psn_list)
+            query_list = dict(zip(psn_list, psn_list2))
 
         # Iterate through the valid PSNs and get results if they pass filters.
         filtered = []
         for psn in query_list:
             if psn in self.data:
-                # If the no disease filter is turned on (i.e. False) don't out put 
-                # "No Biopsy" results.
+                # If the no disease filter is turned on (i.e. False) don't 
+                # output "No Biopsy" results.
                 if outside is False and 'OUTSIDE' in self.data[psn]['source']:
                     filtered.append(psn)
                     continue
-                if no_disease is False and self.data[psn]['ctep_term'] == '-':
+                if no_disease is False and self.data[psn]['ctep_term']=='null':
                     filtered.append(psn)
                     continue
                 output_data[query_list[psn]] = self.data[psn]['ctep_term']
 
-        if filtered and self._quiet is False:
-            sys.stderr.write('WARN: The following specimens were filtered from the '
-                'output due to either the "outside" or "no_disease" filters:\n')
+        if filtered: 
+            sys.stderr.write('WARN: The following specimens were filtered from '
+                'the output due to either\nthe "outside" or "no_disease" '
+                'filters:\n')
             sys.stderr.write('\t%s\n' % ','.join(filtered))
-
         return output_data
 
     def find_variant_frequency(self, query, query_patients=None):
