@@ -652,13 +652,6 @@ class MatchData(object):
         count = defaultdict(int)
         ids = defaultdict(list)
 
-        if category is not None and category not in ('pass', 'failed_biopsy', 
-            'sequenced', 'outside', 'outside_confirmation', 'progression', 
-            'initial'):
-            sys.stderr.write("ERROR: category %s is not valid for this method."
-                "\n")
-            return None
-
         for p in self.data:
             count['patients'] += 1
             try:
@@ -668,8 +661,6 @@ class MatchData(object):
                 for bsn, biopsy in self.data[p]['biopsies'].items():
                     biopsy_flag = biopsy['biopsy_status']
                     source      = biopsy['biopsy_source']
-                    print(source)
-                    continue
                     count[biopsy_flag.lower()] += 1
                     ids[biopsy_flag.lower()].append(bsn) 
 
@@ -684,7 +675,6 @@ class MatchData(object):
                 print('offending record: %s' % p)
                 raise
 
-        return None
         results = {}
         if ret_type == 'counts':
             results = dict(count)
@@ -704,9 +694,9 @@ class MatchData(object):
         """
         Dump a parsed MATCHBox dataset.
         
-        Call to the API and make a JSON file that can later be loaded in, rather 
-        than making an API call and reprocessing. Useful for quicker look ups as 
-        the API call can be very, very slow with such a large DB.
+        Call to the API and make a JSON file that can later be loaded in, 
+        rather than making an API call and reprocessing. Useful for quicker 
+        look ups as the API call can be very, very slow with such a large DB.
 
         .. note:: 
             This is a different dataset than the raw dump.
@@ -722,9 +712,9 @@ class MatchData(object):
 
         """
         if self._json_db == 'sys_default':
-            sys.stderr.write('ERROR: You can not use the system default JSON file '
-                'and create a system default JSON. You must use "json_db = None" '
-                'in the call to MatchData!\n')
+            sys.stderr.write('ERROR: You can not use the system default JSON '
+                'file and create a system default JSON! You must use "json_db '
+                '=None" in the call to MatchData!\n')
             return None
         formatted_date = utils.get_today('short')
         if not filename:
@@ -745,6 +735,9 @@ class MatchData(object):
         Examples: 
             >>> print(get_psn(bsn='T-17-000550'))
             PSN14420
+
+            >>> print(get_psn(msn='57471'))
+            PSN15971
 
         """
         query_term = ''
@@ -848,18 +841,19 @@ class MatchData(object):
             query_term = psn
             if psn in self.data:
                 biopsy_data = self.data[psn]['biopsies']
-                return [x for x in biopsy_data.keys() if biopsy_data[x]['biopsy_status'] != 'Failed_Biopsy']
+                if biopsy_data[x]['biopsy_status'] != 'Failed_Biopsy':
+                    return [x for x in biopsy_data.keys()]
         elif msn:
             msn = self.__format_id('add',msn=msn)
             query_term = msn
             for p in self.data:
                 if msn in self.data[p]['all_msns']:
-                    for b, data in self.data[p]['biopsies'].iteritems():
-                        try:
-                            if msn == data['ngs_data']['msn'] and data['biopsy_status'] != 'Failed_Biopsy':
-                                return [b]
-                        except KeyError:
+                    for b, data in self.data[p]['biopsies'].items():
+                        msn = data['ngs_data'].get('msn', None)
+                        if msn is None:
                             continue
+                        if data['biopsy_status'] != 'Failed_Biopsy':
+                            return [b]
         else:
             sys.stderr.write('ERROR: No PSN or MSN entered!\n')
             return None
