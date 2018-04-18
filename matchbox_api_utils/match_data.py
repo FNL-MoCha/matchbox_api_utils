@@ -104,7 +104,8 @@ class MatchData(object):
             self._json_db = self._config_data.get_config_item('mb_json_data')
 
         ta_data = self._config_data.get_config_item('ta_json_data')
-        self.arm_data = TreatmentArms(self._matchbox, json_db=ta_data)
+        self.arm_data = TreatmentArms(self._matchbox, json_db=ta_data, 
+            quiet=True)
             
         # Load total MB dataset, in raw archived JSON format.
         if self._load_raw:
@@ -1374,9 +1375,9 @@ class MatchData(object):
 
     def get_patient_ta_status(self, psn=None):
         """
-        Input a list of PSNs and return information about the treatment arm(s) 
-        to which they were assigned, if they were assigned to any arms. If no PSN 
-        list is passed to the function, return results for every PSN in the study.
+        Input a PSN and return information about the treatment arm(s) to which
+        they were assigned, if they were assigned to any arms. If no PSN is 
+        passed to the function, return results for every PSN in the study.
 
         Args:
             psn (str): PSN string to query.
@@ -1411,18 +1412,19 @@ class MatchData(object):
     def get_patients_by_disease(self, histology=None, medra_code=None):
         """
         Input a disease and return a list of patients that were registered with 
-        that disease type. For histology query, we can do partial matching based 
-        on the python ``in`` function. So, if one were to query `Lung 
-        Adenocarcinoma`, `Lung` , `Lung Adeno`, or `Adeno`, all Lung Adenocarinoma 
-        cases would be returned.  
+        that disease type. For histology query, we can do partial matching 
+        based on the python ``in`` function. So, if one were to query `Lung 
+        Adenocarcinoma`, `Lung` , `Lung Adeno`, or `Adeno`, all Lung 
+        Adenocarinoma cases would be returned. It may be more robust to just 
+        stick with MEDRA codes as they would to be more precise 
         
         .. note:: 
             Simply inputting `Lung`, would also return `Non-small Cell Lung 
-            Adenocarinoma`, `Squamous Cell Lung Adenocarcinoma`, etc, and querying 
-            `Adeno` would return anything that had `adeno`. So, care must be taken 
-            with the query, and secondary filtering may be necessary. Querying 
-            based on MEDRA codes is specific and only an exact match will return 
-            results; **This is the preferred method.**
+            Adenocarinoma`, `Squamous Cell Lung Adenocarcinoma`, etc, and 
+            querying `Adeno` would return anything that had `adeno`. So, care 
+            must be taken with the query, and secondary filtering may be 
+            necessary. Querying based on MEDRA codes is specific and only an 
+            exact match will return results; **This is the preferred method.**
 
         Args:
             histology (str):  One of the CTEP shotname disease codes.
@@ -1432,13 +1434,54 @@ class MatchData(object):
             dict: Dict of Patient : Histology Mapping
 
         Examples:
-            >>> <put example here>
+            >>> data.get_patients_by_disease(histology='glioma')
+            {'10512': 'Oligodendroglioma, NOS',
+             '13496': 'Anaplastic oligodendroglioma',
+             '13511': 'Anaplastic oligodendroglioma',
+             '16124': 'Anaplastic oligodendroglioma',
+             '16160': 'Anaplastic oligodendroglioma',
+             '16248': 'Anaplastic oligodendroglioma'}
 
+            >>> # We see here that Small Cell and Non-small cell get combined.
+            >>> ret_list = data.get_patients_by_disease(histology='Small cell lung cancer').values()
+            >>> print('Total returned: {}'.format(len(ret_list)))
+            102
+            >>> print(set(ret_list))
+            {'Small cell lung cancer', 'Non-small cell lung cancer, NOS'}
+
+            >>> # Here we distinguish and only get the Non-small cell cases, by using a MEDRA code
+            >>> medra = utils.map_histology(
+            ...    self._disease_db, 
+            ...    histology='Non-small cell lung cancer, NOS')
+            >>> data.get_patients_by_disease(medra_code=medra)
+            {'10196': 'Non-small cell lung cancer, NOS',
+             '10312': 'Non-small cell lung cancer, NOS',
+             '10540': 'Non-small cell lung cancer, NOS',
+             '11850': 'Non-small cell lung cancer, NOS',
+             '11929': 'Non-small cell lung cancer, NOS',
+             '12541': 'Non-small cell lung cancer, NOS',
+             '12577': 'Non-small cell lung cancer, NOS',
+             '12790': 'Non-small cell lung cancer, NOS',
+             '12916': 'Non-small cell lung cancer, NOS',
+             '13187': 'Non-small cell lung cancer, NOS',
+             '13242': 'Non-small cell lung cancer, NOS',
+             '13620': 'Non-small cell lung cancer, NOS',
+             '14256': 'Non-small cell lung cancer, NOS',
+             '15097': 'Non-small cell lung cancer, NOS',
+             '15114': 'Non-small cell lung cancer, NOS',
+             '16095': 'Non-small cell lung cancer, NOS',
+             '16212': 'Non-small cell lung cancer, NOS',
+             '16412': 'Non-small cell lung cancer, NOS',
+             '16467': 'Non-small cell lung cancer, NOS',
+             '16469': 'Non-small cell lung cancer, NOS',
+             '16498': 'Non-small cell lung cancer, NOS',
+             '16554': 'Non-small cell lung cancer, NOS'}
 
         """
+
         if not any(x for x in [histology, medra_code]):
-            sys.stderr.write("ERROR: You must input either a histologie or medra "
-                "code to query!\n")
+            sys.stderr.write("ERROR: You must input either a histology or "
+                "medra code to query!\n")
             return None
 
         results = {}
@@ -1446,7 +1489,6 @@ class MatchData(object):
             for pt in self.data:
                 if histology.lower() in self.data[pt]['ctep_term'].lower():
                     results[pt] = self.data[pt]['ctep_term']
-
         elif medra_code:
             for pt in self.data:
                 if medra_code == self.data[pt]['medra_code']:
@@ -1457,8 +1499,8 @@ class MatchData(object):
         """
         Input an official NCI-MATCH arm identifier (e.g. `EAY131-A`) and return
         a set of patients that have ever qualified for the arm based on variant
-        level data.  This not only includes patients `ON_TREATMENT_ARM`, but also
-        `FORMERLY_ON_ARM_OFF_TRIAL` and even `COMPASSIONATE_CARE`. 
+        level data.  This not only includes patients `ON_TREATMENT_ARM`, but 
+        also `FORMERLY_ON_ARM_OFF_TRIAL` and even `COMPASSIONATE_CARE`. 
 
         Args:
             arm (str): One of the official NCI-MATCH arm identifiers.
