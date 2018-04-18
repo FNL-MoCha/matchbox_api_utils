@@ -17,35 +17,42 @@ class MatchData(object):
     """
     MatchboxData class
 
-    Parsed MATCHBox Data from the API as collected from the Matchbox class above. 
-    This class has methods to generate queries, further filtering, and heuristics 
-    on the dataset.
+    Parsed MATCHBox Data from the API as collected from the Matchbox class. 
+    This class has methods to generate queries, further filtering, and 
+    heuristics on the dataset.
 
     Generate a MATCHBox data object that can be parsed and queried downstream 
     with some methods. 
     
     Can instantiate with either a config JSON file, which contains the url, 
     username, and password information needed to access the resource, or by 
-    supplying the individual arguments to make the connection.  This class will 
-    call the Matchbox class in order to make the connection and deploy the data.
+    supplying the individual arguments to make the connection.  This class 
+    will call the Matchbox class in order to make the connection and deploy 
+    the data.
 
     Can do a live query to get data in real time, or load a MATCHBox JSON file 
     derived from the ``matchbox_json_dump.py`` script that is a part of the 
     package.  Since data in MATCHBox is relatively static these days, it's 
-    preferred to use an existing JSON DB and only periodically update the DB with 
-    a call to the aforementioned script.
+    preferred to use an existing JSON DB and only periodically update the DB 
+    with a call to the aforementioned script.
 
-    # TODO: Fix this!
     Args:
+        matchbox (str) : Name of the MATCHBox system from which we want to
+            get data. This is required now that we have several systems to
+            choose from.  Valid names are ``adult-matchbox``, ``ped-matchbox``,
+            and ``adult-matchbox-uat`` for those that have access to the 
+            adult MATCHBox test system.
+
         config_file (file): Custom config file to use if not using system 
             default.
 
-        url (str): MATCHBox API URL to use if not using a config file.
+        username (str): Username required for access to the MATCHBox. Typically
+            this is already present in the config file made during setup, but 
+            in cases where needed, it can be explicitly defined here.
 
-        creds (dict): MATCHBox credentials to use if not using a config file.
-            Needs to be in the form of:
-
-                ``{'username':<username>, 'password':<password>}``
+        password (str): Password associated with the user. As with the above
+            username argument, this is typically indicated in the config file
+            generated during setup. 
 
         patient (str): Limit data to a specific PSN.
 
@@ -56,18 +63,19 @@ class MatchData(object):
             to ``None``.
 
         load_raw (file): Load a raw API dataset rather than making a fresh
-            call to the API. This is intended for dev purpose
-            only and will be disabled.
+            call to the API. This is intended for dev purpose only and may 
+            be disabled later.
 
-        make_raw (bool): Make a raw API JSON dataset for dev purposes only.
+        make_raw (bool): Make a raw API JSON dataset for dev purposes only. 
+            This will be the file used with teh ``load_raw`` option.
 
-        quiet (bool): If True, suppress module output debug, information, etc.
-            messages.
+        quiet (bool): If ``True``, suppress module output debug, information, 
+            etc. messages. 
     """
 
     def __init__(self, matchbox='adult-matchbox', config_file=None, 
             username=None, password=None, patient=None, json_db='sys_default', 
-            load_raw=None, make_raw=None, quiet=False):
+            load_raw=None, make_raw=None, quiet=True):
 
         self._matchbox = matchbox
         if not quiet:
@@ -82,7 +90,7 @@ class MatchData(object):
         self._client_name = self._config_data.get_config_item('client_name')
         self._client_id = self._config_data.get_config_item('client_id')
 
-        self._patient = patient
+        self._patient = self.__format_id('rm', psn=patient)
         self._json_db = json_db
         self._load_raw = load_raw
         self.db_date = utils.get_today('long')
@@ -134,12 +142,20 @@ class MatchData(object):
                 'sort' : 'patientSequenceNumber'
             }
 
-            matchbox_data = Matchbox(self._url, self._username, self._password, 
-                self._client_name, self._client_id, method=__method, params=params,
-                make_raw=make_raw).api_data
+            matchbox_data = Matchbox(
+                self._url, 
+                self._username, 
+                self._password, 
+                self._client_name, 
+                self._client_id, 
+                method=__method, 
+                params=params, 
+                make_raw=make_raw
+            ).api_data
 
-            # If we are filtering on a patient, then we don't get a list of dicts,
-            # so we need to convert the data before passing or else problems.
+            # If we are filtering on a patient, then we don't get a list of 
+            # dicts, so we need to convert the data before passing or else 
+            # problems.
             if self._patient:
                 matchbox_data = [matchbox_data]
             self.data = self.__gen_patients_list(matchbox_data, self._patient)
@@ -149,7 +165,7 @@ class MatchData(object):
         self._disease_db = self.__make_disease_db()
 
     def __str__(self):
-        return json.dumps(self.data,sort_keys=True,indent=4)
+        return utils.print_json(self.data)
 
     def __getitem__(self,key):
         return self.data[key]
@@ -163,25 +179,30 @@ class MatchData(object):
         # not know how this will be displayed later, this is good enough.
         med_map = {}
         for pt in self.data.values():
-            if 'medra_code' in pt and pt['medra_code'] != '-':
+            medra = pt.get('medra_code', None)
+            if medra is None:
+                print('Offending record:')
+                pp(pt)
+                sys.exit()
+            if medra != 'null':
                 med_map.update({pt['medra_code'] : pt['ctep_term']})
         return med_map
 
     @staticmethod
     def __filter_by_patient(json, patient):
-        return json[patient]
+        return dict(patient=json[patient])
 
     @staticmethod
     def __get_var_data_by_gene(data, gene_list):
         # Get variant report data if the gene is in the input gene list.  But, 
-        # only output the variant level details, and filter out the VAF, coverage, 
-        # etc. so that we can get unqiue lists later.  If we wanted to get 
-        # sequence specific details, we'll run a variant report instead.
+        # only output the variant level details, and filter out the VAF, 
+        # coverage, etc. so that we can get unqiue lists later.  If we wanted 
+        # to get sequence specific details, we'll run a variant report instead.
 
         wanted = ('alternative', 'amoi', 'chromosome', 'exon', 'confirmed', 
             'function', 'gene', 'hgvs', 'identifier', 'oncominevariantclass', 
-            'position', 'protein', 'reference', 'transcript', 'type', 'driverGene',
-            'partnerGene', 'driverReadCount', 'annotation', 
+            'position', 'protein', 'reference', 'transcript', 'type', 
+            'driverGene', 'partnerGene', 'driverReadCount', 'annotation', 
             'confidenceInterval95percent', 'confidenceInterval5percent',
             'copyNumber', 'alleleFrequency', 'copyNumber', 'driverReadCount')
 
@@ -193,29 +214,23 @@ class MatchData(object):
         
     @staticmethod
     def __format_id(op, msn=None, psn=None):
+        if op not in ('add', 'rm'):
+            sys.stderr.write('ERROR: operation "%s" is not valid.  Can only '
+                'choose from "add" or "rm"!\n')
+            sys.exit(1)
+
         if msn:
             msn = str(msn)
             if op == 'add':
                 return 'MSN' + msn.lstrip('MSN')
             elif op == 'rm':
                 return msn.lstrip('MSN')
-            else:
-                sys.stderr.write('ERROR: operation "%s" is not valid.  Can only '
-                    'choose from "add" or "rm"!\n')
-                sys.exit(1)
         elif psn:
             psn = str(psn)
             if op == 'add':
                 return 'PSN' + psn.lstrip('PSN')
             elif op == 'rm':
                 return psn.lstrip('PSN')
-            else:
-                sys.stderr.write('ERROR: operation "%s" is not valid.  Can only '
-                    'choose from "add" or "rm"!\n')
-                sys.exit(1)
-        else:
-            sys.stderr.write("Nothing to do!\n")
-            return None
 
     def __get_patient_table(self, psn, next_key=None):
         # Output the filtered data table for a PSN so that we have a quick way 
@@ -231,18 +246,18 @@ class MatchData(object):
 
     @staticmethod
     def __get_curr_arm(psn, assignment_logic_list, flag):
-        # Figure out the arm to which the patient was assinged based on the flag 
-        # message found in the TA Logic flow.
+        # Figure out the arm to which the patient was assinged based on the 
+        # flag message found in the TA Logic flow.
         try:
             return [x['treatmentArmId'] for x in assignment_logic_list if x['patientAssignmentReasonCategory'] == flag][0]
         except:
             # There are exactly 4 cases (as of 9/19/2017) where the patient has 
-            # PTEN IHC-, but was not assigned Arm P directly for some reason that 
-            # I can't discern. Instead patient was put on compassionate care for 
-            # Arm P, and although I can't comptutationally derive that since 
-            # there is no obvious messsage, I don't want to lose those results. 
-            # So, I'm going to manually enter data for those 4 until I can figure 
-            # out how to get this in better.
+            # PTEN IHC-, but was not assigned Arm P directly for some reason 
+            # that I can't discern. Instead patient was put on compassionate 
+            # care for Arm P, and although I can't comptutationally derive that
+            # since there is no obvious messsage, I don't want to lose those 
+            # results. So, I'm going to manually enter data for those 4 until 
+            # I can figure out how to get this in better.
             if psn in ('13629','13899','14007','14057'):
                 return 'EAY131-P'
             else:
@@ -251,22 +266,23 @@ class MatchData(object):
 
     @staticmethod
     def __get_pt_hist(triggers, assignments, rejoin_triggers):
-        # Read the trigger messages to determine the patient treatment and study 
-        # arm history.
+        # Read the trigger messages to determine the patient treatment and 
+        # study arm history.
         arms = []
         arm_hist = {}
         progressed = False
         tot_msgs = len(triggers)
 
-        # If we only ever got to registration and not further (so there's only 1 
-        # message), let's bail out
+        # If we only ever got to registration and not further (so there's only 
+        # 1 message), let's bail out
         if tot_msgs == 1:
-            return (triggers[0]['patientStatus'], triggers[0]['message'], {}, False)
+            return (triggers[0]['patientStatus'], triggers[0]['message'], {}, 
+                False)
 
         counter = 0
         for i, msg in enumerate(triggers):
-            # On a rare occassion, we get two of the same messages in a row. Just
-            # skip the redundant message?
+            # On a rare occassion, we get two of the same messages in a row. 
+            # Just skip the redundant message?
             if triggers[i-1]['patientStatus'] == msg['patientStatus']:
                 continue
             
@@ -315,14 +331,13 @@ class MatchData(object):
                 return last_status, last_msg, arm_hist, progressed
 
     def __gen_patients_list(self, matchbox_data, patient):
-        #Process the MATCHBox API data (usually in JSON format from MongoDB) into 
-        #a much more concise and easily parsable dict of data. This dict will be 
-        #the main dataset used for later data analysis and queries and is the main 
-        #structure for the MatchboxData class below.
+        # Process the MATCHBox API data (usually in JSON format from MongoDB) 
+        # into a much more concise and easily parsable dict of data. This dict 
+        # will be the main dataset used for later data analysis and queries and
+        # is the main structure for the MatchboxData class below.
         patients = defaultdict(dict)
         for record in matchbox_data:
             psn = record['patientSequenceNumber']
-            # print('processing record: %s' % psn)
             
             if patient and psn != str(patient):
                 continue
@@ -354,8 +369,8 @@ class MatchData(object):
 
             # Get treatment arm history. 
             # TODO: Right now just getting a dict of arm : status. Do we want to
-            # set this up as a list of dicts that include assignment date too, so
-            # that we can order them, and make length on arm calcs?
+            # set this up as a list of dicts that include assignment date too, 
+            # so that we can order them, and make length on arm calcs?
             pt_triggers = record.get('patientTriggers', None)
             pt_assignments = record.get('patientAssignments', None)
             pt_rejoin_trigs = record.get('patientRejoinTriggers', None)
@@ -392,7 +407,7 @@ class MatchData(object):
                                 biopsy['assayMessages']
                         )
 
-                        # Define biopsy type as Initial, Progression, or Outside. 
+                        # Define biopsy type as Initial, Progression, or Outside
                         biopsy_type = biopsy['biopsyType']
                         if biopsy_type == 'STANDARD':
                             biopsy_type = biopsy['associatedPatientStatus']
@@ -435,7 +450,7 @@ class MatchData(object):
                                     self.__proc_ngs_data(vardata))
                     patients[psn]['biopsies'].update(dict(biopsy_data))
         # pp(dict(patients))
-        # sys.exit()
+        # utils.__exit__(448, "Finished with generating Patient DB.")
         return patients
 
     @staticmethod
@@ -447,18 +462,18 @@ class MatchData(object):
                 assay_name = assay['biomarker'].rstrip('s').lstrip('ICC')
                 ihc_results[assay_name] = assay['result']
 
-        # Won't always get RB IHC; depends on if we have other qualifying genomic 
-        # event.  Fill in data anyway.
+        # Won't always get RB IHC; depends on if we have other qualifying 
+        # genomic event.  Fill in data anyway.
         if 'RB' not in ihc_results:
             ihc_results['RB'] = 'ND'
         return ihc_results
 
     def __proc_ngs_data(self, ngs_results):
-       # Create and return a dict of variant call data that can be stored in the 
-       # patient's obj.
+       # Create and return a dict of variant call data that can be stored in 
+       # the patient's obj.
         variant_call_data = defaultdict(list)
-        variant_list = ['singleNucleotideVariants', 'indels', 'copyNumberVariants',
-            'unifiedGeneFusions']
+        variant_list = ['singleNucleotideVariants', 'indels', 
+            'copyNumberVariants', 'unifiedGeneFusions']
 
         for var_type in variant_list:
             for variant in ngs_results[var_type]:
@@ -496,10 +511,10 @@ class MatchData(object):
                     'alleleFrequency', 'alternative', 
                     'alternativeAlleleObservationCount', 'chromosome', 'exon', 
                     'flowAlternativeAlleleObservationCount', 
-                    'flowReferenceAlleleObservations', 'function', 'gene', 'hgvs', 
-                    'identifier', 'oncominevariantclass', 'position', 'readDepth', 
-                    'reference', 'referenceAlleleObservations', 'transcript', 
-                    'protein', 'confirmed'
+                    'flowReferenceAlleleObservations', 'function', 'gene', 
+                    'hgvs', 'identifier', 'oncominevariantclass', 'position', 
+                    'readDepth', 'reference', 'referenceAlleleObservations', 
+                    'transcript', 'protein', 'confirmed'
                 ], 
                 'cnvs' : [
                     'chromosome', 'identifier', 'confidenceInterval5percent', 
@@ -518,17 +533,17 @@ class MatchData(object):
     @staticmethod
     def __remap_fusion_genes(fusion_data):
         # Fix the fusion driver / partner annotation since it is not always 
-        # correct the way it's being parsed.  Also add in a 'gene' field so that 
-        # it's easier to aggregate data later on (the rest of the elements use 
-        # 'gene').
+        # correct the way it's being parsed.  Also add in a 'gene' field so 
+        # that it's easier to aggregate data later on (the rest of the elements 
+        # use 'gene').
         drivers = ['ABL1', 'AKT2', 'AKT3', 'ALK', 'AR', 'AXL', 'BRAF', 'BRCA1', 
-            'BRCA2', 'CDKN2A', 'EGFR', 'ERBB2', 'ERBB4', 'ERG', 'ETV1', 'ETV1a', 
-            'ETV1b', 'ETV4', 'ETV4a', 'ETV5', 'ETV5a', 'ETV5d', 'FGFR1', 'FGFR2', 
-            'FGFR3', 'FGR', 'FLT3', 'JAK2', 'KRAS', 'MDM4', 'MET', 'MYB', 'MYBL1', 
-            'NF1', 'NOTCH1', 'NOTCH4', 'NRG1', 'NTRK1', 'NTRK2', 'NTRK3', 'NUTM1', 
-            'PDGFRA', 'PDGFRB', 'PIK3CA', 'PPARG', 'PRKACA', 'PRKACB', 'PTEN', 
-            'RAD51B', 'RAF1', 'RB1', 'RELA', 'RET', 'ROS1', 'RSPO2', 'RSPO3', 
-            'TERT']
+            'BRCA2', 'CDKN2A', 'EGFR', 'ERBB2', 'ERBB4', 'ERG', 'ETV1', 'ETV1a',
+            'ETV1b', 'ETV4', 'ETV4a', 'ETV5', 'ETV5a', 'ETV5d', 'FGFR1', 
+            'FGFR2', 'FGFR3', 'FGR', 'FLT3', 'JAK2', 'KRAS', 'MDM4', 'MET', 
+            'MYB', 'MYBL1', 'NF1', 'NOTCH1', 'NOTCH4', 'NRG1', 'NTRK1', 'NTRK2',
+            'NTRK3', 'NUTM1', 'PDGFRA', 'PDGFRB', 'PIK3CA', 'PPARG', 'PRKACA',
+            'PRKACB', 'PTEN', 'RAD51B', 'RAF1', 'RB1', 'RELA', 'RET', 'ROS1', 
+            'RSPO2', 'RSPO3', 'TERT']
 
         for fusion in fusion_data:
             gene1 = fusion['driverGene']
@@ -549,8 +564,8 @@ class MatchData(object):
                 driver = partner = 'NA'
 
             fusion['driverGene'] = driver
-            # Also make a "gene" entry so that we can look things up in a similar 
-            # way to the other classes.
+            # Also make a "gene" entry so that we can look things up in a 
+            # similar way to the other classes.
             fusion['gene'] = driver  
             fusion['partnerGene'] = partner
         return fusion_data
@@ -564,8 +579,8 @@ class MatchData(object):
         out. If no metaval is entered, will return the whole patient dict.
 
         .. note::
-            This function is more for debugging and troubleshooting that for real
-            functionality.
+            This function is more for debugging and troubleshooting that for 
+            real functionality.
 
         Args:
             psn (str):  PSN of patient for which we want to receive data.
@@ -575,8 +590,8 @@ class MatchData(object):
         Returns:
             dict: 
             Either return dict of data if a metaval entered, or whole patient 
-            record. Returns ``None`` if no data for a particular record and raises 
-            and error if the metaval is not valid for the dataset.
+            record. Returns ``None`` if no data for a particular record and 
+            raises and error if the metaval is not valid for the dataset.
 
         """
         psn = self.__format_id('rm', psn=psn)
@@ -584,25 +599,25 @@ class MatchData(object):
             try:
                 return {val:self.data[psn][val]}
             except KeyError:
-                sys.stderr.write("ERROR: '%s' is not a valid metavalue for this "
-                    "dataset.\n" % val)
+                sys.stderr.write("ERROR: '%s' is not a valid metavalue for "
+                    "this dataset.\n" % val)
                 return None
         else:
             return dict(self.data[psn])
 
     def get_biopsy_summary(self, category=None, ret_type='counts'):
         """
-        Return dict of patients registered in MATCHBox with biopsy and sequencing
-        information. 
+        Return dict of patients registered in MATCHBox with biopsy and 
+        sequencing information. 
         
-        Categories returned are total PSNs issued (including outside 
-        assay patients), total passed biopsies, total failed biopsies (per MDACC 
-        message), total MSNs (only counting latest MSN if more than one issued to
-        a biopsy due to a failure) as a method of figuring out how many NAs were 
-        prepared, and total with sequencing data.
+        Categories returned are total PSNs issued (including outside assay 
+        patients), total passed biopsies, total failed biopsies (per MDACC 
+        message), total MSNs (only counting latest MSN if more than one issued 
+        to a biopsy due to a failure) as a method of figuring out how many NAs 
+        were prepared, and total with sequencing data.
 
-        Can filter output based on any one criteria by leveraging the ``category`` 
-        variable
+        Can filter output based on any one criteria by leveraging the 
+        ``category`` variable
 
         Args:
             catetory (str): biopsy category to return. Valid categories are:
@@ -620,8 +635,8 @@ class MatchData(object):
                 ids are the BSNs for the category. Default is "counts"
 
         Returns:
-            dict: 
-            Whole set of category : count or single category : count data.
+            Dictionary of whole set of  ``{category : count}`` or 
+            ``{single category : count }`` data.
 
         Todo: 
             * Fix examples.
@@ -637,15 +652,24 @@ class MatchData(object):
         count = defaultdict(int)
         ids = defaultdict(list)
 
+        if category is not None and category not in ('pass', 'failed_biopsy', 
+            'sequenced', 'outside', 'outside_confirmation', 'progression', 
+            'initial'):
+            sys.stderr.write("ERROR: category %s is not valid for this method."
+                "\n")
+            return None
+
         for p in self.data:
             count['patients'] += 1
             try:
                 if self.data[p]['biopsies'] == 'No_Biopsy':
                     count['no_biopsy'] += 1
                     continue
-                for bsn, biopsy in self.data[p]['biopsies'].iteritems():
+                for bsn, biopsy in self.data[p]['biopsies'].items():
                     biopsy_flag = biopsy['biopsy_status']
                     source      = biopsy['biopsy_source']
+                    print(source)
+                    continue
                     count[biopsy_flag.lower()] += 1
                     ids[biopsy_flag.lower()].append(bsn) 
 
@@ -660,6 +684,7 @@ class MatchData(object):
                 print('offending record: %s' % p)
                 raise
 
+        return None
         results = {}
         if ret_type == 'counts':
             results = dict(count)
