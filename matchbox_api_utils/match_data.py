@@ -1552,9 +1552,13 @@ class MatchData(object):
     def __map_ihc_results(ihc_data):
         # Set up a dict of assays now that we'll fill in since the number has 
         # changed over time, and it's good to have results for all assays.
-        all_ihc_assays = {'RB' : None, 'MSH2' : None, 'MLH1' : None, 'PTEN' : None}
+        all_ihc_assays = {
+            'RB' : None, 
+            'MSH2' : None, 
+            'MLH1' : None, 
+            'PTEN' : None
+        }
         return {x : ihc_data.get(x, None) for x in all_ihc_assays.keys()}
-
 
     def get_ihc_results(self, psn=None, msn=None, bsn=None, assays=None):
         """
@@ -1586,7 +1590,7 @@ class MatchData(object):
                           'PTEN': u'POSITIVE',
                           'RB': u'ND'}}
 
-            >>> get_ihc_results(bsn='T-16-002222', assays=['PTEN'])
+            >>> self.get_ihc_results(bsn='T-16-002222', assays=['PTEN'])
             {u'MSN30791': {'PTEN': u'POSITIVE'}}
 
         """
@@ -1595,9 +1599,10 @@ class MatchData(object):
             sys.stderr.write("ERROR: You must input an MSN, BSN, or PSN to "
                 " query!\n")
             return None
+
         if (len([y for y in [psn, msn, bsn] if y is not None]) > 1):
-            sys.stderr.write("ERROR: Only enter one ID per query. We can not look "
-                "up an MSN and PSN at the same time, for example.\n")
+            sys.stderr.write("ERROR: Only enter one ID per query. We can not "
+               "look up an MSN and PSN at the same time, for example.\n")
             return None
 
         results = defaultdict(dict)
