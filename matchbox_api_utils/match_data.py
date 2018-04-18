@@ -257,7 +257,8 @@ class MatchData(object):
         # Figure out the arm to which the patient was assinged based on the 
         # flag message found in the TA Logic flow.
         try:
-            return [x['treatmentArmId'] for x in assignment_logic_list if x['patientAssignmentReasonCategory'] == flag][0]
+            if x['patientAssignmentReasonCategory'] == flag:
+                return [x['treatmentArmId'] for x in assignment_logic_list][0]
         except:
             # There are exactly 4 cases (as of 9/19/2017) where the patient has 
             # PTEN IHC-, but was not assigned Arm P directly for some reason 
@@ -1087,13 +1088,13 @@ class MatchData(object):
         that had hits in those gene with some disease and variant information. 
 
         The return val will be unique to a patient. So, in the cases where we 
-        have multiple biopsies from the same patient (an intitial and progression 
-        re-biopsy for example), we will only get the union of the two sets, and 
-        duplicate variants will not be output.  This will preven the hit rate from 
-        getting over inflated.  Also, there is no sequence specific information 
-        output in this version (i.e. no VAF, Coverage, etc.).  Sequence level 
-        information for a call can be obtained from the method get_variant_report_
-
+        have multiple biopsies from the same patient (an intitial and 
+        progression re-biopsy for example), we will only get the union of the 
+        two sets, and duplicate variants will not be output.  This will prevent
+        the hit rate from getting over inflated.  Also, there is no sequence 
+        specific information output in this version (i.e. no VAF, Coverage, etc.
+        ). Sequence level information for a call can be obtained from the 
+        method ``get_variant_report()``.
 
         Args:
             query (dict): Dictionary of variant_type: gene mappings where: ::
@@ -1106,9 +1107,9 @@ class MatchData(object):
                 data. 
 
         Returns:
-            dict: Return a dict of matching data with disease and MOI information, 
-            along with a count of the number of patients queried and the 
-            number of biopsies queried.
+            dict: Return a dict of matching data with disease and MOI 
+                information, along with a count of the number of patients 
+                queried and the number of biopsies queried.
         
         Examples:
             >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
@@ -1159,58 +1160,82 @@ class MatchData(object):
         # Queue up a patient's list in case you just want to find data for one 
         # patient.
         if query_patients:
-            if type(query_patients) is not list:
-                sys.stderr.write('ERROR: You must input the query patients as a '
-                    'list, even if only inputting one!\n')
+            # if type(query_patients) is not list:
+            if isinstance(query_patients, list) is False:
+                sys.stderr.write('ERROR: You must input the query patients as '
+                    'a list, even if only inputting one!\n')
                 return None
             pt_list = [self.__format_id('rm', psn=x) for x in query_patients]
         else:
             pt_list = self.data.keys()
 
+        # XXX
         for patient in pt_list:
             # Skip no biopsy and all outside biospy cases.  For outside assay 
             # cases, we don't want to consider any of it since the confirmation 
             # data will skew results.
-            if self.data[patient]['biopsies'] != 'No_Biopsy' and 'OUTSIDE' not in self.data[patient]['source']:
+            if self.data[patient]['biopsies'] == 'No_Biopsy':
+                continue
+            elif 'OUTSIDE' in self.data[patient]['source']:
+                continue
+            else:
                 matches = []
                 for biopsy in self.data[patient]['biopsies']:
                     b_record = self.data[patient]['biopsies'][biopsy]
 
                     # Get rid of Outside assays biopsies (but not outside 
                     # confirmation) and Failed biopsies.
-
                     if b_record['biopsy_status'] != "Pass":
                         continue
                     biopsies = []
 
-                    try:
-                        if b_record['ngs_data'] and 'mois' in b_record['ngs_data']:
-                            plist.append(patient)
-                            biopsies.append(biopsy)
-                            input_data = b_record['ngs_data']['mois']
+                    if (
+                        b_record['ngs_data'] 
+                        and 'mois' in b_record['ngs_data']
+                    ):
+                        plist.append(patient)
+                        biopsies.append(biopsy)
+                        input_data = b_record['ngs_data']['mois']
 
-                            if 'snvs' in query and 'singleNucleotideVariants' in input_data:
-                                matches += self.__get_var_data_by_gene(input_data['singleNucleotideVariants'],
-                                    query['snvs'])
+                        if (
+                            'snvs' in query 
+                            and 'singleNucleotideVariants' in input_data
+                        ):
+                            matches += self.__get_var_data_by_gene(
+                                input_data['singleNucleotideVariants'],
+                                query['snvs']
+                            )
 
-                            if 'indels' in query and 'indels' in input_data:
-                                matches += self.__get_var_data_by_gene(input_data['indels'],query['indels'])
+                        if 'indels' in query and 'indels' in input_data:
+                            matches += self.__get_var_data_by_gene(
+                                input_data['indels'], 
+                                query['indels']
+                            )
 
-                            if 'cnvs' in query and 'copyNumberVariants' in input_data:
-                                matches += self.__get_var_data_by_gene(input_data['copyNumberVariants'],query['cnvs'])
+                        if (
+                            'cnvs' in query 
+                            and 'copyNumberVariants' in input_data
+                        ):
+                            matches += self.__get_var_data_by_gene(
+                                input_data['copyNumberVariants'],
+                                query['cnvs']
+                            )
 
-                            if 'fusions' in query and 'unifiedGeneFusions' in input_data:
-                                # input_data['unifiedGeneFusions'] is a list
-                                filtered_fusions = []
-                                for fusion in input_data['unifiedGeneFusions']:
-                                    if fusion['identifier'].endswith('Novel') or fusion['identifier'].endswith('Non-Targeted'): 
-                                        continue
-                                    else:
-                                        filtered_fusions.append(fusion)
-                                matches += self.__get_var_data_by_gene(filtered_fusions,query['fusions'])
-                    except:
-                        print('offending patient record: %s' % patient)
-                        raise
+                        if (
+                            'fusions' in query 
+                            and 'unifiedGeneFusions' in input_data
+                        ):
+                            # input_data['unifiedGeneFusions'] is a list
+                            filtered_fusions = []
+                            skip=('Novel', 'Non-Targeted')
+                            for fusion in input_data['unifiedGeneFusions']:
+                                if any(x in fusion['identifier'] for x in skip):
+                                    continue
+                                else:
+                                    filtered_fusions.append(fusion)
+                            matches += self.__get_var_data_by_gene(
+                                filtered_fusions,query['fusions']
+                            )
 
                     if matches:
                         results[patient] = {
