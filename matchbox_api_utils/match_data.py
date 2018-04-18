@@ -1495,27 +1495,42 @@ class MatchData(object):
                     results[pt] = self.data[pt]['ctep_term']
         return results
 
-    def get_patients_by_arm(self, arm):
+    def get_patients_by_arm(self, arm, outside=False):
         """
         Input an official NCI-MATCH arm identifier (e.g. `EAY131-A`) and return
         a set of patients that have ever qualified for the arm based on variant
         level data.  This not only includes patients `ON_TREATMENT_ARM`, but 
-        also `FORMERLY_ON_ARM_OFF_TRIAL` and even `COMPASSIONATE_CARE`. 
+        also `FORMERLY_ON_ARM_OFF_TRIAL` and even `COMPASSIONATE_CARE`. Also, 
+        since the variant call data is not always confirmable by the NCI-MATCH
+        assay, and only those that are confirmed are "evaluable", all outside
+        assay cases are removed from this list as well, unless explicity 
+        requested at your own peril.
 
         Args:
             arm (str): One of the official NCI-MATCH arm identifiers.
+            outside (bool): If set to ``True``, will also output outside assay
+                cases in the cohort. DEFAULT: ``False``.
 
         Returns:
             list: List of tuples of patient, arm, and arm_status.
 
         Examples:
-            >>> print(self.get_patients_by_arm(arm='EAY131-E'))
+            >>> print(self.get_patients_by_arm(arm='EAY131-E'), outside=True)
             [
                 (u'11476', 'EAY131-E', u'OFF_TRIAL_DECEASED'), 
                 (u'14343', 'EAY131-E', u'FORMERLY_ON_ARM_OFF_TRIAL'), 
                 (u'10626', 'EAY131-E', u'ON_TREATMENT_ARM'), 
                 (u'14256', 'EAY131-E', u'ON_TREATMENT_ARM'), 
                 (u'16472', 'EAY131-E', u'FORMERLY_ON_ARM_OFF_TRIAL')
+            ]
+
+            >>> # Note: we use default outside assay filter in this case.
+            >>> print(self.get_patients_by_arm(arm='EAY131-E'))
+            [
+                ('10626', 'EAY131-E', 'ON_TREATMENT_ARM'), 
+                ('11476', 'EAY131-E', 'OFF_TRIAL_DECEASED'), 
+                ('14256', 'EAY131-E', 'ON_TREATMENT_ARM'), 
+                ('14343', 'EAY131-E', 'ON_TREATMENT_ARM')
             ]
 
         """
@@ -1527,6 +1542,8 @@ class MatchData(object):
             return None
 
         for pt in self.data:
+            if outside is False and 'OUTSIDE' in self.data[pt]['source']:
+                continue
             if arm in self.data[pt]['ta_arms']:
                 results.append((pt, arm, self.data[pt]['ta_arms'][arm]))
         return results
