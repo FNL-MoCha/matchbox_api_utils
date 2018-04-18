@@ -866,7 +866,8 @@ class MatchData(object):
         """
         Return a summary of registered diseases and counts. With no args, will 
         return a list of all diseases and counts as a dict. One can also limit 
-        output to a list of diseases or medra codes and get counts for those only. 
+        output to a list of diseases or medra codes and get counts for those 
+        only. 
 
         Args:
             query_disease (list): List of diseases to filter on.
