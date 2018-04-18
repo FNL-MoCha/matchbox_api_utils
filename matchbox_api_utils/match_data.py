@@ -611,7 +611,7 @@ class MatchData(object):
 
         if val:
             try:
-                return {val:self.data[psn][val]}
+                return self.data[psn][val]
             except KeyError:
                 sys.stderr.write("ERROR: '%s' is not a valid metavalue for "
                     "this dataset.\n" % val)
@@ -853,10 +853,13 @@ class MatchData(object):
         if psn:
             psn = self.__format_id('rm', psn=psn)
             query_term = psn
+            biopsies = []
             if psn in self.data:
                 biopsy_data = self.data[psn]['biopsies']
-                if biopsy_data[x]['biopsy_status'] != 'Failed_Biopsy':
-                    return [x for x in biopsy_data.keys()]
+                for biop in biopsy_data.keys():
+                    if biopsy_data[biop]['biopsy_status'] != 'Failed_Biopsy':
+                        biopsies.append(biop)
+            return biopsies
         elif msn:
             msn = self.__format_id('add',msn=msn)
             query_term = msn
@@ -1565,19 +1568,20 @@ class MatchData(object):
         Get the IHC results for a patient.
 
         Input a PSN, MSN, or BSN and / or a set of IHC assays, and return a dict
-        of data. 
+        of data.
+
+        .. note:
+            Each MSN or BSN will have only one set of IHC results typically, 
+            since newer results would overwrite the other ones.  However, there
+            can be more than one BSN or MSN for a PSN, and so using a PSN for 
+            this query is discouraged since you can get multiple results.
 
         Args:
             psn (str):  Query the data by PSN. 
-            
             msn (str):  Query the data by MSN.
             bsn (str):  Query the data by BSN.
             assay (list): IHC assay for which we want to return results. If no 
                 assay is passed, will return all IHC assay results.
-
-        .. note:: 
-            Multiple results will be returned since there can be more than 
-            one MSN / PSN.
 
         Returns:
             dict: Dict of lists containing the MSN and all IHC assays available 
@@ -1593,12 +1597,23 @@ class MatchData(object):
             >>> self.get_ihc_results(bsn='T-16-002222', assays=['PTEN'])
             {u'MSN30791': {'PTEN': u'POSITIVE'}}
 
-        """
+            >>> self.get_ihc_results(psn=10818)
+            {
+                'MSN12104': {
+                    'RB': 'ND', 
+                    'MSH2': 'POSITIVE', 
+                    'MLH1': 'POSITIVE', 
+                    'PTEN': 'POSITIVE'
+                }, 
+                'MSN51268': {
+                    'RB': 'ND', 
+                    'MSH2': 'POSITIVE', 
+                    'MLH1': 'POSITIVE', 
+                    'PTEN': 'POSITIVE'
+                }
+            }
 
-        if not any(x for x in [psn, msn, bsn]):
-            sys.stderr.write("ERROR: You must input an MSN, BSN, or PSN to "
-                " query!\n")
-            return None
+        """
 
         if (len([y for y in [psn, msn, bsn] if y is not None]) > 1):
             sys.stderr.write("ERROR: Only enter one ID per query. We can not "
@@ -1607,26 +1622,37 @@ class MatchData(object):
 
         results = defaultdict(dict)
 
-        if psn:
-            record = self.get_patient_meta(psn=psn)
-            bsns = record['all_biopsies']
-            for b in bsns:
-                ihc_data = record['biopsies'][b]['ihc']
-                msn = record['biopsies'][b]['ngs_data']['msn']
-                results[msn] = self.__map_ihc_results(ihc_data)
-        elif msn:
-            psn = self.get_psn(msn=msn)
-            record = self.get_patient_meta(psn=psn)
-            for b in record['all_biopsies']:
-                if msn == record['biopsies'][b]['ngs_data']['msn']:
-                    ihc_data = record['biopsies'][b]['ihc']
-                    results[msn] = self.__map_ihc_results(ihc_data)
-        elif bsn:
-            psn = self.get_psn(bsn=bsn)
-            record = self.get_patient_meta(psn=psn)
-            ihc_data = record['biopsies'][bsn]['ihc']
-            msn = record['biopsies'][bsn]['ngs_data']['msn']
-            results[msn] = self.__map_ihc_results(ihc_data)
+        if msn or bsn:
+            if msn:
+                psn = self.get_psn(msn=msn)
+                if psn is None:
+                    sys.stderr.write('ERROR: No such MSN "%s" in the '
+                        'dataset!\n' % msn)
+                    return None
+                bsn = self.get_bsn(msn=msn)[0]
+            elif bsn:
+                psn = self.get_psn(bsn=bsn)
+                if psn is None:
+                    sys.stderr.write('ERROR: No such BSN "%s" in the '
+                        'dataset!\n' % msn)
+                    return None
+                msn = self.get_msn(bsn=bsn)[0]
+            
+            record = self.get_patient_meta(psn=psn, val='biopsies')
+            results[msn] = self.__map_ihc_results(record[bsn]['ihc'])
+
+        # If we're working with a PSN, there can be multiple results, so we
+        # have to parse the all and build a total set.
+        elif psn:
+            record = self.get_patient_meta(psn=psn, val='biopsies')
+            bsn_list = self.get_bsn(psn=psn)
+            for b in bsn_list:
+                msn = self.get_msn(bsn=b)[0]
+                results[msn] = self.__map_ihc_results(record[b]['ihc'])
+        else:
+            sys.stderr.write("ERROR: You must input an MSN, BSN, or PSN to "
+                " query!\n")
+            return None
 
         if assays:
             for m in results:
