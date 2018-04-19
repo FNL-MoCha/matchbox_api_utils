@@ -401,7 +401,7 @@ class TreatmentArms(object):
         else:
             return None
 
-    def map_drug_arm(self, armid=None, drugname=None):
+    def map_drug_arm(self, armid=None, drugname=None, drugcode=None):
         """
         Input an Arm ID or a drug name, and retun a tuple of arm, drugname, and 
         ID. If no arm ID or drug name is input, will return a whole table of all 
@@ -417,6 +417,12 @@ class TreatmentArms(object):
                 (SU011248 L-malate)'), but will work on a regex to help make 
                 this easier later on.
 
+            drugcode (str): Use the 6-digit drug code to pull results.
+
+        .. note:
+            Note that using the ``drugname`` or ``drugcode`` option may return
+            more than one result as we can have more than one arm per drug.
+
         Returns:
             list: List of tuples or ``None``.
 
@@ -424,27 +430,44 @@ class TreatmentArms(object):
             >>> map_drug_arm(armid='EAY131-Z1A')
             (u'EAY131-Z1A', 'Binimetinib', u'788187')
 
-        Todo:
-            Write regex for drug name mapping so that we don't need to deal with 
-            long, cryptic strings.
+            >>> map_drug_arm(drugname='Afatinib')
+            [('EAY131-A', 'Afatinib', '750691'),
+             ('EAY131-B', 'Afatinib', '750691'),
+             ('EAY131-BX1', 'Afatinib', '750691')]
+
+            >>> map_drug_arm(drugcode='750691')
+            [('EAY131-A', 'Afatinib', '750691'),
+             ('EAY131-B', 'Afatinib', '750691'),
+             ('EAY131-BX1', 'Afatinib', '750691')]
+
+            >>> map_drug_arm(drugname='Tylenol')
+            None
 
         """
 
-        if all(x is None for x in [armid,drugname]):
+        if all(x is None for x in [armid, drugname, drugcode]):
             return [(arm, self.data[arm]['drug_name'], 
                 self.data[arm]['drug_id']) for arm in sorted(self.data)]
         elif armid:
             if armid in self.data:     
                 return (armid, self.data[armid]['drug_name'], 
                         self.data[armid]['drug_id'])
-        elif drugname: 
+        elif drugname or drugcode: 
+            results = [] 
             for arm in self.data:
-                if self.data[arm]['drug_name'] == drugname:
-                    return (self.data[arm]['arm_id'],drugname, 
-                            self.data[arm]['drug_id'])
+                if drugname and self.data[arm]['drug_name'] != drugname:
+                    continue
+                elif drugcode and self.data[arm]['drug_id'] != drugcode:
+                    continue
+                results.append(
+                    (self.data[arm]['arm_id'], self.data[arm]['drug_name'], 
+                    self.data[arm]['drug_id']))
+            if not results:
+                results = None
+            return results
         return None
     
-    def get_exclusion_disease(self,armid):
+    def get_exclusion_disease(self, armid):
         """
         Input an arm ID and return a list of exclusionary diseases for the arm, 
         if there are any. Otherwise return ``None``.
@@ -457,18 +480,27 @@ class TreatmentArms(object):
             there aren't any.
 
         Example:
-            >>> get_exclusion_disease('EAY131-Z1A')
-            [u'Melanoma', u'Colorectal Cancer']
+            >>> self.get_exclusion_disease('EAY131-Z1A')
+            ['Melanoma']
 
-            >>> get_exclusion_disease('EAY131-Y')
+            >>> self.get_exclusion_disease('EAY131-Y')
             None
+
+            >>> self.get_exclusion_disease('EAY131-A')
+            ['Bronchioloalveolar carcinoma',
+             'Lung adenocar. w/ bronch. feat.',
+             'Lung adenocarcinoma',
+             'Non-small cell lung cancer, NOS',
+             'Small Cell Lung Cancer',
+             'Squamous cell lung carcinoma']
 
         """
         if armid in self.data:
-            if self.data[armid]['excl_diseases']:
-                return self.data[armid]['excl_diseases'].keys()
+            excl_diseases = self.data[armid].get('excl_diseases', None)
+            if excl_diseases is not None:
+                return list(excl_diseases.keys())
             else:
-                return None
+                return excl_diseases
         else:
             print('ERROR: No arm with ID: "%s" found in study!' % armid)
             return None
