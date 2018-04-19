@@ -6,7 +6,6 @@ import asyncio
 import concurrent.futures
 import requests
 
-from pprint import pprint as pp
 from matchbox_api_utils import utils
 
 

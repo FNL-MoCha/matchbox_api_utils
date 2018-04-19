@@ -2,7 +2,6 @@
 import sys
 import json
 from collections import defaultdict
-from pprint import pprint as pp
 
 from matchbox_api_utils import utils
 from matchbox_api_utils import matchbox_conf

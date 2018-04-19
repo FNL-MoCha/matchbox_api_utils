@@ -3,7 +3,6 @@ import sys
 import json
 import itertools
 from collections import defaultdict
-from pprint import pprint as pp
 
 from matchbox_api_utils import utils
 from matchbox_api_utils import matchbox_conf
@@ -185,7 +184,7 @@ class MatchData(object):
             medra = pt.get('medra_code', None)
             if medra is None:
                 print('Offending record:')
-                pp(pt)
+                utils.pp(pt)
                 sys.exit()
             if medra != 'null':
                 med_map.update({pt['medra_code'] : pt['ctep_term']})
@@ -459,7 +458,7 @@ class MatchData(object):
                                 biopsy_data[bsn]['ngs_data']['mois']  = dict(
                                     self.__proc_ngs_data(vardata))
                     patients[psn]['biopsies'].update(dict(biopsy_data))
-        # pp(dict(patients))
+        # utils.pp(dict(patients))
         # utils.__exit__(448, "Finished with generating Patient DB.")
         return patients
 
