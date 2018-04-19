@@ -14,7 +14,7 @@ from matchbox_api_utils.match_arms import TreatmentArms
 class MatchData(object):
 
     """
-    MatchboxData class
+    **MatchboxData class**
 
     Parsed MATCHBox Data from the API as collected from the Matchbox class. 
     This class has methods to generate queries, further filtering, and 
@@ -40,7 +40,7 @@ class MatchData(object):
             get data. This is required now that we have several systems to
             choose from.  Valid names are ``adult-matchbox``, ``ped-matchbox``,
             and ``adult-matchbox-uat`` for those that have access to the 
-            adult MATCHBox test system.
+            adult MATCHBox test system. **DEFAULT:** ``adult-matchbox``.
 
         config_file (file): Custom config file to use if not using system 
             default.
@@ -66,10 +66,11 @@ class MatchData(object):
             be disabled later.
 
         make_raw (bool): Make a raw API JSON dataset for dev purposes only. 
-            This will be the file used with teh ``load_raw`` option.
+            This will be the file used with the ``load_raw`` option.
 
         quiet (bool): If ``True``, suppress module output debug, information, 
             etc. messages. 
+
     """
 
     def __init__(self, matchbox='adult-matchbox', config_file=None, 
@@ -77,14 +78,16 @@ class MatchData(object):
             load_raw=None, make_raw=None, quiet=True):
 
         self._matchbox = matchbox
+        self._username = username
+        self._password = password
         if not quiet:
             sys.stderr.write('INFO: Loading MATCHBox: %s\n' % self._matchbox)
         self._config_data = matchbox_conf.Config(self._matchbox, config_file)
     
         self._url = self._config_data.get_config_item('url')
-        if username is None:
+        if self._username is None:
             self._username = self._config_data.get_config_item('username')
-        if password is None:
+        if self._password is None:
             self._password = self._config_data.get_config_item('password')
         self._client_name = self._config_data.get_config_item('client_name')
         self._client_id = self._config_data.get_config_item('client_id')
@@ -102,6 +105,7 @@ class MatchData(object):
         if self._json_db == 'sys_default':
             self._json_db = self._config_data.get_config_item('mb_json_data')
 
+        # Load up a TA Obj for annotation and whatnot in some methods.
         ta_data = self._config_data.get_config_item('ta_json_data')
         self.arm_data = TreatmentArms(self._matchbox, json_db=ta_data, 
             quiet=True)
