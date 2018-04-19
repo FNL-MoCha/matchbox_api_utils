@@ -30,41 +30,55 @@ class TreatmentArms(object):
     to the aforementioned script.
 
     Args:
-        config_file (file): Custom config file to use if not using system default.
+        matchbox (str): Name of the MATCHBox system from which we want to get 
+            data. This is required now that we have several systems to choose
+            from. Valid names are ``adult-matchbox``, ``ped-matchbox``, and 
+            ``adult-matchbox-uat`` for those that have access to the adult
+            MATCHBox test system. **DEFUALT:** ``adult-matchbox``.
 
-        url (str): MATCHBox API URL to use.
+        config_file (file): Custom config file to use if not using system 
+            default.
 
-        creds (dict): MATCHBox credentials to use. Needs to be in the form of: ::
+        username (str): Username required for access to MATCHBox. Typically this
+            is already present in the config file made during setup, but in
+            cases where needed, it can be explicitly defined here. 
 
-            { 'username':<username>, 'password':<password> }
+        password (str): Password associated with the user. As with the above 
+            username argument, this is typically indicated in the config file
+            generated during setup.
 
         json_db (file):     MATCHbox processed JSON file containing the whole 
             dataset. This is usually generated from ``'matchbox_json_dump.py'``. 
-            The default value is ``'sys_default'`` which loads the default package 
-            data. If you wish you get a live call, set this
-            variable to `"None"`.
+            The default value is ``'sys_default'`` which loads the default
+            package data. If you wish you get a live call, set this variable to 
+            `"None"`.
 
         load_raw (file): Load a raw API dataset rather than making a fresh call 
-            to the API. This is intended for dev purpose only and will be 
-            disabled in production.
+            to the API. This is intended for dev purpose only and may be 
+            disabled later.
 
-        make_raw (bool): Make a raw API JSON dataset for dev purposes only.
+        make_raw (bool): Make a raw API JSON dataset for dev purposes only. This
+            file will be used with the ``load_raw`` option.
 
-    Returns:
-        MATCH Treatment Arms object of data and methods.
+        quiet (bool); If ``True``, supress module output debug, information,
+            etc. messages.
 
     """
 
-    def __init__(self, matchbox='adult-matchbox-uat', config_file=None, 
+    def __init__(self, matchbox='adult-matchbox', config_file=None, 
         username=None, password=None, json_db='sys_default', 
-        load_raw=None, make_raw=False, quiet=False):
+        load_raw=None, make_raw=False, quiet=True):
 
         self._matchbox = matchbox
+        self._username = username
+        self._password = password
+        if quiet is False:
+            sys.stderr.write('INFO: Loading MATCHBox: %s\n' % self._matchbox)
         self._config_data = matchbox_conf.Config(self._matchbox, config_file)
         self._url = self._config_data.get_config_item('arms_url')
-        if username is None:
+        if self._username is None:
             self._username = self._config_data.get_config_item('username')
-        if password is None:
+        if self._password is None:
             self._password = self._config_data.get_config_item('password')
         self._client_name = self._config_data.get_config_item('client_name')
         self._client_id = self._config_data.get_config_item('client_id')
@@ -99,7 +113,7 @@ class TreatmentArms(object):
                 sys.stderr.write('  ->  Starting from a live MB instance.\n')
             params = {'active' : True}
             matchbox_data = Matchbox(
-                self._url,self._username, self._password, self._client_name, 
+                self._url, self._username, self._password, self._client_name, 
                 self._client_id, 'sync', params=params, make_raw=make_raw
             ).api_data
             self.data = self.make_match_arms_db(matchbox_data)
@@ -108,7 +122,7 @@ class TreatmentArms(object):
         self.amoi_lookup_table = self.__gen_rules_table()
 
     def __str__(self):
-        return json.dumps(self.data, sort_keys=True, indent=4)
+        return utils.print_json(self.data)
 
     def __getitem__(self,key):
         return self.data[key]
@@ -116,7 +130,7 @@ class TreatmentArms(object):
     def __iter__(self):
         return self.data.itervalues()
 
-    def ta_json_dump(self,amois_filename=None,ta_filename=None):
+    def ta_json_dump(self, amois_filename=None, ta_filename=None):
         """
         Dump the TreatmentArms data to a JSON file that can be easily loaded 
         downstream. We will make both the treatment arms object, as well as the 
@@ -125,6 +139,7 @@ class TreatmentArms(object):
         Args:
             amois_filename (str): Name of aMOI lookup JSON file. **Default:**
                 `amoi_lookup_<datestring>.json`
+
             ta_filename (str): Name of TA object JSON file **Default:**  
                 `ta_obj_<datestring>.json`
 
@@ -188,7 +203,6 @@ class TreatmentArms(object):
                 if var_type in ('deleterious', 'positional'):
                     if amoi_data['non_hs'][var_type]:
                         for var, flag in amoi_data['non_hs'][var_type].items():
-                            #rules_table[var_type][var].append('{}({})'.format(
                             rules_table[var_type][var].append('{}({})'.format(
                                 arm, ie_flag[str(flag)]))
                 # All other mois
@@ -293,8 +307,8 @@ class TreatmentArms(object):
                 acceptable_keys = ('type', 'identifier')
 
         if not all(i in variant.keys() for i in acceptable_keys):
-            sys.stderr.write("ERROR: Your variant dict is missing keys. You must "
-                "input all keys:\n")
+            sys.stderr.write("ERROR: Your variant dict is missing keys. You "
+                "must input all keys:\n")
             sys.stderr.write("\t%s" % ', '.join(acceptable_keys))
             sys.stderr.write('\n')
             return None
@@ -342,17 +356,26 @@ class TreatmentArms(object):
 
         result = []
         if variant['type'] == 'snvs_indels':
-            if variant['oncominevariantclass'] == 'Hotspot' and variant['identifier'] in self.amoi_lookup_table['hotspot']:
+            if (
+                variant['oncominevariantclass'] == 'Hotspot' 
+                and variant['identifier'] in self.amoi_lookup_table['hotspot']
+            ):
                 result = self.amoi_lookup_table['hotspot'][variant['identifier']]
 
-            elif variant['oncominevariantclass'] == 'Deleterious' and variant['gene'] in self.amoi_lookup_table['deleterious']:
+            elif (
+                variant['oncominevariantclass'] == 'Deleterious' 
+                and variant['gene'] in self.amoi_lookup_table['deleterious']
+            ):
                 result = self.amoi_lookup_table['deleterious'][variant['gene']]
 
             else:
                 for v in self.amoi_lookup_table['positional']:
                     if v.startswith(variant['gene']):
                         gene,exon,func = v.split('|')
-                        if variant['exon'] == exon and variant['function'] == func:
+                        if (
+                            variant['exon'] == exon 
+                            and variant['function'] == func
+                        ):
                             result = self.amoi_lookup_table['positional'][v]
 
         elif variant['type'] == 'cnvs':
@@ -368,19 +391,21 @@ class TreatmentArms(object):
         else:
             return None
 
-    def map_drug_arm(self,armid=None,drugname=None):
+    def map_drug_arm(self, armid=None, drugname=None):
         """
         Input an Arm ID or a drug name, and retun a tuple of arm, drugname, and 
         ID. If no arm ID or drug name is input, will return a whole table of all 
         arm data.
 
         Args:
-            armid (str): Offcial NCI-MATCH Arm ID in the form of `EAY131-xxx` (e.g. 
-                'EAY131-Z1A').
-            drugname (str): Drug name as registered in the NCI-MATCH subprotocols.  
-                Right now, required to have the full string (e.g. 'MLN0128(TAK-228)' 
-                or, unfortunately, 'Sunitinib malate (SU011248 L-malate)'), but 
-                will work on a regex to help make this easier later on.
+            armid (str): Offcial NCI-MATCH Arm ID in the form of `EAY131-xxx`
+                (e.g. 'EAY131-Z1A').
+
+            drugname (str): Drug name as registered in the NCI-MATCH 
+                subprotocols. Right now, required to have the full string (e.g.
+                'MLN0128(TAK-228)' or, unfortunately, 'Sunitinib malate 
+                (SU011248 L-malate)'), but will work on a regex to help make 
+                this easier later on.
 
         Returns:
             list: List of tuples or ``None``.
@@ -418,8 +443,8 @@ class TreatmentArms(object):
             armid (str): Full identifier of the arm to be queried.
 
         Returns:
-            list: List of exclusionary diseases for the arm, or ``None`` if there 
-            aren't any.
+            list: List of exclusionary diseases for the arm, or ``None`` if 
+            there aren't any.
 
         Example:
             >>> get_exclusion_disease('EAY131-Z1A')
@@ -457,7 +482,8 @@ class TreatmentArms(object):
         try:
             arm_data = self.data[arm]
         except KeyError:
-            sys.stderr.write('ERROR: No arm with ID: "%s" found in study!\n' % arm)
+            sys.stderr.write('ERROR: No arm with ID: "%s" found in '
+                'study!\n' % arm)
             return None
 
         # Iterate through hotspots, cnvs, fusions, and non-hs aMOIs and generate
@@ -465,4 +491,3 @@ class TreatmentArms(object):
 
         #TODO: implement this.  For now just dump out dict.
         return dict(arm_data['amois'])
-
