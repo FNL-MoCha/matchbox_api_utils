@@ -71,9 +71,35 @@ def read_json(json_file):
 def pp(data):
     pprint(data)
 
+def map_fusion_driver(gene1, gene2):
+    # From two gene ids derived from a fusion identifier or the like, determine
+    # which is the driver and which is the partner.
+    drivers = ['ABL1', 'AKT2', 'AKT3', 'ALK', 'AR', 'AXL', 'BRAF', 'BRCA1', 
+        'BRCA2', 'CDKN2A', 'EGFR', 'ERBB2', 'ERBB4', 'ERG', 'ETV1', 'ETV1a',
+        'ETV1b', 'ETV4', 'ETV4a', 'ETV5', 'ETV5a', 'ETV5d', 'FGFR1', 
+        'FGFR2', 'FGFR3', 'FGR', 'FLT3', 'JAK2', 'KRAS', 'MDM4', 'MET', 
+        'MYB', 'MYBL1', 'NF1', 'NOTCH1', 'NOTCH4', 'NRG1', 'NTRK1', 'NTRK2',
+        'NTRK3', 'NUTM1', 'PDGFRA', 'PDGFRB', 'PIK3CA', 'PPARG', 'PRKACA',
+        'PRKACB', 'PTEN', 'RAD51B', 'RAF1', 'RB1', 'RELA', 'RET', 'ROS1', 
+        'RSPO2', 'RSPO3', 'TERT']
+
+    # handle intragenic fusions
+    if gene1 in ['MET','EGFR']:
+        driver = partner = gene1
+
+    # figure out others.
+    if gene1 in drivers:
+        (driver, partner) = (gene1, gene2)
+    elif gene2 in drivers:
+        (driver, partner) = (gene2, gene1)
+    elif gene1 in drivers and gene2 in drivers:
+        driver = partner = 'NA'
+    elif gene1 not in drivers and gene2 not in drivers:
+        driver = partner = 'NA'
+    return driver, partner
+
 def __exit__(line, msg=None):
     output = ('Script stopped at line: {} with message: "{}".'.format(line, msg))
     sys.stderr.write('\n')
     cprint(output, 'white', 'on_green', attrs=['bold'], file=sys.stderr)
     sys.exit()
-
