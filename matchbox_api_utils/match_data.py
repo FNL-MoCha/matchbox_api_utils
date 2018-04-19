@@ -258,11 +258,12 @@ class MatchData(object):
 
     @staticmethod
     def __get_curr_arm(psn, assignment_logic_list, flag):
-        # Figure out the arm to which the patient was assinged based on the 
+        # Figure out the arm to which the patient was assigned based on the 
         # flag message found in the TA Logic flow.
         try:
-            if x['patientAssignmentReasonCategory'] == flag:
-                return [x['treatmentArmId'] for x in assignment_logic_list][0]
+            return[x['treatmentArmId'] 
+                    for x in assignment_logic_list 
+                    if x['patientAssignmentReasonCategory'] == flag][0]
         except:
             # There are exactly 4 cases (as of 9/19/2017) where the patient has 
             # PTEN IHC-, but was not assigned Arm P directly for some reason 
@@ -281,7 +282,6 @@ class MatchData(object):
     def __get_pt_hist(triggers, assignments, rejoin_triggers):
         # Read the trigger messages to determine the patient treatment and 
         # study arm history.
-        arms = []
         arm_hist = {}
         progressed = False
         tot_msgs = len(triggers)
@@ -293,6 +293,7 @@ class MatchData(object):
                 False)
 
         counter = 0
+        curr_arm = ''
         for i, msg in enumerate(triggers):
             # On a rare occassion, we get two of the same messages in a row. 
             # Just skip the redundant message?
@@ -333,13 +334,13 @@ class MatchData(object):
             if i+1 == tot_msgs:
                 last_status = msg['patientStatus']
                 last_msg = msg.get('message', '---')
-                if arms:
+                if arm_hist:
                     if last_status.startswith('OFF_TRIAL'):
-                        if arm_hist[arms[-1]] == 'ON_TREATMENT_ARM':
-                            arm_hist[arms[-1]] = 'FORMERLY_ON_ARM_OFF_TRIAL'
+                        if arm_hist[curr_arm] == 'ON_TREATMENT_ARM':
+                            arm_hist[curr_arm] = 'FORMERLY_ON_ARM_OFF_TRIAL'
 
-                    if arm_hist[arms[-1]] == '.':
-                        arm_hist[arms[-1]] = last_status
+                    if arm_hist[curr_arm] == '.':
+                        arm_hist[curr_arm] = last_status
 
                 return last_status, last_msg, arm_hist, progressed
 
@@ -460,7 +461,9 @@ class MatchData(object):
                                 biopsy_data[bsn]['ngs_data']['vcf_path'] = vcf
 
                                 biopsy_data[bsn]['ngs_data']['mois']  = dict(
-                                    self.__proc_ngs_data(vardata))
+                                    self.__proc_ngs_data(vardata)
+                                )
+
                     patients[psn]['biopsies'].update(dict(biopsy_data))
         # utils.pp(dict(patients))
         # utils.__exit__(448, "Finished with generating Patient DB.")
@@ -505,7 +508,6 @@ class MatchData(object):
             variant_call_data['unifiedGeneFusions'] = self.__remap_fusion_genes(
                 variant_call_data['unifiedGeneFusions']
             )
-
         return variant_call_data
 
     @staticmethod
@@ -549,36 +551,11 @@ class MatchData(object):
         # correct the way it's being parsed.  Also add in a 'gene' field so 
         # that it's easier to aggregate data later on (the rest of the elements 
         # use 'gene').
-        drivers = ['ABL1', 'AKT2', 'AKT3', 'ALK', 'AR', 'AXL', 'BRAF', 'BRCA1', 
-            'BRCA2', 'CDKN2A', 'EGFR', 'ERBB2', 'ERBB4', 'ERG', 'ETV1', 'ETV1a',
-            'ETV1b', 'ETV4', 'ETV4a', 'ETV5', 'ETV5a', 'ETV5d', 'FGFR1', 
-            'FGFR2', 'FGFR3', 'FGR', 'FLT3', 'JAK2', 'KRAS', 'MDM4', 'MET', 
-            'MYB', 'MYBL1', 'NF1', 'NOTCH1', 'NOTCH4', 'NRG1', 'NTRK1', 'NTRK2',
-            'NTRK3', 'NUTM1', 'PDGFRA', 'PDGFRB', 'PIK3CA', 'PPARG', 'PRKACA',
-            'PRKACB', 'PTEN', 'RAD51B', 'RAF1', 'RB1', 'RELA', 'RET', 'ROS1', 
-            'RSPO2', 'RSPO3', 'TERT']
-
         for fusion in fusion_data:
-            gene1 = fusion['driverGene']
-            gene2 = fusion['partnerGene']
-
-            # handle intragenic fusions
-            if gene1 in ['MET','EGFR']:
-                driver = partner = gene1
-
-            # figure out others.
-            if gene1 in drivers:
-                (driver,partner) = (gene1,gene2)
-            elif gene2 in drivers:
-                (driver,partner) = (gene2,gene1)
-            elif gene1 in drivers and gene2 in drivers:
-                driver = partner = 'NA'
-            elif gene1 not in drivers and gene2 not in drivers:
-                driver = partner = 'NA'
+            driver, partner = utils.map_fusion_driver(fusion['driverGene'], 
+                fusion['partnerGene'])
 
             fusion['driverGene'] = driver
-            # Also make a "gene" entry so that we can look things up in a 
-            # similar way to the other classes.
             fusion['gene'] = driver  
             fusion['partnerGene'] = partner
         return fusion_data
@@ -1397,7 +1374,7 @@ class MatchData(object):
 
             >>> data.get_patient_ta_status(psn=11889)
             {u'EAY131-IX1': u'FORMERLY_ON_ARM_OFF_TRIAL', 
-                    u'EAY131-I': u'COMPASSIONATE_CARE'}
+             u'EAY131-I': u'COMPASSIONATE_CARE'}
 
             >>> data.get_patient_ta_status(psn=10003)
             {}
