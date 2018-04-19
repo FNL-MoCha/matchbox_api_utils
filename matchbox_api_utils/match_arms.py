@@ -334,7 +334,8 @@ class TreatmentArms(object):
                 etc.).
 
         Returns
-            list:  Arm ID(s) with (i)nclusion or (e)xclusion information.
+            list:  Arm ID(s) with (i)nclusion or (e)xclusion information, or 
+            ``None`` if the variant is not an aMOI.
 
         Examples:
             >>> variant = { 
@@ -348,10 +349,19 @@ class TreatmentArms(object):
             self.map_amoi(variant)
             ['EAY131-Y(e)', 'EAY131-P(e)', 'EAY131-N(e)', 'EAY131-H(i)']
 
-        Todo:
-           Check the examples work.
+            >>> variant = { 
+                'type' : 'snvs_indels', 
+                'gene' : 'TP53', 
+                'identifier' : 'COSM10660', 
+                'exon' : '-', 
+                'function' : 'missense' , 
+                'oncominevariantclass' : '-' 
+            }
+            self.map_amoi(variant)
+            None
 
         """
+
         self.__validate_variant_dict(variant)
 
         result = []
