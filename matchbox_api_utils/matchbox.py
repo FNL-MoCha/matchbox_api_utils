@@ -12,7 +12,7 @@ from matchbox_api_utils import utils
 class Matchbox(object):
 
     """
-    MATCHBox API Connector Class
+    **MATCHBox API Connector Class**
 
     Basic connector class to make a call to the API and load the raw data. From
     here we pass data, current MatchData or TreatmentArm data to appropiate
@@ -50,7 +50,7 @@ class Matchbox(object):
     """
 
     def __init__(self, url, username, password, client_name, client_id, 
-            method='sync', params=None, make_raw=None, quiet=False):
+            method='sync', params=None, make_raw=None, quiet=True):
         self._url = url
         self._username = username
         self._password = password
@@ -92,7 +92,7 @@ class Matchbox(object):
                 return None
 
             sys.stdout.write('Making a raw MATCHBox API dump that can be loaded '
-                'for development purposes rather than a live call to MATCHBox '
+                'for development purposes\nrather than a live call to MATCHBox '
                 'prior to parsing and filtering.\n')
             utils.make_json(outfile=filename, data=self.api_data, sort=True)
             sys.exit()
