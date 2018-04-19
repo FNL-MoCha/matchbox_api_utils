@@ -514,11 +514,8 @@ class TreatmentArms(object):
             arm (str):  Arm identifier to query
 
         Returns:
+            dict: All aMOIs indicated for an arm.
 
-        Todo:
-            Need to finish implementing this method.  Currently only dumping a 
-            dict.
-            
         """
 
         try:
@@ -530,6 +527,35 @@ class TreatmentArms(object):
 
         # Iterate through hotspots, cnvs, fusions, and non-hs aMOIs and generate
         # a list of tuples of data that can be printed easily later.
-
-        #TODO: implement this.  For now just dump out dict.
         return dict(arm_data['amois'])
+
+    def get_arm_by_amoi(self, gene=None, hotspot=None):
+        """
+        Query study arms by gene or hotspot ID
+
+        Input either a HUGO gene name or a hotspot ID as it is represented in
+        the hotspots BED file (e.g. COSM476, MCH12, etc.), and return a list of
+        arms for which that variant is a part, along with the type of variant 
+        represented by the identifier.  If one were to enter BRAF, then all arms
+        that contain BRAF mutations, along with the categories of `Hotspot` and 
+        `Fusion` would be indicated, as BRAF can be activating in either of 
+        those categories.  
+
+        Args:
+            gene (str): HUGO genename to use for querying the database.
+
+            hotspot (str): NCI-MATCH assay hotspots BED file identifier to use
+                query the database.
+
+        Returns:
+            list: List of study arms for which the query variants are aMOIs.
+
+        Examples:
+
+            >>> # Need to put an example here.
+
+        """
+        
+        if gene:
+            pass
+
