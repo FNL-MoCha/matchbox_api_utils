@@ -7,7 +7,7 @@ import json
 import datetime
 
 from termcolor import colored, cprint
-from pprint import pprint as pp
+from pprint import pprint
 
 from matchbox_api_utils import matchbox_conf
 
@@ -67,6 +67,9 @@ def print_json(data):
 def read_json(json_file):
     with open(json_file) as fh:
         return json.load(fh)
+
+def pp(data):
+    pprint(data)
 
 def __exit__(line, msg=None):
     output = ('Script stopped at line: {} with message: "{}".'.format(line, msg))
