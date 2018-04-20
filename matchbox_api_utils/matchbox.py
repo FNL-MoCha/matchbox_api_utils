@@ -14,88 +14,104 @@ class Matchbox(object):
     """
     **MATCHBox API Connector Class**
 
-    Basic connector class to make a call to the API and load the raw data. From
-    here we pass data, current MatchData or TreatmentArm data to appropiate
-    calling classes.
+    Basic connector class to make a call to the API and load the raw data. 
+    Used for calling to the MATCHBox API, loading data, and passing along to
+    the appropriate calling classes for making a basic data structure. Can 
+    load a raw MATCHBox API dataset JSON file, or create one.  Requires 
+    credentials, generally acquired from the config file generated upon 
+    package setup.
 
-    Used for calling to the MATCHBox API, loading data and, creating a basic 
-    data structure. Can load a raw MATCHBox API dataset JSON file, or create 
-    one.  Requires credentials, generally acquired from the config file generated 
-    upon package setup.
-
-    # TODO: need to update docs.
     Args:
-        url (str): API URL for MATCHbox. Generally only using one at the moment,
-            but possible to add others later.
+        url (str): API URL for MATCHbox. This will be specific to the system
+            for which you are connecting, and is defined in the config file.
 
-        creds (dict): Username and Password credentials obtained from the config
-            file generated upon setup. Can also just input a dict in the form 
-            of: :: 
+        username (str): Username required for access to MATCHBox. Typically 
+            this is already present in the config file made during setup, but
+            in cases where needed, it can be explicitly defined here.
 
-                { 'username' : <username>, 'password' : <password> }
+        password (str): Password associatd with the user.  As with the above
+            username argument, this is typically configured at setup.
 
-        connection (dict): Auth0 client ID  and connection name for the system you 
-            are trying to access. This should match the input URL and is system 
-            specific (i.e. there is a different one for Adult-MATCHbox, 
-            Adult-MATCHbox-UAT, Ped-MATCHBox, etc.).
+        client_name (str): Official Auth0 recognized client name for the 
+             MATCHBox to which you are connecting.  This is usually defined
+             in the configuration file generated at setup.
+
+        client_id (str): Official Auth0 recognized client id string for the 
+             MATCHBox to which you are connecting.  As with the client name,
+             this is established in the configuration file typically.
+
+        method (str): Method by which we'll make HTTP requests to the client.
+            Valid values are 'sync' for synchronous requests (usually when 
+            there is only one request to be made), or 'async' for asynchronous
+            requests (usually when we're trying to get the whole DB and have
+            to make many calls to the server).
+
+        params (dict): Parameters to pass along to the API in the request. For
+            example, if you wanted to add "&is_oa=True" to the API URL, you can
+            add: ::
+
+                ``params = {'is_oa' : True}``
+
+            and this will be passed along to the request.
 
         make_raw (str): Make a raw, unprocessed MATCHBox API JSON file. Default
             filename will be raw_mb_obj (raw MB patient dataset) or raw_ta_obj (
             raw treatment arm dataset) followed by a datestring. Inputting a
             a string will save the file with the requested filename.
 
-    Returns:
-        MATCHBox API dataset, used in ``MatchData`` or ``TreatmentArm`` classes.
+        quiet (bool): Suppress debug and information messages.
 
     """
 
     def __init__(self, url, username, password, client_name, client_id, 
             method='sync', params=None, make_raw=None, quiet=True):
+
         self._url = url
         self._username = username
         self._password = password
         self._client_name = client_name
         self._client_id = client_id
-
         self._params = params
         self._quiet = quiet
         self._method = method
-
         self._token = self.__get_token()
 
         if self._method == 'sync':
             if not self._quiet:
-                sys.stderr.write("** DEBUG: Making synchronous HTTP request. **\n")
+                sys.stderr.write("** DEBUG: Making synchronous HTTP request. "
+                    "**\n")
             self.api_data = self.__api_call()
         elif self._method == 'async':
             if not self._quiet:
-                sys.stderr.write("** DEBUG: Making an asynchronous HTTP request. "
-                    "**\n")
+                sys.stderr.write("** DEBUG: Making an asynchronous HTTP "
+                    "request.  **\n")
             loop = asyncio.get_event_loop()
             self.api_data = loop.run_until_complete(self.__async_caller())
 
         if not self._quiet:
             sys.stdout.write("Completed the call successfully!\n")
-            sys.stdout.write('    -> return len: %s\n' % str(len(self.api_data)))
+            sys.stdout.write('   -> return len: %s\n' % str(len(self.api_data)))
 
         # For debugging purposes, we may want to dump the whole raw dataset out 
         # to see what keys / vals are availble.  
         today = utils.get_today('short')
+        raw_files = {
+            'mb' : 'raw_mb_dump_' + today + '.json',
+            'ta' : 'raw_ta_dump_' + today + '.json',
+        }
         if make_raw:
-            if make_raw == 'mb': 
-                filename = 'raw_mb_dump_' + today + '.json'
-            elif make_raw == 'ta':
-                filename = 'raw_ta_dump_' + today + '.json'
-            else:
+            try:
+                filename = raw_files[make_raw]
+            except KeyError:
                 sys.stderr.write('ERROR: You must choose from "mb" or "ta" '
-                    'only.\n')
+                    'only when using the "make_raw" argument.\n')
                 return None
 
-            sys.stdout.write('Making a raw MATCHBox API dump that can be loaded '
-                'for development purposes\nrather than a live call to MATCHBox '
-                'prior to parsing and filtering.\n')
+            sys.stdout.write('Making a raw MATCHBox API dump that can be '
+                'loaded for development purposes\nrather than a live call to '
+                'MATCHBox prior to parsing and filtering.\n')
             utils.make_json(outfile=filename, data=self.api_data, sort=True)
-            sys.exit()
+            return
 
     def __str__(self):
         return utils.print_json(self.api_data)
@@ -117,8 +133,8 @@ class Matchbox(object):
         return response.json()
         
     async def __async_caller(self):
-        # Set up an asynchronous method to make HTTP requests in order to get the 
-        # DB quicker. 
+        # Set up an asynchronous method to make HTTP requests in order to get 
+        # the DB more quickly. 
         gathered_data = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=24) as executor:
             loop = asyncio.get_event_loop()
@@ -140,17 +156,21 @@ class Matchbox(object):
             "connection" : self._client_name,
         }
         url = 'https://ncimatch.auth0.com/oauth/ro'
-        response = requests.post(url, data = body)
-        # TODO: What kinds of errors do we need to handle and how should we handle
-        #       them?  Also, what about the fluke times when the request fails; can
-        #       we set up a few iterations just to make sure we get a token?
-        try:
-            response.raise_for_status()
-        except HTTPError as error:
-            print("got an error!")
-            raise
-        except:
-            raise
+        counter = 0
+        while counter < 4:  # Keep it to three attempts.
+            counter += 1
+            response = requests.post(url, data = body)
+            # TODO: Figure out what other kinds of error we might encounter,
+            #       and try to handle them appropriately.
+            try:
+                response.raise_for_status()
+                break
+            except HTTPError as error:
+                sys.stderr.write("ERROR: Got an error trying to get an Auth0 "
+                    "token! Attempt %s of 3.\n" % counter)
+                continue
+            except:
+                raise
 
         json_data = response.json()
         return json_data['id_token']
