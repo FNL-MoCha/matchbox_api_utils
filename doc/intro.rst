@@ -41,6 +41,15 @@ of interest. ::
     PSN13070,T-16-002251,MSN31054
     PSN13948,T-16-003010,MSN37895
 
+.. attention::
+    While throughout these docs the need to always make sure one specifies which
+    MATHCBox they intend on connecting to and pulling data from is mentioned 
+    frequently, at the time of this publication (4/20/2018), the established
+    methods have not been verified to work on other versions of MATCHBox.  Those
+    components will be added and available soon, which is why getting into the
+    habit of specifying MATCHBox systems is important (especially in the event of
+    writing code using these methods, where changes will be necessary later). 
+
 
 Installation
 ============
