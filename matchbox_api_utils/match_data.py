@@ -205,7 +205,7 @@ class MatchData(object):
         rec = self.data.get(psn, None)
         if rec is None:
             sys.stderr.write('ERROR: Can not filter on patient with id: %s! '
-                'No such patient in this version of the database.\n' % psn)
+                'No such patient\nin this version of the database.\n' % psn)
             return None
         return {psn : rec}
 
@@ -259,7 +259,7 @@ class MatchData(object):
                         return json.dumps(self.data[str(psn)][key], indent=4,
                                 sort_keys=True)
             else:
-                return json.dumps(self.data[str(psn)], indent=4, sort_keys=True)
+                return utils.print_json(self.data[str(psn)])
 
     @staticmethod
     def __get_curr_arm(psn, assignment_logic_list, flag):
@@ -580,8 +580,8 @@ class MatchData(object):
         Args:
             psn (str):  PSN of patient for which we want to receive data.
 
-            val (str):  Optional metaval of data we want. If no entered, will
-                return the entire patient record.
+            val (str):  Optional metaval of data we want. If nothing entered, 
+                will return the entire patient record.
 
         Returns:
             dict: 
@@ -590,20 +590,21 @@ class MatchData(object):
             raises and error if the metaval is not valid for the dataset.
 
         """
-        psn = self.__format_id('rm', psn=psn)
-        pt_data = self.__get_record(psn)
+        pt = self.__format_id('rm', psn=psn)
+        pt_data = self.__get_record(pt)
         if pt_data is None:
+            sys.stderr.write("ERROR: No such patient with id: %s.\n" % psn)
             return None
 
         if val:
             try:
-                return self.data[psn][val]
+                return self.data[pt][val]
             except KeyError:
                 sys.stderr.write("ERROR: '%s' is not a valid metavalue for "
                     "this dataset.\n" % val)
                 return None
         else:
-            return utils.print_json(pt_data)
+            return pt_data
 
     def get_biopsy_summary(self, category=None, ret_type='counts'):
         """
@@ -645,6 +646,31 @@ class MatchData(object):
                 u'initial': 5563, u'patients': 6491, u'outside': 61, 
                 u'no_biopsy': 465, u'failed_biopsy': 574, u'pass': 5654, 
                 u'outside_confirmation': 21}
+
+            >>> print(data.get_biopsy_summary(category='progression'))
+            {'progression': 19}
+
+            >>> print(data.get_biopsy_summary(category='progression', 
+            ...     ret_type='ids')
+            {'progression': ['T-17-001275',
+                 'T-17-000787',
+                 'T-17-001175',
+                 'T-17-002730',
+                 'T-17-002657',
+                 'T-17-000333',
+                 'T-17-002564',
+                 'T-17-002556',
+                 'T-17-002600',
+                 'T-17-002064',
+                 'T-18-000113',
+                 'T-17-002755',
+                 'T-17-002621',
+                 'T-18-000005',
+                 'T-17-002680',
+                 'T-18-000071',
+                 'T-18-000171',
+                 'T-18-000123',
+                 'T-18-000031']}
 
         """
         count = defaultdict(int)
@@ -882,22 +908,17 @@ class MatchData(object):
 
             {medra_code : (ctep_term, count)}
 
-        Todo:
-            * Data is good but should try to filter outside assay data, failed
-              specimens, and progression biopsies (collapsed into one count) to 
-              get a value that is closer to the accepted final count.
-
         Examples:
             >>> data.get_disease_summary(query_medra=['10006190'])
-            {'10006190': (u'Invasive breast carcinoma', 641)}
+            {'10006190': (u'Invasive breast carcinoma', 605)}
 
             >>> data.get_disease_summary(query_disease=['Invasive breast carcinoma'])
-            {u'10006190': ('Invasive breast carcinoma', 641)} 
+            {u'10006190': ('Invasive breast carcinoma', 605)} 
 
             >>> data.get_disease_summary(query_medra=[10006190,10024193,10014735])
-            {'10006190': (u'Invasive breast carcinoma', 641),
-             '10014735': (u'Endometrioid endometrial adenocarcinoma', 124),
-              '10024193': (u'Leiomyosarcoma (excluding uterine leiomyosarcoma)', 57)}
+            {'10006190': (u'Invasive breast carcinoma', 605),
+             '10014735': (u'Endometrioid endometrial adenocarcinoma', 111),
+              '10024193': (u'Leiomyosarcoma (excluding uterine leiomyosarcoma)', 55)}
             
         """
         disease_counts = defaultdict(int)
@@ -975,15 +996,16 @@ class MatchData(object):
 
         Examples: 
             >>> data.get_histology(psn='11352')
-            {'PSN11352': u'Serous endometrial adenocarcinoma'}
+            {'PSN11352': 'Serous endometrial adenocarcinoma'}
 
             >>> data.get_histology(psn='12104,12724,12948,13367,15784')
-            {
-                'PSN12104': 'CNS primary tumor, NOS', 
-                'PSN12948': 'Cholangiocarcinoma, intrahepatic and extrahepatic bile ducts (adenocarcinoma)', 
-                'PSN13367': 'Adenocarcinoma of the pancreas', 
-                'PSN15748': 'Follicular thyroid carcinoma'
-            }
+            WARN: The following specimens were filtered from the output due to 
+            either the "outside" or "no_disease" filters:
+	         12724,15784
+            {'PSN12104': 'CNS primary tumor, NOS',
+             'PSN12948': 'Cholangiocarcinoma, intrahepatic and extrahepatic '
+                         'bile ducts (adenocarcinoma)',
+             'PSN13367': 'Adenocarcinoma of the pancreas'}
 
             >>> data.get_histology(msn='12104,12724,12948,13367,15784')
             {
@@ -1102,9 +1124,11 @@ class MatchData(object):
         
         Examples:
             >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
-            find_variant_frequency(query)
+            >>> find_variant_frequency(query)
+            >>> # Note the result list is too long to print here.
 
-            >>> pprint(data.find_variant_frequency({'snvs':['EGFR'], 'indels':['EGFR']}, [15232]))
+            >>> query = {'snvs':['EGFR'], 'indels':['EGFR']}
+            >>> data.find_variant_frequency(query, [15232])
             ({'15232': {'bsns': [u'T-17-001423'],
                         'disease': u'Lung adenocarcinoma',
                         'mois': [{'alternative': u'T',
@@ -1140,7 +1164,6 @@ class MatchData(object):
                         'msns': [u'MSN52258'],
                         'psn': u'15232'}},
             1)
-
 
         """
         results = {} 
@@ -1263,22 +1286,15 @@ class MatchData(object):
 
         Examples:
             >>> data.get_variant_report(psn=10005)
-            {
-                'MSN3111': {
-                    'unifiedGeneFusions': [
-                        {
-                            'amoi': None, 
-                            'annotation': 'COSF1232', 
-                            'confirmed': True, 
-                            'driverGene': 'RET', 
-                            'driverReadCount': 7121, 
-                            'gene': 'RET', 
-                            'identifier': 'KIF5B-RET.K15R12.COSF1232', 
-                            'partnerGene': 'KIF5B', 'type': 'fusions'
-                        }
-                    ]
-                }
-            }
+            {'MSN3111': {'unifiedGeneFusions': [{'amoi': None,
+                                     'annotation': 'COSF1232',
+                                     'confirmed': True,
+                                     'driverGene': 'RET',
+                                     'driverReadCount': 7121,
+                                     'gene': 'RET',
+                                     'identifier': 'KIF5B-RET.K15R12.COSF1232',
+                                     'partnerGene': 'KIF5B',
+                                     'type': 'fusions'}]}}
 
             >>> data.get_variant_report(msn=35733)
             {
@@ -1339,7 +1355,7 @@ class MatchData(object):
                     return None
             except KeyError:
                 sys.stderr.write('ERROR: Patient %s does not exist in the '
-                    'database!\n')
+                    'database!\n' % psn)
                 return None
 
             for biopsy in self.data[psn]['biopsies'].values():
@@ -1375,7 +1391,7 @@ class MatchData(object):
 
         Examples:
             >>> data.get_patient_ta_status(psn=10837)
-            {u'EAY131-Z1A': u'ON_TREATMENT_ARM'}
+            {'EAY131-Z1A': 'FORMERLY_ON_ARM_OFF_TRIAL'}
 
             >>> data.get_patient_ta_status(psn=11889)
             {u'EAY131-IX1': u'FORMERLY_ON_ARM_OFF_TRIAL', 
@@ -1430,14 +1446,17 @@ class MatchData(object):
              '16160': 'Anaplastic oligodendroglioma',
              '16248': 'Anaplastic oligodendroglioma'}
 
-            >>> # We see here that Small Cell and Non-small cell get combined.
-            >>> ret_list = data.get_patients_by_disease(histology='Small cell lung cancer').values()
+            We see here that Small Cell and Non-small cell get combined.
+            >>> 
+            >>> ret_list = data.get_patients_by_disease(
+            ...     histology='Small cell lung cancer').values()
             >>> print('Total returned: {}'.format(len(ret_list)))
             102
             >>> print(set(ret_list))
             {'Small cell lung cancer', 'Non-small cell lung cancer, NOS'}
 
-            >>> # Here we distinguish and only get the Non-small cell cases, by using a MEDRA code
+            Here we distinguish and only get the Non-small cell cases, by 
+            using a MEDRA code
             >>> medra = utils.map_histology(
             ...    self._disease_db, 
             ...    histology='Non-small cell lung cancer, NOS')
@@ -1503,7 +1522,7 @@ class MatchData(object):
             list: List of tuples of patient, arm, and arm_status.
 
         Examples:
-            >>> print(self.get_patients_by_arm(arm='EAY131-E'), outside=True)
+            >>> data.get_patients_by_arm(arm='EAY131-E', outside=True)
             [
                 (u'11476', 'EAY131-E', u'OFF_TRIAL_DECEASED'), 
                 (u'14343', 'EAY131-E', u'FORMERLY_ON_ARM_OFF_TRIAL'), 
@@ -1512,8 +1531,8 @@ class MatchData(object):
                 (u'16472', 'EAY131-E', u'FORMERLY_ON_ARM_OFF_TRIAL')
             ]
 
-            >>> # Note: we use default outside assay filter in this case.
-            >>> print(self.get_patients_by_arm(arm='EAY131-E'))
+            Note: we use default outside assay filter in this case.
+            >>> data.get_patients_by_arm(arm='EAY131-E')
             [
                 ('10626', 'EAY131-E', 'ON_TREATMENT_ARM'), 
                 ('11476', 'EAY131-E', 'OFF_TRIAL_DECEASED'), 
@@ -1573,30 +1592,25 @@ class MatchData(object):
             for the specimen.
 
         Examples:
-            >>> self.get_ihc_results(msn='MSN30791')
+            >>> data.get_ihc_results(msn='MSN30791')
             {'MSN30791': {'MLH1': u'POSITIVE',
                           'MSH2': u'POSITIVE',
                           'PTEN': u'POSITIVE',
                           'RB': u'ND'}}
 
-            >>> self.get_ihc_results(bsn='T-16-002222', assays=['PTEN'])
+            >>> data.get_ihc_results(bsn='T-16-002222', assays=['PTEN'])
             {u'MSN30791': {'PTEN': u'POSITIVE'}}
 
-            >>> self.get_ihc_results(psn=10818)
-            {
-                'MSN12104': {
-                    'RB': 'ND', 
-                    'MSH2': 'POSITIVE', 
-                    'MLH1': 'POSITIVE', 
-                    'PTEN': 'POSITIVE'
-                }, 
-                'MSN51268': {
-                    'RB': 'ND', 
-                    'MSH2': 'POSITIVE', 
-                    'MLH1': 'POSITIVE', 
-                    'PTEN': 'POSITIVE'
-                }
-            }
+            >>> data.get_ihc_results(psn=10818)
+            {'MSN12104': {'MLH1': 'POSITIVE',
+                          'MSH2': 'POSITIVE',
+                          'PTEN': 'POSITIVE',
+                          'RB': 'ND'},
+             'MSN51268': {'MLH1': 'POSITIVE',
+                          'MSH2': 'POSITIVE',
+                          'PTEN': 'POSITIVE',
+                          'RB': 'ND'}}
+
 
         """
 
@@ -1619,7 +1633,7 @@ class MatchData(object):
                 psn = self.get_psn(bsn=bsn)
                 if psn is None:
                     sys.stderr.write('ERROR: No such BSN "%s" in the '
-                        'dataset!\n' % msn)
+                        'dataset!\n' % bsn)
                     return None
                 msn = self.get_msn(bsn=bsn)[0]
             
