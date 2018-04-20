@@ -115,7 +115,7 @@ class MatchData(object):
         # Load total MB dataset, in raw archived JSON format.
         if load_raw:
             if self._quiet is False:
-                print('\n  ->  Starting from a raw MB JSON Obj')
+                sys.stderr.write('\n  ->  Starting from a raw MB JSON Obj\n')
             self.db_date, matchbox_data = utils.load_dumped_json(load_raw)
             self.data = self.__gen_patients_list(matchbox_data, self._patient)
 
@@ -137,7 +137,7 @@ class MatchData(object):
         # and work from there.
         else:
             if self._quiet is False:
-                sys.stderr.write('\n  ->  Starting from a live MB instance')
+                sys.stderr.write('\n  ->  Starting from a live MB instance\n')
 
             if self._patient:
                 url += '/%s' % self._patient
@@ -579,6 +579,7 @@ class MatchData(object):
 
         Args:
             psn (str):  PSN of patient for which we want to receive data.
+
             val (str):  Optional metaval of data we want. If no entered, will
                 return the entire patient record.
 
@@ -634,11 +635,9 @@ class MatchData(object):
                 ids are the BSNs for the category. Default is "counts"
 
         Returns:
-            Dictionary of whole set of  ``{category : count}`` or 
-            ``{single category : count }`` data.
-
-        Todo: 
-            * Fix examples.
+            dict:
+            Dictionary of whole set of ``{category : count}`` or 
+            ``{single category : count}`` data.
 
         Examples:
             >>> print(data.get_biopsy_summary())
@@ -706,13 +705,13 @@ class MatchData(object):
                 ``mb_obj_<date_generated>.json``
 
         Returns:
-            json: 
+            JSON: 
             MATCHBox API JSON file.
 
         """
         if self._json_db == 'sys_default':
             sys.stderr.write('ERROR: You can not use the system default JSON '
-                'file and create a system default JSON! You must use "json_db '
+                'file and create a system default JSON! You must use "json_db'
                 '=None" in the call to MatchData!\n')
             return None
         formatted_date = utils.get_today('short')
@@ -1096,9 +1095,10 @@ class MatchData(object):
                 data. 
 
         Returns:
-            dict: Return a dict of matching data with disease and MOI 
-                information, along with a count of the number of patients 
-                queried and the number of biopsies queried.
+            dict: 
+            Return a dict of matching data with disease and MOI 
+            information, along with a count of the number of patients 
+            queried and the number of biopsies queried.
         
         Examples:
             >>> query={'snvs' : ['BRAF','MTOR'], 'indels' : ['BRAF', 'MTOR']}
@@ -1555,7 +1555,7 @@ class MatchData(object):
         Input a PSN, MSN, or BSN and / or a set of IHC assays, and return a dict
         of data.
 
-        .. note:
+        .. note::
             Each MSN or BSN will have only one set of IHC results typically, 
             since newer results would overwrite the other ones.  However, there
             can be more than one BSN or MSN for a PSN, and so using a PSN for 
