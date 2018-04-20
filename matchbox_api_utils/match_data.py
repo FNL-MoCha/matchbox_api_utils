@@ -77,24 +77,7 @@ class MatchData(object):
             username=None, password=None, patient=None, json_db='sys_default', 
             load_raw=None, make_raw=None, quiet=True):
 
-        # TODO: Do we want to store these as instance variables? Don't really 
-        #       need them after the initial connection.
         self._matchbox = matchbox
-        self._username = username
-        self._password = password
-
-        if not quiet:
-            sys.stderr.write('INFO: Loading MATCHBox: %s\n' % self._matchbox)
-        self._config_data = matchbox_conf.Config(self._matchbox, config_file)
-    
-        self._url = self._config_data.get_config_item('url')
-        if self._username is None:
-            self._username = self._config_data.get_config_item('username')
-        if self._password is None:
-            self._password = self._config_data.get_config_item('password')
-        self._client_name = self._config_data.get_config_item('client_name')
-        self._client_id = self._config_data.get_config_item('client_id')
-
         self._patient = self.__format_id('rm', psn=patient)
         self._json_db = json_db
         self.db_date = utils.get_today('long')
@@ -103,6 +86,19 @@ class MatchData(object):
         # Ensure that we pass "mb" to Matchbox()
         if make_raw:
             make_raw = 'mb'
+
+        if not self._quiet:
+            sys.stderr.write('INFO: Loading MATCHBox: %s\n' % self._matchbox)
+        self._config_data = matchbox_conf.Config(self._matchbox, config_file)
+
+        url = self._config_data.get_config_item('url')
+
+        if username is None:
+            username = self._config_data.get_config_item('username')
+        if password is None:
+            password = self._config_data.get_config_item('password')
+        client_name = self._config_data.get_config_item('client_name')
+        client_id = self._config_data.get_config_item('client_id')
 
         # If json_db is 'sys_default', get json file from matchbox_conf.Config, 
         # which is from matchbox_api_util.__init__.mb_json_data.  Otherwise use 
@@ -127,21 +123,24 @@ class MatchData(object):
         elif self._json_db:
             self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._quiet is False:
-                print('\n  ->  Starting from a processed MB JSON Obj')
-                print('\n  ->  JSON database object date: %s' % self.db_date)
+                sys.stderr.write('\n  ->  Starting from a processed MB JSON '
+                    'Object.\n')
+                sys.stderr.write('\n  ->  JSON database object date: '
+                    '%s\n' % self.db_date)
             if self._patient:
                 if self._quiet is False:
-                    print('filtering on patient: %s\n' % self._patient)
+                    sys.stderr.write('Filtering on patient: '
+                        '%s.\n' % self._patient)
                 self.data = self.__get_record(self._patient)
 
         # Make a live query to MB and either create a new raw_db or parse it out
         # and work from there.
         else:
             if self._quiet is False:
-                print('\n  ->  Starting from a live MB instance')
+                sys.stderr.write('\n  ->  Starting from a live MB instance')
 
             if self._patient:
-                self._url += '/%s' % self._patient
+                url += '/%s' % self._patient
                 __method='sync'
             else:
                 __method='async'
@@ -153,11 +152,11 @@ class MatchData(object):
             }
 
             matchbox_data = Matchbox(
-                self._url, 
-                self._username, 
-                self._password, 
-                self._client_name, 
-                self._client_id, 
+                url, 
+                username, 
+                password, 
+                client_name, 
+                client_id, 
                 method=__method, 
                 params=params, 
                 make_raw=make_raw

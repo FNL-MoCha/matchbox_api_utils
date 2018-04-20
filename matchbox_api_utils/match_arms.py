@@ -66,43 +66,48 @@ class TreatmentArms(object):
     """
 
     def __init__(self, matchbox='adult-matchbox', config_file=None, 
-        username=None, password=None, json_db='sys_default', 
-        load_raw=None, make_raw=False, quiet=True):
+        username=None, password=None, json_db='sys_default', load_raw=None, 
+        make_raw=False, quiet=True):
 
         self._matchbox = matchbox
-        self._username = username
-        self._password = password
-        if quiet is False:
-            sys.stderr.write('INFO: Loading MATCHBox: %s\n' % self._matchbox)
-        self._config_data = matchbox_conf.Config(self._matchbox, config_file)
-        self._url = self._config_data.get_config_item('arms_url')
-        if self._username is None:
-            self._username = self._config_data.get_config_item('username')
-        if self._password is None:
-            self._password = self._config_data.get_config_item('password')
-        self._client_name = self._config_data.get_config_item('client_name')
-        self._client_id = self._config_data.get_config_item('client_id')
-
         self._json_db = json_db
-        self._load_raw = load_raw
         self.db_date = utils.get_today('long')
         self._quiet = quiet
+
+        # Ensure we pass "ta" to Matchbox().
+        if make_raw:
+            make_raw = 'ta'
         
+        if quiet is False:
+            sys.stderr.write('INFO: Loading Treatment Arm data from MATCHBox: '
+                '%s\n' % self._matchbox)
+        self._config_data = matchbox_conf.Config(self._matchbox, config_file)
+
+        url = self._config_data.get_config_item('arms_url')
+
+        if username is None:
+            username = self._config_data.get_config_item('username')
+        if password is None:
+            password = self._config_data.get_config_item('password')
+        client_name = self._config_data.get_config_item('client_name')
+        client_id = self._config_data.get_config_item('client_id')
+
         if self._json_db == 'sys_default':
             self._json_db = self._config_data.get_config_item('ta_json_data')
 
         # Loading a pre-made Raw MB dump
-        if self._load_raw:
+        if load_raw:
             if self._quiet is False:
                 sys.stderr.write('\n  ->  Starting from a raw TA JSON Obj\n')
-            self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
+            self.db_date, matchbox_data = utils.load_dumped_json(load_raw)
             self.data = self.make_match_arms_db(matchbox_data)
 
         # Loading a MB parsed DB
         elif self._json_db:
             self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._quiet is False:
-                sys.stderr.write('\n  ->  Starting from a processed TA JSON Obj\n')
+                sys.stderr.write('\n  ->  Starting from a processed TA JSON '
+                    'Object.\n')
                 sys.stderr.write('\n  ->  JSON database object date: '
                     '%s\n' % self.db_date)
 
@@ -113,8 +118,14 @@ class TreatmentArms(object):
                 sys.stderr.write('  ->  Starting from a live MB instance.\n')
             params = {'active' : True}
             matchbox_data = Matchbox(
-                self._url, self._username, self._password, self._client_name, 
-                self._client_id, 'sync', params=params, make_raw=make_raw
+                url, 
+                username, 
+                password,
+                client_name, 
+                client_id, 
+                'sync', 
+                params=params, 
+                make_raw=make_raw
             ).api_data
             self.data = self.make_match_arms_db(matchbox_data)
         
