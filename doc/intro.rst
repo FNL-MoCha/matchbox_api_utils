@@ -18,7 +18,7 @@ click through the GUI, and find the correct data.  Or, with this tool, you can
 simply run: ::
 
     >>> from matchbox_api_utils import MatchData
-    >>> data = MatchData()
+    >>> data = MatchData(matchbox='adult-matchbox')
     >>> data.get_msn(psn=13070)
     [u'MSN31054', u'MSN59774']
 
@@ -57,9 +57,10 @@ URLs, username, and password for your system and user.  At the end, a new set of
 JSON files will be created in ``$HOME/.mb_utils/`` which will contain the initial
 MATCH dataset for use.  
 
-.. note:
-    Alternatively, one can install with Python easy_install, but there may be
-    some issues with the postinstaller script.  
+.. note::
+    Alternatively, one can install with Python ``easy_install``, but there may 
+    be some issues with the postinstaller script, and so this method is not 
+    preferred.
 
 We recommend re-building this dataset on occassion using the 
 ``matchbox_json_dump.py`` program included in the package for up to date data,
@@ -72,26 +73,26 @@ API documentation for details).
 Requirements
 ============
 
-These modules are run under Python 2.7.  However, all coding (where possible) is 
-done with Python 3 in mind, and should be easily portable. This is especially the 
-case with the main library modules and classes.  Your mileage may vary with the 
-helper scripts somewhat.  
+These modules require Python >=3.5 to run, although backwards compatible Python
+v2.7 was used where possible. Your mileage may vary with the helper scripts 
+somewhat.  
 
 In addition to the above, the package requires the installation of:
 
     - `requests <http://docs.python-requests.org/en/master/>`_
+    - `asyncio <https://docs.python.org/3/library/asyncio.html>`_
+    - `termcolor <https://pypi.org/project/termcolor/>`_
 
 The setup script should take care of this dependency upon installation.  
+
+.. todo::
+    Verify in a clean environment that we added all required packages and 
+    environment defaults.
 
 Using MATCHBox API Utils
 ========================
 
-Once the installation is run, one can either use the pre-built scripts available
-in your systems binary directory (see Helper Scripts documentation), or write 
-your own scripts using any one of the included methods (see the MATCHBox API Utils
-API documentation).
-
-
-
-
-
+Once the installation is run, one can either use the pre-built scripts 
+available in your systems binary directory (see Helper Scripts documentation
+), or write your own scripts using any one of the included methods (see the 
+MATCHBox API Utils API documentation).
