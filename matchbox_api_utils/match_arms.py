@@ -326,8 +326,9 @@ class TreatmentArms(object):
 
     def map_amoi(self, variant):
         """
-        Input a variant dict derived from some kind and return either an aMOI id 
-        in the form of Arm(i|e). If variant is not an aMOI, returns ``'None'``.
+        Input a variant dict derived from some kind and return either an aMOI 
+        id in the form of Arm(i|e). If variant is not an aMOI, returns 
+        ``'None'``.
 
         Args:
             variant (dict):  Variant dict to annotate.  Dict must have the 
@@ -340,13 +341,14 @@ class TreatmentArms(object):
                     - exon
                     - function
 
-                Not all variant types will have meaningful data for these fields,
-                and so fields may be padded with a null char (e.g. '.', '-', 'NA', 
-                etc.).
+                Not all variant types will have meaningful data for these 
+                fields, and so fields may be padded with a null char (e.g. 
+                '.', '-', 'NA', etc.).
 
         Returns
-            list:  Arm ID(s) with (i)nclusion or (e)xclusion information, or 
-            ``None`` if the variant is not an aMOI.
+            list:  
+            Arm ID(s) with (i)nclusion or (e)xclusion information, or ``None``
+            if the variant is not an aMOI.
 
         Examples:
             >>> variant = { 
@@ -381,7 +383,7 @@ class TreatmentArms(object):
                 variant['oncominevariantclass'] == 'Hotspot' 
                 and variant['identifier'] in self.amoi_lookup_table['hotspot']
             ):
-                result = self.amoi_lookup_table['hotspot'][variant['identifier']]
+                result=self.amoi_lookup_table['hotspot'][variant['identifier']]
 
             elif (
                 variant['oncominevariantclass'] == 'Deleterious' 
@@ -408,15 +410,15 @@ class TreatmentArms(object):
                 result = self.amoi_lookup_table['fusion'][variant['identifier']]
 
         if result:
-            return result
+            return sorted(result)
         else:
             return None
 
     def map_drug_arm(self, armid=None, drugname=None, drugcode=None):
         """
-        Input an Arm ID or a drug name, and retun a tuple of arm, drugname, and 
-        ID. If no arm ID or drug name is input, will return a whole table of all 
-        arm data.
+        Input an Arm ID or a drug name, and return a tuple of arm, drugname,
+        and ID. If no arm ID or drug name is input, will return a whole table
+        of all arm data.
 
         Args:
             armid (str): Offcial NCI-MATCH Arm ID in the form of `EAY131-xxx`
@@ -430,7 +432,7 @@ class TreatmentArms(object):
 
             drugcode (str): Use the 6-digit drug code to pull results.
 
-        .. note:
+        .. note::
             Note that using the ``drugname`` or ``drugcode`` option may return
             more than one result as we can have more than one arm per drug.
 
@@ -564,6 +566,10 @@ class TreatmentArms(object):
         Examples:
 
             >>> # Need to put an example here.
+
+        .. attention::
+            This method is not yet functional and is only a placeholder for
+            now.  Intend to code and implement soon!
 
         """
         
