@@ -86,7 +86,7 @@ class Matchbox(object):
                 sys.stderr.write("** DEBUG: Making an asynchronous HTTP "
                     "request.  **\n")
             loop = asyncio.get_event_loop()
-            self.api_data = loop.run_until_complete(self.__async_caller())
+            self.api_data = loop.run_until_complete(self.__async_caller(loop))
 
         if not self._quiet:
             sys.stdout.write("Completed the call successfully!\n")
@@ -132,18 +132,18 @@ class Matchbox(object):
             sys.exit(1)
         return response.json()
         
-    async def __async_caller(self):
+    async def __async_caller(self, loop):
         # Set up an asynchronous method to make HTTP requests in order to get 
         # the DB more quickly. 
         gathered_data = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=24) as executor:
-            loop = asyncio.get_event_loop()
             futures = [
                 loop.run_in_executor(executor, self.__api_call, page)
-                for page in range(1, 20)
+                for page in range(1, 21)
             ]
             for response in await asyncio.gather(*futures):
                 gathered_data.extend(response)
+                gathered_data+=response
         return gathered_data
 
     def __get_token(self):
