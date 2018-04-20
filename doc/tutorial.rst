@@ -9,23 +9,32 @@ Working with MATCHBox API Utils is very easy.  It is simply a matter of loading 
     #. ``TreatmentArms()``
 
 Most often one will be using the ``MatchData()`` module, as that deals directly 
-with the majority of the MATCH data that needs to be dealt with.  It directly pulls
-data from ``Matchbox`` and ``TreatmentArms`` where need be, and it allows for the 
-most flexible parsing and reporting of data.  That's not to say that the other 
-modules are not useful.  Far from it!  As we'll see a little later down, there are
-a number of useful things that one can do with those as well.
+with the majority of the MATCH data that needs to be dealt with.  It directly 
+pulls data from ``Matchbox`` and ``TreatmentArms`` where need be, and it allows
+for the most flexible parsing and reporting of data.  That's not to say that
+the other modules are not useful.  Far from it!  As we'll see a little later 
+down, there are a number of useful things that one can do with those as well.
 
 By default modules will load the most recent dataset available in
-``$HOME/.mb_utils`` (see API documentation for specifics), and be ready for use. 
+``$HOME/.mb_utils`` (see API documentation for specifics), and be ready for 
+use. 
+
 However, if one wanted to get a live dataset, or one wanted to get data from an 
 older snapshot of the database, that is all possible too.  
 
-.. note: 
-    Live queries to MATCHBox can take a long time to perform due to network traffic,
-    and the very large size of the database.  MATCHBox v2.0, when it's released, 
-    may have solved some of these problems.  But for now, it's recommended to use
-    a JSON snapshot of data when possible.
+.. note:: 
+    Live queries to MATCHBox can take a long time to perform due to network 
+    traffic, and the very large size of the database, and is not the preferred
+    way to work with the data. Especially since most of the data is in a final,
+    locked state, it's recommended to use a JSON snapshot of data when possible.
 
+.. attention::
+    Now that we have multiple MATCHBoxes in production for different studies,
+    one will always need to specify which MATCHBox they are intending to 
+    connect to when initializing any of these classes.  By default, the Adult
+    MATCHBox is loaded since this is the most frequently used.  But, that is 
+    likely to change without warning, and you are advised to explicityly 
+    specify which system you are interested in calling.
 
 Module: Matchbox
 ------------------
@@ -35,15 +44,18 @@ MATCHBox system.  Apart from a URL to query and credentials, there are not a
 whole lot of options.  
 
 In general this module is called by MatchData and TreatmentArms to make the 
-connection to the live system and pull data.  I've included some documentation of
-this module, though, in the event that one needs to call on it at some point.  
+connection to the live system and pull data.  I've included some documentation 
+of this module, though, in the event that one needs to call on it at some point.  
 
 For example, on occassion one might want to get a complete raw MATCHBox dataset,
-which has not been parse and filtered, and can be accepted into the other modules
-as if they were making a live call.  In this case, one could run: ::
+which has not been parse and filtered, and can be accepted into the other 
+modules as if they were making a live call.  In this case, one could run: ::
 
     >>> from matchbox_api_utils import Matchbox
-    >>> Matchbox(make_raw='raw_mb_dataset.json')
+    >>> Matchbox(matchbox='adult-matchbox', username='user', 
+    ...     password='password', client_name='Adult-MATCH-Production',
+    ...     client_id='<long_id_string>', method='async', params=<API_params>,
+    ...     make_raw='raw_mb_dataset.json')
 
 This will create a raw complete JSON dump of MATCHBox.
 
@@ -51,36 +63,46 @@ This will create a raw complete JSON dump of MATCHBox.
     A raw MATCHBox data dump like this might be very large!
 
 Without dumping that data to a JSON file, one could assign a variable to the 
-Matchbox obj, and then pass it around.  However, MatchData is better for an 
-entry point here.
+Matchbox obj, and then pass it around.  However, as one can see with regard to
+how many required arguments there are to configure the API call, most of which 
+are set up in the configuration file generated upon installation, ``class 
+MatchData()`` is a much better entry point, and only requires one argument to
+generate the same file, as shown below.
+
 
 Module: MatchData
 -------------------
 
-This is by far the workhorse module of the package.  In its most basic form, one 
-needs only load the object into a variable, and then run the host of methods 
-available: ::
+This is by far the workhorse module of the package.  In its most basic form, 
+one needs only load the object into a variable, and then run the host of 
+methods available: ::
 
     >>> from matchbox_api_utils import MatchData
-    >>> data = MatchData()
+    >>> data = MatchData(matchbox='adult-matchbox')
     >>> data.get_biopsy_summary(category='progression', ret_type='counts')
-    {'progression': 16}
+    {'progression': 19}
+
+.. note::
+    The resultant data above may be different than your result depending on 
+    when the dataset was generated!
 
 This simply works by loading a processed version of MATCHBox, which has been 
 optimized to be smaller and more efficient than the raw MATCHBox dataset, and 
 then having a set of methods to extract portions of the data for cohort type 
 analysis. 
 
-As mentioned above, one can either choose to use the `system_default` JSON option
-for ``MatchData``, in which case the latest version of the MATCHBox JSON dump will
-be loaded, or one can load their own custom file (e.g. if one wanted to load an old
-version of the data to see how things changed).  Alternatively (and with the same
-warning as above), one can make a live query at the cost of a long load time. 
+As mentioned above, one can either choose to use the `sys_default` JSON option
+for ``MatchData``, in which case the latest version of the MATCHBox JSON dump 
+will be loaded, or one can load their own custom file (e.g. if one wanted to 
+load an old version of the data to see how things changed).  Alternatively 
+(and with the same warning as above), one can make a live query at the cost of 
+a long load time. 
 
-There is also the possibility of loading just one or more patient IDs into the API
-and limiting data to that cohort.  However, this is usually only meant for 
-debugging purposes and filtering on a patient identifier is usually best done at 
-each method call.  
+There is also the possibility of loading just one or more patient IDs into the
+API and limiting data to that cohort. In this case passing a PSN to the 
+``patient`` argument will allow one to filter data to only that patient when 
+reading the ``sys_default`` JSON file, or, and arguably better, getting live
+and up to date data for only that patient from MATCHBox.
 
 Toy Example #1
 **************
@@ -140,20 +162,20 @@ data ultimately: ::
 
 Looks like there are a couple issues here.  
 
-    #. First, results from the ``get_msn()`` method are always lists.  We can have
-       multiple MSNs per BSN unfortunately, and so we need to output more than one
-       on occassion.  In this case, for what we want to do, we can just output them
-       all as a comma separated list.  
+    #. First, results from the ``get_msn()`` method are always lists.  We can 
+       have multiple MSNs per BSN unfortunately, and so we need to output more 
+       than one on occassion.  In this case, for what we want to do, we can 
+       just output them all as a comma separated list.  
 
-    #. Second some results to not have a MSN returned!  This can happen.  In this
-       case, there was a progression biopsy collected, but no valid MSN was yet
-       generated for the case.  Since we would prefer to only work with complete
-       data for now, we'll skip those cases.
+    #. Second some results to not have a MSN returned!  This can happen.  In 
+       this case, there was a progression biopsy collected, but no valid MSN 
+       was yet generated for the case.  Since we would prefer to only work with
+       complete data for now, we'll skip those cases.
 
-So, now that we know which are progression cases from the whole dataset, and know 
-their PSN, BSN, and MSN identifiers, let's get the disease for each, and store it
-in our ``results`` dict above.  We'll rewrite a little bit of the code above to
-help with some of the processing: ::
+So, now that we know which are progression cases from the whole dataset, and 
+know their PSN, BSN, and MSN identifiers, let's get the disease for each, and 
+store it in our ``results`` dict above.  We'll rewrite a little bit of the code
+above to help with some of the processing: ::
 
     >>> for bsn in biopsies['progression']:
     ...     psn = data.get_psn(bsn=bsn)
@@ -198,7 +220,8 @@ patient's disease and add it to the data: ::
     {'PSN11127': u'Invasive breast carcinoma'}
 
 As we can see the results for this method call are all dicts of `PSN : Disease`
-mappings.  So, we can use the PSN to pull the disease and add it to the results: ::
+mappings.  So, we can use the PSN to pull the disease and add it to the 
+results: ::
 
     >>> for p in results:
     ...     results[p].append(data.get_histology(psn=p)[p])
@@ -228,8 +251,8 @@ mappings.  So, we can use the PSN to pull the disease and add it to the results:
                  u'Laryngeal squamous cell carcinoma'],
     'PSN15362': [u'T-17-002680', u'MSN62489', u'Salivary gland cancer']}
 
-And finally we have a nice list of collected data for each progression case, which 
-is ready to print out for downstream use: ::
+And finally we have a nice list of collected data for each progression case, 
+which is ready to print out for downstream use: ::
 
     >>> for patient in results:
     ...     print('\t'.join([patient] + results[patient]))
@@ -250,74 +273,78 @@ is ready to print out for downstream use: ::
 
 .. note:
     It is recommended that you use the 
-    `CSV <https://docs.python.org/2/library/csv.html>` module for printing data, 
-    since it is much better equipped to handle commas and spaces in names, and 
-    makes the data much more portable into things like Excel or R
+    `CSV <https://docs.python.org/2/library/csv.html>`_ module for printing 
+    data, since it is much better equipped to handle commas and spaces in 
+    names, and makes the data much more portable into things like Excel or R
 
 So, there you have it.  Very simple toy case, but hopefully one that highlights
-some of the features of the MatchData module.  See the API documentation section 
-for more information about the included modules and their usage.
+some of the features of the MatchData module.  See the API documentation 
+section for more information about the included modules and their usage.
 
 
 Module: TreatmentArms
 ----------------------
 
-The ``TreatmentArms`` module will handle all NCI-MATCH treatment arm related data,
-including the handling of a "rules engine" to categorize mutations of interest
-(MOIs) as being actionable (aMOIs) or not.  At the time of this writing, there are 
-not a lot of public methods available for the module, and it's main use will be 
-directly (really behind the scenes) from ``MatchData``.  However, there are a few
-methods that one will (hopefully) find handy.
+The ``TreatmentArms`` module will handle all NCI-MATCH treatment arm related 
+data, including the handling of a "rules engine" to categorize mutations of 
+interest (MOIs) as being actionable (aMOIs) or not.  At the time of this 
+writing, there are not a lot of public methods available for the module, and 
+it's main use will be directly (really behind the scenes) from ``MatchData``.  
+However, there are a few methods that one will (hopefully) find handy.
 
-As with the other modules, one can either make a live query to MATCHBox to generate
-a dataset: ::
+As with the other modules, one can either make a live query to MATCHBox to 
+generate a dataset: ::
 
     >>> from matchbox_api_utils import TreatmentArms
-    >>> ta_data = TreatmentArms()
+    >>> ta_data = TreatmentArms(matchbox='adult-matchbox')
     
-As with ``MatchData``, not specifying a JSON database will result in loading the 
-`sys_default` database which is built at the same time as the ``MatchData`` JSON
-database.  You'll see this file in ``$HOME/.mb_utils/ta_obj_<date>.json``.  
+As with ``MatchData``, not specifying a JSON database will result in loading 
+the ``sys_default`` database which is built at the same time as the 
+``MatchData`` JSON database.  You'll see this file in 
+``$HOME/.mb_utils/ta_obj_<date>.json``.  
 
-One you have object loaded, then you can run one of the public methods available, 
-including ``map_amoi()``, ``map_drug_arm()``, or ``get_exclusion_disease()``.
+Once you have object loaded, then you can run one of the public methods 
+available, including ``map_amoi()``, ``map_drug_arm()``, or 
+``get_exclusion_disease()``.
 
 Toy Example #2
 **************
 
 Let's say you have a *`BRAF p.V600E`* mutation that you discovered in a patient 
-diagnosed with *`Melanoma`* , but you are not sure whether or not any arms cover the 
-patient, and if there is a qualifying arm, whether or not the patient has an 
-exclusionary disease (i.e. a histological subtype that is excluded from arm 
-eligibility).  
+diagnosed with *`Melanoma`* , but you are not sure whether or not any arms 
+cover the patient, and if there is a qualifying arm, whether or not the patient
+has an exclusionary disease (i.e. a histological subtype that is excluded from
+arm eligibility).  
 
-The first step is to try to map that aMOI to the study arms.  You need to have a
-of aMOI level data since there are some extra rules to map.  We always need to know
-the following ( dict_key: accepted_values):
+The first step is to try to map that aMOI to the study arms.  You need to have 
+some NCI-MATCH level variant data (typically from Ion Reporter / OVAT) since 
+there are some extra rules to map.  We always need to know the following 
+(dict_key: accepted_values):
 
-    ====================   =======================================================
+    ====================   ====================================================
     Variant Key            Acceptable Values
-    ====================   =======================================================
+    ====================   ====================================================
     type                   | { snvs_indels, cnvs, fusions }
     oncomineVariantClass   | { Hotspot, Deleterious }
     gene                   | Any acceptable HUGO gene name (e.g. BRAF)
     identifier             | Any variant identifier, usually from COSMIC 
                            | (e.g. COSM476)
-    exon                   | The numeric value for the exon in which the variant 
-                           | is found. For example, if the variant is in Exon 15, 
+    exon                   | The numeric value for the exon in which the 
+                           | variant is found. For example, if the variant is
+                           | in Exon 15, you would indicate 15 in this field. 
                            | you would indicate 15 in this field.
     function               | {'missense', 'nonsense', 'frameshiftInsertion', 
                            | 'frameshiftDeletion', 'nonframeshiftDeletion', 
                            | 'nonframeshiftInsertion', 
                            | 'frameshiftBlockSubstitution'}
-    ====================   =======================================================
+    ====================   ====================================================
 
-In the case of a typical BRAF p.V600E variant, we would set up our environment as
-follows: ::
+In the case of a typical BRAF p.V600E variant, we would set up our environment 
+as follows: ::
 
     >>> from matchbox_api_utils import TreatmentArms
     >>> from pprint import pprint as pp
-    >>> ta_data = TreatmentArms()
+    >>> ta_data = TreatmentArms(matchbox='adult-matchbox')
     >>> variant = {
     ...    'type' : 'snvs_indels',
     ...    'gene' : 'BRAF',
@@ -326,18 +353,19 @@ follows: ::
     ...    'function' : 'missense',
     ...    'oncominevariantclass' : 'Hotspot' }
 
-Now to find out if our variant would qualify for any arms, we'll run ``map_amoi()``
-to check: ::
+Now to find out if our variant would qualify for any arms, we'll run 
+``map_amoi()`` to check: ::
 
     >>> v600e_arms = ta_data.map_amoi(variant)
     >>> pp(v600e_arms)
     ['EAY131-Y(e)', 'EAY131-P(e)', 'EAY131-N(e)', 'EAY131-H(i)']
 
-So we see that there are 4 arms that have identified this variant as being an aMOI. 
-But, based on the notation in parenthesis (e.g. `'(e)'`), we can see that Arms Y, P,
-and N consider this aMOI to be exclusionary, while arm H consider this aMOI to be 
-inclusionary.  So, it looks like so far the patient is a potential match for Arm H
-only.  Now, let's see if their disease would qualify them for this arm: ::
+So we see that there are 4 arms that have identified this variant as being an 
+aMOI. But, based on the notation in parenthesis (e.g. `'(e)'`), we can see that
+Arms Y, P, and N consider this aMOI to be exclusionary, while arm H consider 
+this aMOI to be inclusionary.  So, it looks like so far the patient is a 
+potential match for Arm H only.  Now, let's see if their disease would qualify 
+them for this arm: ::
 
     >>> pp(ta_data.get_exclusion_disease('EAY131-H'))
     [u'Papillary thyroid carcinoma',
@@ -348,16 +376,16 @@ only.  Now, let's see if their disease would qualify them for this arm: ::
      u'Adenocarcinoma - rectum',
      u'Colorectal cancer, NOS']
 
-Well, that's bad news!  Based on the fact that the patient has `Melanoma` and it is
-an exclusionary disease for Arm H, the patient would not currently qualify for any
-MATCH Arm.  
+Well, that's bad news!  Based on the fact that the patient has `Melanoma` and 
+it is an exclusionary disease for Arm H, the patient would not currently 
+qualify for any NCI-MATCH Arm.  
 
-.. note:
+.. note::
     This mapping functionality is very simple and only relies on the reported
     histology and the input biomarker.  There are many other NCI-MATCH trial 
     factors that determine eligibility, which are way outside the scope of this 
-    utility.  In essence, this is not meant to be a treatment assignment utility 
-    and is only meant to help classify variants.  
+    utility.  In essence, this is not meant to be a treatment assignment 
+    utility and is only meant to help classify variants.  
 
-For more detailed descriptions of the methods in the module and their use, see the 
-TreatmentArms API documention section.
+For more detailed descriptions of the methods in the module and their use, see 
+the TreatmentArms API documention section.
