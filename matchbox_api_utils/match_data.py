@@ -14,7 +14,7 @@ from matchbox_api_utils.match_arms import TreatmentArms
 class MatchData(object):
 
     """
-    **MatchboxData class**
+    **NCI-MATCH MATCHBox Data class**
 
     Parsed MATCHBox Data from the API as collected from the Matchbox class. 
     This class has methods to generate queries, further filtering, and 
@@ -77,9 +77,12 @@ class MatchData(object):
             username=None, password=None, patient=None, json_db='sys_default', 
             load_raw=None, make_raw=None, quiet=True):
 
+        # TODO: Do we want to store these as instance variables? Don't really 
+        #       need them after the initial connection.
         self._matchbox = matchbox
         self._username = username
         self._password = password
+
         if not quiet:
             sys.stderr.write('INFO: Loading MATCHBox: %s\n' % self._matchbox)
         self._config_data = matchbox_conf.Config(self._matchbox, config_file)
@@ -94,9 +97,12 @@ class MatchData(object):
 
         self._patient = self.__format_id('rm', psn=patient)
         self._json_db = json_db
-        self._load_raw = load_raw
         self.db_date = utils.get_today('long')
         self._quiet = quiet
+
+        # Ensure that we pass "mb" to Matchbox()
+        if make_raw:
+            make_raw = 'mb'
 
         # If json_db is 'sys_default', get json file from matchbox_conf.Config, 
         # which is from matchbox_api_util.__init__.mb_json_data.  Otherwise use 
@@ -111,10 +117,10 @@ class MatchData(object):
             quiet=True)
             
         # Load total MB dataset, in raw archived JSON format.
-        if self._load_raw:
+        if load_raw:
             if self._quiet is False:
                 print('\n  ->  Starting from a raw MB JSON Obj')
-            self.db_date, matchbox_data = utils.load_dumped_json(self._load_raw)
+            self.db_date, matchbox_data = utils.load_dumped_json(load_raw)
             self.data = self.__gen_patients_list(matchbox_data, self._patient)
 
         # Load parsed MB JSON dataset rather than a live query.
