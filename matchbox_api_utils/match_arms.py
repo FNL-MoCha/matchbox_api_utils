@@ -104,6 +104,12 @@ class TreatmentArms(object):
 
         # Loading a MB parsed DB
         elif self._json_db:
+            if make_raw:
+                sys.stderr.write("ERROR: You can not load a processed JSON DB "
+                    "*and* ask to make a raw \nDB. You should set the 'json_db' "
+                    "argument to `False`.\n")
+                return None
+
             self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._quiet is False:
                 sys.stderr.write('\n  ->  Starting from a processed TA JSON '
@@ -287,8 +293,8 @@ class TreatmentArms(object):
         arm_data = defaultdict(dict)
         for arm in api_data:
             arm_id = arm['treatmentArmId']
-            #if arm_id != 'EAY131-G':
-                 #continue
+            # if arm_id != 'EAY131-Q':
+                 # continue
 
             arm_data[arm_id]['name']      = arm['name']
             arm_data[arm_id]['arm_id']    = arm_id
@@ -306,9 +312,9 @@ class TreatmentArms(object):
     @staticmethod
     def __validate_variant_dict(variant):
         # Validate that we have enough information to run the aMOIs rules 
-        # processing. Will have different amounts of data depending on the source 
-        # data. From MATCHBox we'll get less than user input, and going to need 
-        #to account for that.
+        # processing. Will have different amounts of data depending on the
+        # source data. From MATCHBox we'll get less than user input, and going
+        # to need to account for that.
         acceptable_keys = ('type', 'gene', 'identifier', 'exon', 'function', 
             'oncominevariantclass')
         if 'type' in variant:
@@ -402,8 +408,14 @@ class TreatmentArms(object):
                             result = self.amoi_lookup_table['positional'][v]
 
         elif variant['type'] == 'cnvs':
-            if variant['identifier'] in self.amoi_lookup_table['cnv']:
-                result = self.amoi_lookup_table['cnv'][variant['identifier']]
+            # Sometimes the MATCHBox team is inserting these data as "gene" (
+            # the way it was originally intended!) and sometimes it's as 
+            # "identifier".  Need to be able to handle both.
+            if variant['gene'] in ('-', '.', None, 'null', ''):
+                variant['gene'] = variant['identifier']
+
+            if variant['gene'] in self.amoi_lookup_table['cnv']:
+                result = self.amoi_lookup_table['cnv'][variant['gene']]
 
         elif variant['type'] == 'fusions':
             if variant['identifier'] in self.amoi_lookup_table['fusion']:
