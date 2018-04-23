@@ -75,18 +75,26 @@ class Matchbox(object):
         self._quiet = quiet
         self._method = method
         self._token = self.__get_token()
+        self.api_data = []
 
+        # TODO: For now, keep the the async code, but don't run asynchronously;
+        #       The MATCHBox API is not build to handle this correctly.
         if self._method == 'sync':
             if not self._quiet:
                 sys.stderr.write("** DEBUG: Making synchronous HTTP request. "
                     "**\n")
             self.api_data = self.__api_call()
         elif self._method == 'async':
+            for page in range(1, 15):
+                self.api_data += self.__api_call(page)
+
+            '''
             if not self._quiet:
                 sys.stderr.write("** DEBUG: Making an asynchronous HTTP "
                     "request.  **\n")
             loop = asyncio.get_event_loop()
             self.api_data = loop.run_until_complete(self.__async_caller(loop))
+            '''
 
         if not self._quiet:
             sys.stdout.write("Completed the call successfully!\n")
@@ -124,6 +132,20 @@ class Matchbox(object):
             self._params['page'] = page 
 
         response = requests.get(self._url, params=self._params, headers=header)
+        
+        # DEBUG XXX: remove me
+        '''
+        print('-'*75)
+        print(response.links)
+        print(response.headers)
+        print('page {} -> {}'.format(page, response.url))
+        print('status: {}; total returned: {}'.format(response.status_code,
+            len(response.json())))
+        # print(len(response.json()))
+        print(response.json()[0].keys())
+        print('-'*75)
+        '''
+
         try: 
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -133,13 +155,14 @@ class Matchbox(object):
         return response.json()
         
     async def __async_caller(self, loop):
+        # TODO: probably will purge this; can't work with MATCHBox.
         # Set up an asynchronous method to make HTTP requests in order to get 
         # the DB more quickly. 
         gathered_data = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=24) as executor:
             futures = [
                 loop.run_in_executor(executor, self.__api_call, page)
-                for page in range(1, 21)
+                for page in range(1, 15)
             ]
             for response in await asyncio.gather(*futures):
                 gathered_data.extend(response)
@@ -160,8 +183,6 @@ class Matchbox(object):
         while counter < 4:  # Keep it to three attempts.
             counter += 1
             response = requests.post(url, data = body)
-            # TODO: Figure out what other kinds of error we might encounter,
-            #       and try to handle them appropriately.
             try:
                 response.raise_for_status()
                 break
