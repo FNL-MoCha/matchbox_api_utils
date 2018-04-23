@@ -146,9 +146,8 @@ class MatchData(object):
                 __method='async'
             
             params = {
-                'page' : '20', 
-                'size' : '500', 
-                'sort' : 'patientSequenceNumber'
+                'size' : '500',
+                'sort' : 'patientSequenceNumber',
             }
 
             matchbox_data = Matchbox(
@@ -607,6 +606,9 @@ class MatchData(object):
             return pt_data
 
     def get_biopsy_summary(self, category=None, ret_type='counts'):
+        # TODO: These numbers are sort of wonky.  Because of the way patients
+        #       are registered, the numbers don't always really make sense. i
+        #       think we need some logic here to clean up the values a bit.
         """
         Return dict of patients registered in MATCHBox with biopsy and 
         sequencing information. 
@@ -623,13 +625,16 @@ class MatchData(object):
         Args:
             catetory (str): biopsy category to return. Valid categories are:
 
-                * pass
-                * failed_biopsy
-                * sequenced
-                * outside
-                * outside_confirmation
-                * progression
-                * initial
+                * patients - Any patient that has ever registered.
+                * failed_biopsy - Number of failed biopsies.
+                * no_biopsy - Number of patient for which no biopsy collected.
+                * pass - Number of biopsies that passed.
+                * sequenced - Number of sequencing results available.
+                * outside - Number of outside assay cases.
+                * confirmation - Number of confirmation sequences for outside
+                    assay results.
+                * progression - Number of progression biopsy cases.
+                * initial - Number of non-outside assay cases.
 
             ret_type (str): Data type to return. Valid types are "counts" and 
                 "ids", where counts is the total number in that category, and 
@@ -642,10 +647,9 @@ class MatchData(object):
 
         Examples:
             >>> print(data.get_biopsy_summary())
-            {u'sequenced': 5620, u'msns': 5620, u'progression': 9, 
-                u'initial': 5563, u'patients': 6491, u'outside': 61, 
-                u'no_biopsy': 465, u'failed_biopsy': 574, u'pass': 5654, 
-                u'outside_confirmation': 21}
+            {'patients': 6560, 'failed_biopsy': 576, 'no_biopsy': 465, 
+             'pass': 5776, 'initial': 5563, 'sequenced': 5748, 
+             'progression': 19, 'outside': 130, 'confirmation': 64}
 
             >>> print(data.get_biopsy_summary(category='progression'))
             {'progression': 19}
@@ -1028,7 +1032,7 @@ class MatchData(object):
         if count_none < 2:
             sys.stderr.write('Error: Mixed query types detected. Please only '
                 'use one type of query ID in this function.\n')
-            sys.exit(1)
+            return None
 
         # Prepare an ID list dict if one is provided. Need some special mapping 
         # and whatnot before we can pass it.
@@ -1128,42 +1132,43 @@ class MatchData(object):
             >>> # Note the result list is too long to print here.
 
             >>> query = {'snvs':['EGFR'], 'indels':['EGFR']}
-            >>> data.find_variant_frequency(query, [15232])
-            ({'15232': {'bsns': [u'T-17-001423'],
-                        'disease': u'Lung adenocarcinoma',
-                        'mois': [{'alternative': u'T',
-                                  'amoi': [u'EAY131-E(i)', u'EAY131-A(e)'],
-                                  'chromosome': u'chr7',
-                                  'confirmed': True,
-                                  'exon': u'20',
-                                  'function': u'missense',
-                                  'gene': u'EGFR',
-                                  'hgvs': u'c.2369C>T',
-                                  'identifier': u'COSM6240',
-                                  'oncominevariantclass': u'Hotspot',
-                                  'position': u'55249071',
-                                  'protein': u'p.Thr790Met',
-                                  'reference': u'C',
-                                  'transcript': u'NM_005228.3',
-                                  'type': u'snvs_indels'},
-                                 {'alternative': u'-',
-                                  'amoi': [u'EAY131-A(i)'],
-                                  'chromosome': u'chr7',
-                                  'confirmed': True,
-                                  'exon': u'19',
-                                  'function': u'nonframeshiftDeletion',
-                                  'gene': u'EGFR',
-                                  'hgvs': u'c.2240_2257delTAAGAGAAGCAACATCTC',
-                                  'identifier': u'COSM12370',
-                                  'oncominevariantclass': u'Hotspot',
-                                  'position': u'55242470',
-                                  'protein': u'p.Leu747_Pro753delinsSer',
-                                  'reference': u'TAAGAGAAGCAACATCTC',
-                                  'transcript': u'NM_005228.3',
-                                  'type': u'snvs_indels'}],
-                        'msns': [u'MSN52258'],
-                        'psn': u'15232'}},
-            1)
+            >>> data.find_variant_frequency(query, [15232])[0]
+            {'15232': {'bsns': ['T-17-001423'],
+            'disease': 'Lung adenocarcinoma',
+            'mois': [{'alleleFrequency': 0.191596,
+                      'alternative': 'T',
+                      'amoi': ['EAY131-A(e)', 'EAY131-E(i)'],
+                      'chromosome': 'chr7',
+                      'confirmed': True,
+                      'exon': '20',
+                      'function': 'missense',
+                      'gene': 'EGFR',
+                      'hgvs': 'c.2369C>T',
+                      'identifier': 'COSM6240',
+                      'oncominevariantclass': 'Hotspot',
+                      'position': '55249071',
+                      'protein': 'p.Thr790Met',
+                      'reference': 'C',
+                      'transcript': 'NM_005228.3',
+                      'type': 'snvs_indels'},
+                     {'alleleFrequency': 0.748107,
+                      'alternative': '-',
+                      'amoi': ['EAY131-A(i)'],
+                      'chromosome': 'chr7',
+                      'confirmed': True,
+                      'exon': '19',
+                      'function': 'nonframeshiftDeletion',
+                      'gene': 'EGFR',
+                      'hgvs': 'c.2240_2257delTAAGAGAAGCAACATCTC',
+                      'identifier': 'COSM12370',
+                      'oncominevariantclass': 'Hotspot',
+                      'position': '55242470',
+                      'protein': 'p.Leu747_Pro753delinsSer',
+                      'reference': 'TAAGAGAAGCAACATCTC',
+                      'transcript': 'NM_005228.3',
+                      'type': 'snvs_indels'}],
+            'msns': ['MSN52258'],
+            'psn': '15232'}}
 
         """
         results = {} 
