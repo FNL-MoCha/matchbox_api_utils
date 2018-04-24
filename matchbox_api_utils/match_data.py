@@ -1358,7 +1358,7 @@ class MatchData(object):
         elif psn:
             # if we are searching by PSN, can get multiple reports. Print them 
             # all as a list.
-            if not self.quiet:
+            if not self._quiet:
                 sys.stderr.write('WARN: Using a PSN can result in multiple reports,'
                     ' especially in cases where\nthere is more than one valid MSN '
                     'per PSN (like as in progression cases. It\nis recommended to '
