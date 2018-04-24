@@ -863,6 +863,9 @@ class MatchData(object):
             >>> print(get_bsn(msn='18184'))
             [u'T-16-000811']
 
+            >>> print(get_bsn(psn='11586'))
+            None
+
         """
         query_term = ''
         if psn:
@@ -871,6 +874,10 @@ class MatchData(object):
             biopsies = []
             if psn in self.data:
                 biopsy_data = self.data[psn]['biopsies']
+                if biopsy_data == 'No_Biopsy':
+                    sys.stderr.write('WARN: No Biopsy for specimen %s.\n' % psn)
+                    return None
+
                 for biop in biopsy_data.keys():
                     if biopsy_data[biop]['biopsy_status'] != 'Failed_Biopsy':
                         biopsies.append(biop)
@@ -1048,7 +1055,6 @@ class MatchData(object):
 
             for p in query_list:
                 if p not in self.data:
-                    print('got here')
                     output_data[query_list[p]] = None
         
         elif msn:
@@ -1088,10 +1094,15 @@ class MatchData(object):
                 output_data[query_list[psn]] = self.data[psn]['ctep_term']
 
         if filtered: 
-            sys.stderr.write('WARN: The following specimens were filtered from '
-                'the output due to either\nthe "outside" or "no_disease" '
-                'filters:\n')
-            sys.stderr.write('\t%s\n' % ','.join(filtered))
+            if len(filtered) > 10:
+                sys.stderr.write('WARN: there were %i records that were '
+                    'filtered from the output due to either\nthe "outside" '
+                    'or "no_disease" option.\n' % len(filtered))
+            else:
+                sys.stderr.write('WARN: The following specimens were filtered '
+                    'from the output due to either\nthe "outside" or '
+                    '"no_disease" filters:\n')
+                sys.stderr.write('\t%s\n' % ','.join(filtered))
         return output_data
 
     def find_variant_frequency(self, query, query_patients=None):
@@ -1347,10 +1358,11 @@ class MatchData(object):
         elif psn:
             # if we are searching by PSN, can get multiple reports. Print them 
             # all as a list.
-            sys.stderr.write('WARN: Using a PSN can result in multiple reports,'
-                ' especially in cases where\nthere is more than one valid MSN '
-                'per PSN (like as in progression cases. It\nis recommended to '
-                'use a MSN for this method.\n')
+            if not self.quiet:
+                sys.stderr.write('WARN: Using a PSN can result in multiple reports,'
+                    ' especially in cases where\nthere is more than one valid MSN '
+                    'per PSN (like as in progression cases. It\nis recommended to '
+                    'use a MSN for this method.\n')
 
             results = {}  
             psn = self.__format_id('rm', psn=psn)

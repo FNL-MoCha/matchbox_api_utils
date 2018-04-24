@@ -20,33 +20,31 @@ def readme():
         return fh.read()
 
 config = {
-    'name'                   : 'matchbox_api_utils',
-    'description'            : ('MATCHBox API Utlilites Package'),
-    'long_description'       : readme(),
-    'version'                : matchbox_api_utils.__version__,
-    'author'                 : 'Dave Sims',
-    'author_email'           : 'david.sims2@nih.gov',
-    'download_url'           : 'https://github.com/drmrgd/matchbox_api_utils.git',
-    'url'                    : 'https://github.com/drmrgd/matchbox_api_utils.git',
-    'test_suite'             : 'nose.collector',
-    'tests_require'          : ['nose'],
-    'packages'               : ['matchbox_api_utils'],
-    'python_requires'        : '>=3.6',
-    'install_requires'       : ['requests>=2.18.4',
-                                'asyncio',
-                                'termcolor>=1.1'
-                               ],
-    'scripts'                : ['bin/map_msn_psn.py',
-                                'bin/matchbox_json_dump.py',
-                                'bin/match_specimen_tracking.py',
-                                'bin/match_variant_frequency.py',
-                                'bin/matchbox_patient_summary.py',
-                                'bin/match_amoi_summary.py',
-                               ],
-    'include_package_data'   : True,
-    'zip_safe'               : False,
-    'license'                : 'MIT',
-    'cmdclass'               : {'install' : install}
+    'name'                 : 'matchbox_api_utils',
+    'description'          : ('MATCHBox API Utlilites Package'),
+    'long_description'     : readme(),
+    'version'              : matchbox_api_utils.__version__,
+    'author'               : 'Dave Sims',
+    'author_email'         : 'david.sims2@nih.gov',
+    'download_url'         : 'https://github.com/drmrgd/matchbox_api_utils.git',
+    'url'                  : 'https://github.com/drmrgd/matchbox_api_utils.git',
+    'test_suite'           : 'nose.collector',
+    'tests_require'        : ['nose'],
+    'packages'             : ['matchbox_api_utils'],
+    'python_requires'      : '>=3.6',
+    'install_requires'     : ['requests>=2.18.4',
+                              'asyncio',
+                              'termcolor>=1.1'
+                             ],
+    'scripts'              : ['bin/map_msn_psn.py',
+                              'bin/matchbox_json_dump.py',
+                              'bin/match_variant_frequency.py',
+                              'bin/matchbox_patient_summary.py',
+                             ],
+    'include_package_data' : True,
+    'zip_safe'             : False,
+    'license'              : 'MIT',
+    'cmdclass'             : {'install' : install}
 }
 
 setup(**config)
