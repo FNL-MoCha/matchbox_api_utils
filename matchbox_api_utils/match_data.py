@@ -537,7 +537,8 @@ class MatchData(object):
                 ], 
                 'cnvs' : [
                     'chromosome', 'identifier', 'confidenceInterval5percent', 
-                    'confidenceInterval95percent', 'copyNumber','confirmed'
+                    'confidenceInterval95percent', 'copyNumber','confirmed',
+                    'gene'
                 ],
                 'fusions' : [
                     'annotation', 'identifier', 'driverReadCount', 'driverGene',
