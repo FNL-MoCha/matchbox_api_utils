@@ -21,6 +21,7 @@ class TestImport(unittest.TestCase):
     proc_mb_file = 'mb_obj_' + today_short + '.json'
     raw_ta_file = 'raw_ta_dump_' + today_short + '.json'
     proc_ta_file = 'ta_obj_' + today_short + '.json'
+    amoi_lookup = 'amoi_lookup_' + today_short + '.json'
 
     # @unittest.skip('Skip create live connection test.')
     def test_can_create_live_connection(self):
@@ -73,12 +74,9 @@ class TestImport(unittest.TestCase):
         ta_data.ta_json_dump()
         self.assertTrue(os.path.isfile(self.proc_ta_file))
         
-    # def tearDown(self):
-        # """
-        # Need to clean up the extra test files that we don't really need.
-        # """
-        # sys.stderr.write('Cleaning up extra test files.\n')
-        # for f in (self.raw_ta_file, self.raw_mb_file, self.proc_mb_file, 
-            # self.proc_ta_file):
-            # if os.path.exists(f):
-                # os.remove(f)
+    def tearDown(self):
+        sys.stderr.write('Cleaning up extra test files.\n')
+        for f in (self.raw_ta_file, self.raw_mb_file, self.proc_mb_file, 
+            self.proc_ta_file, self.amoi_lookup):
+            if os.path.exists(f):
+                os.remove(f)
