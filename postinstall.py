@@ -40,6 +40,7 @@ def write_json(config_data):
     matchbox_api_utils.utils.make_json(outfile=config_file, data=config_data, 
         sort=False)
     fix_perms(config_file)
+
     if test_config_file(config_file) is True:
         sys.stdout.write('Done with config creation!\n')
     else:
@@ -56,6 +57,7 @@ def test_config_file(config_file):
         matchbox_api_utils.utils.print_json(config_data.config_data)
         return True
     except:
+        raise
         return False
 
 def make_config_file(root_dir):

@@ -8,17 +8,15 @@ from matchbox_api_utils.matchbox import Matchbox
 from matchbox_api_utils.match_data import MatchData
 from matchbox_api_utils.match_arms import TreatmentArms
 
-__version__ = '1.9.042418'
+from ._version import __version__ 
 
 __all__ = ['Matchbox','MatchData','TreatmentArms','matchbox_conf']
 
 mb_utils_root = os.path.join(os.environ['HOME'], '.mb_utils')
 if not os.path.isdir(mb_utils_root):
     # os.mkdir(mb_utils_root)
-    sys.stderr.write('ERROR: Can not find the MATCHBox API Utils root dir '
+    sys.stderr.write('WARN: Can not find the MATCHBox API Utils root dir '
         '"%s". You may need to reconfigure your package!\n')
-    sys.exit(1)
-
 
 def get_latest_data(dfiles):
     """
@@ -56,17 +54,25 @@ def get_latest_data(dfiles):
 def get_files(string,file_list):
     return [x for x in file_list if os.path.basename(x).startswith(string)]
 
-json_files = [os.path.join(mb_utils_root, f) for f in os.listdir(mb_utils_root) if f.endswith('.json')]
+if os.path.isdir(mb_utils_root):
+    json_files = [
+        os.path.join(mb_utils_root, f) 
+        for f in os.listdir(mb_utils_root) 
+        if f.endswith('.json')
+    ]
 
-for f in json_files:
-    if 'mb2.0_config.json' in f:
-        mb_config_file = f
+    # Set up default JSON files.
+    for f in json_files:
+        if 'mb2.0_config.json' in f:
+            mb_config_file = f
 
-mb_data_files = get_files('mb_obj', json_files)
-mb_json_data = get_latest_data(mb_data_files)
+    mb_data_files = get_files('mb_obj', json_files)
+    mb_json_data = get_latest_data(mb_data_files)
 
-ta_data_files = get_files('ta_obj', json_files)
-ta_json_data = get_latest_data(ta_data_files)
+    ta_data_files = get_files('ta_obj', json_files)
+    ta_json_data = get_latest_data(ta_data_files)
 
-amois_files = get_files('amoi_lookup', json_files)
-amoi_json_data = get_latest_data(amois_files)
+    amois_files = get_files('amoi_lookup', json_files)
+    amoi_json_data = get_latest_data(amois_files)
+else:
+    sys.stderr.write('Can not initialize default config and db JSON files.\n')

@@ -26,20 +26,30 @@ class Config(object):
             self._config_file = matchbox_api_utils.mb_config_file
         self.config_data = self.read_config()
 
-        if mb_json_data:
-            self.config_data['mb_json_data'] = mb_json_data
-        else:
-            self.config_data['mb_json_data'] = matchbox_api_utils.mb_json_data
+        # This might fail when we are running the package setup post installer for
+        # brand new installs on systems where we have never installed the package.
+        # But the failure is OK, because the rest of the steps will take care of 
+        # filling in the blanks.
+        try:
+            if mb_json_data:
+                self.config_data['mb_json_data'] = mb_json_data
+            else:
+                self.config_data['mb_json_data'] = matchbox_api_utils.mb_json_data
 
-        if ta_json_data:
-            self.config_data['ta_json_data'] = ta_json_data
-        else:
-            self.config_data['ta_json_data'] = matchbox_api_utils.ta_json_data
+            if ta_json_data:
+                self.config_data['ta_json_data'] = ta_json_data
+            else:
+                self.config_data['ta_json_data'] = matchbox_api_utils.ta_json_data
 
-        if amois_lookup:
-            self.config_data['amois_lookup'] = amois_lookup
-        else:
-            self.config_data['amois_lookup'] = matchbox_api_utils.amoi_json_data
+            if amois_lookup:
+                self.config_data['amois_lookup'] = amois_lookup
+            else:
+                self.config_data['amois_lookup'] = matchbox_api_utils.amoi_json_data
+        except AttributeError:
+            sys.stderr.write('Have not yet established initial MATCHBox JSON DB '
+                'files. If this is not a package\nsetup message, then we may have '
+                'a problem and setup needs to be re-run.\n')
+
 
     def __repr__(self):
         return '%s:%s' % (self.__class__, self.__dict__)
