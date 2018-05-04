@@ -1677,3 +1677,48 @@ class MatchData(object):
                 results[m] = filtered_results
 
         return dict(results)
+    
+    def get_biopsy_info(self, *, bsn, term=None):
+        """
+        Collect some metadata info about a biopsy and return a dict of all data,
+        or just a single term:value entry.
+
+        Args:
+            bsn (str):  BSN for which we want to get data.
+            term (str): Optional metadata value to filter on.
+
+        Returns:
+            dict: Dict of results matching the BSN and term (if entered).
+
+        Examples:
+
+            >>> self.get_biopsy_info(bsn='T-16-000029')
+            {'T-16-000029': {
+                'biopsy_source': 'Initial', 
+                'biopsy_status': 'Pass'
+                }
+            }
+            
+            >>> self.get_biopsy_info(bsn='T-16-000029', term='biopsy_source')
+            {'T-16-000029': {'biopsy_source': 'Initial'}}
+
+            >>> self.get_biopsy_info(bsn='T-16-000029', term='foo')
+            None
+            ERROR: No such term 'foo' in data structure!
+        
+        """
+        metaval = defaultdict(dict)
+        wanted_data = ('biopsy_source', 'biopsy_status')
+        psn = self.__format_id('rm', psn=self.get_psn(bsn=bsn))
+        biopsy_record = self.data[psn]['biopsies'][bsn]
+        if term:
+            ret  = utils.get_vals(biopsy_record, term)[0]
+            if ret == '---':
+                sys.stderr.write("ERROR: No such term '%s' in data structure! "
+                    % term)
+                return None
+            metaval[term] = ret
+        else:
+            for t in wanted_data:
+                metaval[t] = utils.get_vals(biopsy_record, t)[0]
+        return {bsn : dict(metaval)}
