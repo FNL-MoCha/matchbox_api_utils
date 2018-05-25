@@ -73,11 +73,19 @@ class MatchData(object):
 
     """
 
-    def __init__(self, matchbox='adult-matchbox', config_file=None, 
+    def __init__(self, matchbox='adult', config_file=None, 
             username=None, password=None, patient=None, json_db='sys_default', 
             load_raw=None, make_raw=None, quiet=True):
 
+        # Determine which MATCHBox we'll be using and validate the entry.
         self._matchbox = matchbox
+        valid_matchboxes = ('adult', 'ped', 'pediatric', 'adult-uat')
+        if self._matchbox not in valid_matchboxes:
+            sys.stderr.write('ERROR: No such MATCHBox "%s". Valid MATCHBoxes ',
+                'are:\n')
+            sys.stderr.write('\n'.join(valid_matchboxes))
+            return None
+
         self._patient = self.__format_id('rm', psn=patient)
         self._json_db = json_db
         self.db_date = utils.get_today('long')

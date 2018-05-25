@@ -20,7 +20,7 @@ def get_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('matchbox', metavar='<matchbox>', help='Name of '
         'MATCHBox to which we make the file. Valid systems are: '
-        '"adult-matchbox", "adult-matchbox-uat", "ped-matchbox".')
+        '"adult", "adult-uat", "ped".')
     parser.add_argument('-d', '--data', metavar='<raw_mb_datafile.json>',
         help='Load a raw MATCHBox database file (usually after running with '
             'the -r option).')

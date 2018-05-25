@@ -21,7 +21,7 @@ def get_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('matchbox', metavar='<matchbox>', help='Name of '
         'MATCHBox system to which the connection will be made. Valid systems '
-        'are "adult-matchbox", "ped-matchbox", "adult-matchbox-uat".')
+        'are "adult", "ped", "adult-uat".')
     parser.add_argument('result_type', choices=['patient','disease'], 
             help='Category of data to output. Can either be patient or disease '
             'level.')

@@ -21,7 +21,7 @@ def get_args():
     parser = argparse.ArgumentParser(description=__doc__,)
     parser.add_argument('matchbox', metavar='<matchbox>', help='Name of '
         'MATCHBox system to which the connection should be made.  Valid names '
-        'are "adult-matchbox", "ped-matchbox", adult-matchbox-uat".')
+        'are "adult", "ped", adult-uat".')
     parser.add_argument('-j', '--json', metavar='<mb_json_file>', 
         default='sys_default', help='Load a MATCHBox JSON file derived from '
         '"matchbox_json_dump.py" instead of a live query')

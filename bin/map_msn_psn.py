@@ -27,7 +27,7 @@ def get_args():
     parser = argparse.ArgumentParser(description = __doc__)
     parser.add_argument('matchbox', metavar='<matchbox>', help='Name of '
         'MATCHBox to which we make the connection. Valid systems are: '
-        '"adult-matchbox", "adult-matchbox-uat", "ped-matchbox".')
+        '"adult", "adult-uat", "ped".')
     parser.add_argument('ids', metavar='<IDs>', nargs='?',
         help='MATCH IDs to query.  Can be single or comma separated list. '
         'Must be used with PSN or MSN option.')
