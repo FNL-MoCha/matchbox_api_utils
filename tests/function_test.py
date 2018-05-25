@@ -11,7 +11,7 @@ class FunctionTests(unittest.TestCase):
         'mb_obj_042018.json'
     )
     # sys_default_json = os.path.join(os.path.dirname(__file__), proc_mb_file)
-    data = MatchData(json_db=sys_default_json)
+    data = MatchData(matchbox='adult', json_db=sys_default_json)
 
     def test_get_biopsy_summary(self):
         self.assertNotEqual(

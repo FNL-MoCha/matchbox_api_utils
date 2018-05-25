@@ -25,7 +25,7 @@ class TestImport(unittest.TestCase):
 
     # @unittest.skip('Skip create live connection test.')
     def test_can_create_live_connection(self):
-        data = MatchData(matchbox='adult-matchbox', json_db=None, make_raw=True,
+        data = MatchData(matchbox='adult', json_db=None, make_raw=True,
             quiet=False)
 
         # DB Date should be same as today if we did a live query.
@@ -56,7 +56,7 @@ class TestImport(unittest.TestCase):
             sorted(data.data['10001'].keys()))
 
         # Load up one discrete patient and check keys.
-        patient_data = MatchData(matchbox='adult-matchbox', json_db=None, 
+        patient_data = MatchData(matchbox='adult', json_db=None, 
                 patient=11583)
         self.assertListEqual(sorted(self.default_keys), 
             sorted(patient_data.data['11583'].keys()))
@@ -67,7 +67,7 @@ class TestImport(unittest.TestCase):
 
     # @unittest.skip('Skip create TreatmentArms DB.')
     def test_can_create_treatment_arms_db(self):
-        ta_data = TreatmentArms(matchbox='adult-matchbox', json_db=None,
+        ta_data = TreatmentArms(matchbox='adult', json_db=None,
             make_raw=True, quiet=False)
         self.assertTrue(os.path.isfile(self.raw_ta_file))
 

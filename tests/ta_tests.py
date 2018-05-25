@@ -9,7 +9,7 @@ from matchbox_api_utils import utils
 
 class TreatmentArmTests(unittest.TestCase):
     # Stick with live queries; they're not too bad.
-    ta_data = TreatmentArms(matchbox='adult-matchbox')
+    ta_data = TreatmentArms(matchbox='adult')
 
     def test_amoi_mapping(self):
         variant1 = {

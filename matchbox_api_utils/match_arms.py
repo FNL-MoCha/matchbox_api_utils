@@ -32,9 +32,9 @@ class TreatmentArms(object):
     Args:
         matchbox (str): Name of the MATCHBox system from which we want to get 
             data. This is required now that we have several systems to choose
-            from. Valid names are ``adult-matchbox``, ``ped-matchbox``, and 
-            ``adult-matchbox-uat`` for those that have access to the adult
-            MATCHBox test system. **DEFUALT:** ``adult-matchbox``.
+            from. Valid names are ``adult``, ``ped``, and ``adult-uat`` for 
+            those that have access to the adult MATCHBox test system. 
+            **DEFUALT:** ``adult``.
 
         config_file (file): Custom config file to use if not using system 
             default.
@@ -65,7 +65,7 @@ class TreatmentArms(object):
 
     """
 
-    def __init__(self, matchbox='adult-matchbox', config_file=None, 
+    def __init__(self, matchbox='adult', config_file=None, 
         username=None, password=None, json_db='sys_default', load_raw=None, 
         make_raw=False, quiet=True):
 

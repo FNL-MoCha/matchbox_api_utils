@@ -53,7 +53,7 @@ def test_config_file(config_file):
     sys.stdout.write('\nTesting new configuration file can be loaded.\n')
     try:
         config_data = matchbox_api_utils.matchbox_conf.Config(
-            matchbox_name='adult-matchbox', config_file=config_file)
+            matchbox_name='adult', config_file=config_file)
         matchbox_api_utils.utils.print_json(config_data.config_data)
         return True
     except:
@@ -73,21 +73,21 @@ def make_config_file(root_dir):
     )
 
     matchboxes = {
-        'adult-matchbox' : {
+        'adult' : {
             'client_name' : 'Adult-MATCH-Production',
             'client_id' : 'xIK6GfCwz87sq2vPd2CJpFtKwaDR32PH',
             'url' : 'https://match.nci.nih.gov/api/v1/patients',
             'arms_url' : 'https://match.nci.nih.gov/api/v1/treatment_arms',
             'version' : '2.0'
         },
-        'adult-matchbox-uat' : {
+        'adult-uat' : {
             'client_name' : 'Adult-MATCH-UAT',
             'client_id' : 'c5dUZ4aL5Bke9DNItN5VzWgcK07Djsh0',
             'url' : 'https://match-uat.nci.nih.gov/api/v1/patients',
             'arms_url' : 'https://match-uat.nci.nih.gov/api/v1/treatment_arms',
             'version' : '2.0'
         },
-        'ped-matchbox' : {
+        'ped' : {
             'client_name' : 'MATCH-Production',
             'client_id' : 'aD7QAC2p8tsR9cd8UZTAMnIEcJrj2tgS',
             'url' : 'https://match-uat.nci.nih.gov/api/v1/patients',
@@ -113,7 +113,7 @@ def make_config_file(root_dir):
 def fix_perms(input_file):
     os.system('chown {} {}'.format(system_user, input_file))
 
-def pre_build_mb_obj(root_dir, matchbox='adult-matchbox'):
+def pre_build_mb_obj(root_dir, matchbox='adult'):
     # TODO: Will need to add a lot more code for handling other systems. For
     # now, we only care about Adult MATCHBox, and so we'll just configure that
     # one.

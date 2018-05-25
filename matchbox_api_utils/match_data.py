@@ -38,9 +38,9 @@ class MatchData(object):
     Args:
         matchbox (str) : Name of the MATCHBox system from which we want to
             get data. This is required now that we have several systems to
-            choose from.  Valid names are ``adult-matchbox``, ``ped-matchbox``,
-            and ``adult-matchbox-uat`` for those that have access to the 
-            adult MATCHBox test system. **DEFAULT:** ``adult-matchbox``.
+            choose from.  Valid names are ``adult``, ``ped``, and 
+            ``adult-uat`` for those that have access to the adult MATCHBox
+            test system. **DEFAULT:** ``adult``.
 
         config_file (file): Custom config file to use if not using system 
             default.
