@@ -81,9 +81,10 @@ class MatchData(object):
         self._matchbox = matchbox
         valid_matchboxes = ('adult', 'ped', 'pediatric', 'adult-uat')
         if self._matchbox not in valid_matchboxes:
-            sys.stderr.write('ERROR: No such MATCHBox "%s". Valid MATCHBoxes ',
+            sys.stderr.write('ERROR: No such MATCHBox "%s". Valid MATCHBoxes '
                 'are:\n')
             sys.stderr.write('\n'.join(valid_matchboxes))
+            sys.stderr.write('\n')
             return None
 
         self._patient = self.__format_id('rm', psn=patient)
