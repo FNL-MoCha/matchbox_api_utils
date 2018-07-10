@@ -82,7 +82,7 @@ class MatchData(object):
         valid_matchboxes = ('adult', 'ped', 'pediatric', 'adult-uat')
         if self._matchbox not in valid_matchboxes:
             sys.stderr.write('ERROR: No such MATCHBox "%s". Valid MATCHBoxes '
-                'are:\n')
+                'are:\n' % matchbox)
             sys.stderr.write('\n'.join(valid_matchboxes))
             sys.stderr.write('\n')
             return None
