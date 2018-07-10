@@ -236,9 +236,7 @@ class TreatmentArms(object):
             # indels
             # nonHotspotRules
             # singleNucleotideVariants
-
         parsed_amois = defaultdict(dict)
-
         wanted = {
             'singleNucleotideVariants' : 'hotspot',
             'indels'                   : 'hotspot',
@@ -266,10 +264,20 @@ class TreatmentArms(object):
                         )
                         nhr_vars['positional'].update({var_id : elem['inclusion']})
                 parsed_amois[wanted[var]] = nhr_vars
-            elif amoi_data[var]:
-                results = {i['identifier'] : i['inclusion'] for i in amoi_data[var]} 
-                parsed_amois[wanted[var]].update(results)
 
+            # Rest of variant classes
+            elif amoi_data[var]:
+                # Now we have the unreliable and random "NOVEL" variants from
+                # outside labs.  Skip all of these since you can't do a 
+                # uniform analysis with the data.
+                for entry in amoi_data[var]:
+                    source = entry['metadata']['variantSource']
+                    if source == 'NOVEL':
+                        continue
+                    else:
+                        parsed_amois[wanted[var]].update(
+                            {entry['identifier'] : entry['inclusion']}
+                        )
         # Pad out data
         for i in wanted.values():
             if i not in parsed_amois:
@@ -293,12 +301,11 @@ class TreatmentArms(object):
         arm_data = defaultdict(dict)
         for arm in api_data:
             arm_id = arm['treatmentArmId']
-            # if arm_id != 'EAY131-Q':
-                 # continue
+            # if arm_id != 'EAY131-Z1G':
+                # continue
 
             arm_data[arm_id]['name']      = arm['name']
             arm_data[arm_id]['arm_id']    = arm_id
-            arm_data[arm_id]['gene']      = arm['gene']
             arm_data[arm_id]['drug_name'] = arm['targetName']
             arm_data[arm_id]['drug_id']   = arm['treatmentArmDrugs'][0]['drugId']
             arm_data[arm_id]['assigned']      = arm['numPatientsAssigned']
