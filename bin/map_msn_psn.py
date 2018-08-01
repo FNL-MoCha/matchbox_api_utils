@@ -1,11 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# TODO: We'll need to configure this for other MATCHBox systems once we get 
+#       the all worked out.  For now, just take the MATCHBox arg as a 
+#       "placeholder", and use it for live connections.  But later, need it to
+#       figure out which JSON file to load.
 """
-Input a MSN, BSN, or PSN, and return the other identifiers. Useful when trying to 
-retrieve the correct dataset and you only know one piece of information.
+Input a MSN, BSN, or PSN, and return the other identifiers. Useful when trying 
+to retrieve the correct dataset and you only know one piece of information.
 
-Note: We are only working with internal BSN, MSN, and PSN numbers for now and can 
-not return Outside Assay identifiers at this time. 
+Note: We are only working with internal BSN, MSN, and PSN numbers for now and 
+can not return Outside Assay identifiers at this time. 
 """
 import sys
 import os
@@ -17,10 +21,13 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData 
 
-version = '3.4.021218'
+version = '3.5.042418'
 
 def get_args():
     parser = argparse.ArgumentParser(description = __doc__)
+    parser.add_argument('matchbox', metavar='<matchbox>', help='Name of '
+        'MATCHBox to which we make the connection. Valid systems are: '
+        '"adult", "adult-uat", "ped".')
     parser.add_argument('ids', metavar='<IDs>', nargs='?',
         help='MATCH IDs to query.  Can be single or comma separated list. '
         'Must be used with PSN or MSN option.')
@@ -60,6 +67,9 @@ def map_id(mb_data, id_list, qtype):
     # MSN and BSN results returns lists. Cat for easier str output.
     for pt in id_list:
         if qtype == 'psn':
+            if pt not in mb_data.data.keys():
+                sys.stderr.write('WARN: No such patient with ID: %s.\n' % pt)
+                continue;
             bsn = mb_data.get_bsn(psn=pt)
             if bsn:
                 bsn = cat_list(bsn)
@@ -141,14 +151,16 @@ if __name__=='__main__':
 
     # Make a call to MATCHbox to get a JSON obj of data.
     if not args['json']:
-        sys.stdout.write('Retrieving a live MATCHBox data object. This may take '
-           'a few minutes...\n')
+        sys.stdout.write('Retrieving a live MATCHBox data object. This may '
+            'take a few minutes...\n')
         sys.stdout.flush()
 
-    data = MatchData(json_db=args['json'], quiet=False)
+    data = MatchData(matchbox=args['matchbox'], json_db=args['json'], 
+        quiet=True)
     sys.stdout.write('\n')
 
-    print('Getting MSN / PSN mapping data...')
+    print('Getting MSN / PSN mapping data (Database date: %s)...' 
+        % data.db_date)
     results = map_id(data, valid_ids, args['type'])
 
     if args['outfile']:

@@ -2,10 +2,10 @@
 import sys
 import json
 from collections import defaultdict
-from pprint import pprint as pp
 
 from matchbox_api_utils import utils
 from matchbox_api_utils import matchbox_conf
+
 from matchbox_api_utils.matchbox import Matchbox
 
 
@@ -30,68 +30,116 @@ class TreatmentArms(object):
     to the aforementioned script.
 
     Args:
-        config_file (file): Custom config file to use if not using system default.
+        matchbox (str): Name of the MATCHBox system from which we want to get 
+            data. This is required now that we have several systems to choose
+            from. Valid names are ``adult``, ``ped``, and ``adult-uat`` for 
+            those that have access to the adult MATCHBox test system. 
+            **DEFUALT:** ``adult``.
 
-        url (str): MATCHBox API URL to use.
+        config_file (file): Custom config file to use if not using system 
+            default.
 
-        creds (dict): MATCHBox credentials to use. Needs to be in the form of: ::
+        username (str): Username required for access to MATCHBox. Typically this
+            is already present in the config file made during setup, but in
+            cases where needed, it can be explicitly defined here. 
 
-            { 'username':<username>, 'password':<password> }
+        password (str): Password associated with the user. As with the above 
+            username argument, this is typically indicated in the config file
+            generated during setup.
 
         json_db (file):     MATCHbox processed JSON file containing the whole 
             dataset. This is usually generated from ``'matchbox_json_dump.py'``. 
-            The default value is ``'sys_default'`` which loads the default package 
-            data. If you wish you get a live call, set this
-            variable to `"None"`.
+            The default value is ``'sys_default'`` which loads the default
+            package data. If you wish you get a live call, set this variable to 
+            `"None"`.
 
         load_raw (file): Load a raw API dataset rather than making a fresh call 
-            to the API. This is intended for dev purpose only and will be 
-            disabled in production.
+            to the API. This is intended for dev purpose only and may be 
+            disabled later.
 
-        make_raw (bool): Make a raw API JSON dataset for dev purposes only.
+        make_raw (bool): Make a raw API JSON dataset for dev purposes only. This
+            file will be used with the ``load_raw`` option.
 
-    Returns:
-        MATCH Treatment Arms object of data and methods.
+        quiet (bool); If ``True``, supress module output debug, information,
+            etc. messages.
 
     """
 
-    def __init__(self, config_file=None, url=None, creds=None, 
-        json_db='sys_default', load_raw=None, make_raw=False):
+    def __init__(self, matchbox='adult', config_file=None, 
+        username=None, password=None, json_db='sys_default', load_raw=None, 
+        make_raw=False, quiet=True):
 
-        self._url = url
-        self._creds = creds
+        self._matchbox = matchbox
         self._json_db = json_db
-        self._load_raw = load_raw
         self.db_date = utils.get_today('long')
-        self._config_file = config_file
-        
-        if not self._url:
-            self._url = utils.get_config_data(self._config_file, 'arms_url')
-        
-        if not self._creds:
-            self._creds = utils.get_config_data(self._config_file, 'creds')
-        
-        if self._json_db == 'sys_default':
-            self._json_db = utils.get_config_data(self._config_file, 
-                'ta_json_data')
+        self._quiet = quiet
 
+        # Ensure we pass "ta" to Matchbox().
         if make_raw:
-            Matchbox(self._url,self._creds,make_raw='ta')
-        elif self._load_raw:
-            self.db_date,matchbox_data = utils.load_dumped_json(self._load_raw)
+            make_raw = 'ta'
+        
+        if quiet is False:
+            sys.stderr.write('INFO: Loading Treatment Arm data from MATCHBox: '
+                '%s\n' % self._matchbox)
+        self._config_data = matchbox_conf.Config(self._matchbox, config_file)
+
+        url = self._config_data.get_config_item('arms_url')
+
+        if username is None:
+            username = self._config_data.get_config_item('username')
+        if password is None:
+            password = self._config_data.get_config_item('password')
+        client_name = self._config_data.get_config_item('client_name')
+        client_id = self._config_data.get_config_item('client_id')
+
+        if self._json_db == 'sys_default':
+            self._json_db = self._config_data.get_config_item('ta_json_data')
+
+        # Loading a pre-made Raw MB dump
+        if load_raw:
+            if self._quiet is False:
+                sys.stderr.write('\n  ->  Starting from a raw TA JSON Obj\n')
+            self.db_date, matchbox_data = utils.load_dumped_json(load_raw)
             self.data = self.make_match_arms_db(matchbox_data)
+
+        # Loading a MB parsed DB
         elif self._json_db:
-            self.db_date,self.data = utils.load_dumped_json(self._json_db)
+            if make_raw:
+                sys.stderr.write("ERROR: You can not load a processed JSON DB "
+                    "*and* ask to make a raw \nDB. You should set the 'json_db' "
+                    "argument to `False`.\n")
+                return None
+
+            self.db_date, self.data = utils.load_dumped_json(self._json_db)
+            if self._quiet is False:
+                sys.stderr.write('\n  ->  Starting from a processed TA JSON '
+                    'Object.\n')
+                sys.stderr.write('\n  ->  JSON database object date: '
+                    '%s\n' % self.db_date)
+
+        # Making a live query
         else:
             # make api call to get json data; load and present to self.data.
-            matchbox_data = Matchbox(self._url,self._creds).api_data
+            if self._quiet is False:
+                sys.stderr.write('  ->  Starting from a live MB instance.\n')
+            params = {'active' : True}
+            matchbox_data = Matchbox(
+                url, 
+                username, 
+                password,
+                client_name, 
+                client_id, 
+                'sync', 
+                params=params, 
+                make_raw=make_raw
+            ).api_data
             self.data = self.make_match_arms_db(matchbox_data)
         
         # Make a condensed aMOI lookup table too for running aMOIs rules.
         self.amoi_lookup_table = self.__gen_rules_table()
 
     def __str__(self):
-        return json.dumps(self.data, sort_keys=True, indent=4)
+        return utils.print_json(self.data)
 
     def __getitem__(self,key):
         return self.data[key]
@@ -99,7 +147,7 @@ class TreatmentArms(object):
     def __iter__(self):
         return self.data.itervalues()
 
-    def ta_json_dump(self,amois_filename=None,ta_filename=None):
+    def ta_json_dump(self, amois_filename=None, ta_filename=None):
         """
         Dump the TreatmentArms data to a JSON file that can be easily loaded 
         downstream. We will make both the treatment arms object, as well as the 
@@ -108,6 +156,7 @@ class TreatmentArms(object):
         Args:
             amois_filename (str): Name of aMOI lookup JSON file. **Default:**
                 `amoi_lookup_<datestring>.json`
+
             ta_filename (str): Name of TA object JSON file **Default:**  
                 `ta_obj_<datestring>.json`
 
@@ -122,8 +171,8 @@ class TreatmentArms(object):
         if not ta_filename:
             ta_filename = 'ta_obj_' + utils.get_today('short') + '.json'
 
-        utils.make_json(amois_filename, self.amoi_lookup_table)
-        utils.make_json(ta_filename, self.data)
+        utils.make_json(outfile=amois_filename, data=self.amoi_lookup_table)
+        utils.make_json(outfile=ta_filename, data=self.data)
 
     def __retrive_data_with_keys(self, data, k1, k2):
         results = {}
@@ -168,15 +217,16 @@ class TreatmentArms(object):
             amoi_data = self.data[arm]['amois']
             for var_type in rules_table:
                 # non_hs mois
-                if var_type in ('deleterious', 'positional') and amoi_data['non_hs'][var_type]:
-                    for var,flag in amoi_data['non_hs'][var_type].items():
-                        rules_table[var_type][var].append('{}({})'.format(
-                            arm,ie_flag[str(flag)]))
+                if var_type in ('deleterious', 'positional'):
+                    if amoi_data['non_hs'][var_type]:
+                        for var, flag in amoi_data['non_hs'][var_type].items():
+                            rules_table[var_type][var].append('{}({})'.format(
+                                arm, ie_flag[str(flag)]))
                 # All other mois
                 elif amoi_data[var_type]:
-                    for var,flag in amoi_data[var_type].items():
+                    for var, flag in amoi_data[var_type].items():
                         rules_table[var_type][var].append('{}({})'.format(
-                            arm,ie_flag[str(flag)]))
+                            arm, ie_flag[str(flag)]))
         return rules_table
 
     def __parse_amois(self, amoi_data):
@@ -186,9 +236,7 @@ class TreatmentArms(object):
             # indels
             # nonHotspotRules
             # singleNucleotideVariants
-
         parsed_amois = defaultdict(dict)
-
         wanted = {
             'singleNucleotideVariants' : 'hotspot',
             'indels'                   : 'hotspot',
@@ -205,16 +253,31 @@ class TreatmentArms(object):
                     'positional' : defaultdict(dict)
                 }
                 for elem in amoi_data[var]:
-                    if elem['oncominevariantclass'] == 'Deleterious':
-                        nhr_vars['deleterious'].update({elem['gene'] : elem['inclusion']})
+                    if 'oncominevariantclass' in elem:
+                        if elem['oncominevariantclass'] == 'Deleterious':
+                            nhr_vars['deleterious'].update(
+                                {elem['gene'] : elem['inclusion']}
+                            )
                     else:
-                        var_id = '|'.join([elem['gene'], elem['exon'], elem['function']])
+                        var_id = '|'.join(
+                            [elem['gene'], elem['exon'], elem['function']]
+                        )
                         nhr_vars['positional'].update({var_id : elem['inclusion']})
                 parsed_amois[wanted[var]] = nhr_vars
-            elif amoi_data[var]:
-                results = { i['matchingId'] : i['inclusion'] for i in amoi_data[var]} 
-                parsed_amois[wanted[var]].update(results)
 
+            # Rest of variant classes
+            elif amoi_data[var]:
+                # Now we have the unreliable and random "NOVEL" variants from
+                # outside labs.  Skip all of these since you can't do a 
+                # uniform analysis with the data.
+                for entry in amoi_data[var]:
+                    source = entry['metadata']['variantSource']
+                    if source == 'NOVEL':
+                        continue
+                    else:
+                        parsed_amois[wanted[var]].update(
+                            {entry['identifier'] : entry['inclusion']}
+                        )
         # Pad out data
         for i in wanted.values():
             if i not in parsed_amois:
@@ -237,47 +300,48 @@ class TreatmentArms(object):
         """
         arm_data = defaultdict(dict)
         for arm in api_data:
-            arm_id = arm['id']
-            # if arm_id != 'EAY131-Z1A':
+            arm_id = arm['treatmentArmId']
+            # if arm_id != 'EAY131-Z1G':
                 # continue
 
-            arm_data[arm_id]['name']          = arm['name']
-            arm_data[arm_id]['arm_id']        = arm['id']
-            arm_data[arm_id]['gene']          = arm['gene']
-            arm_data[arm_id]['drug_name']     = arm['targetName']
-            arm_data[arm_id]['drug_id']       = arm['treatmentArmDrugs'][0]['drugId']
+            arm_data[arm_id]['name']      = arm['name']
+            arm_data[arm_id]['arm_id']    = arm_id
+            arm_data[arm_id]['drug_name'] = arm['targetName']
+            arm_data[arm_id]['drug_id']   = arm['treatmentArmDrugs'][0]['drugId']
             arm_data[arm_id]['assigned']      = arm['numPatientsAssigned']
-            arm_data[arm_id]['excl_diseases'] = self.__retrive_data_with_keys(arm['exclusionDiseases'],'shortName','medraCode')
-            arm_data[arm_id]['ihc']           = self.__retrive_data_with_keys(arm['assayResults'],'gene','assayResultStatus')
-            arm_data[arm_id]['amois']         = self.__parse_amois(arm['variantReport'])
-
+            arm_data[arm_id]['excl_diseases'] = self.__retrive_data_with_keys(
+                arm['exclusionDiseases'], 'shortName', '_id')
+            arm_data[arm_id]['ihc']           = self.__retrive_data_with_keys(
+                arm['assayResults'], 'gene', 'assayResultStatus')
+            arm_data[arm_id]['amois'] = self.__parse_amois(arm['variantReport'])
         return arm_data
     
     @staticmethod
     def __validate_variant_dict(variant):
         # Validate that we have enough information to run the aMOIs rules 
-        # processing. Will have different amounts of data depending on the source 
-        # data. From MATCHBox we'll get less than user input, and going to need 
-        #to account for that.
+        # processing. Will have different amounts of data depending on the
+        # source data. From MATCHBox we'll get less than user input, and going
+        # to need to account for that.
         acceptable_keys = ('type', 'gene', 'identifier', 'exon', 'function', 
             'oncominevariantclass')
         if 'type' in variant:
             if variant['type'] == 'cnvs':
-                acceptable_keys = ('type', 'gene')
+                acceptable_keys = ('type', 'identifier')
             elif variant['type'] == 'fusions':
                 acceptable_keys = ('type', 'identifier')
 
         if not all(i in variant.keys() for i in acceptable_keys):
-            sys.stderr.write("ERROR: Your variant dict is missing keys. You must "
-                "input all keys:\n")
+            sys.stderr.write("ERROR: Your variant dict is missing keys. You "
+                "must input all keys:\n")
             sys.stderr.write("\t%s" % ', '.join(acceptable_keys))
             sys.stderr.write('\n')
             return None
 
     def map_amoi(self, variant):
         """
-        Input a variant dict derived from some kind and return either an aMOI id 
-        in the form of Arm(i|e). If variant is not an aMOI, returns ``'None'``.
+        Input a variant dict derived from some kind and return either an aMOI 
+        id in the form of Arm(i|e). If variant is not an aMOI, returns 
+        ``'None'``.
 
         Args:
             variant (dict):  Variant dict to annotate.  Dict must have the 
@@ -290,12 +354,14 @@ class TreatmentArms(object):
                     - exon
                     - function
 
-                Not all variant types will have meaningful data for these fields,
-                and so fields may be padded with a null char (e.g. '.', '-', 'NA', 
-                etc.).
+                Not all variant types will have meaningful data for these 
+                fields, and so fields may be padded with a null char (e.g. 
+                '.', '-', 'NA', etc.).
 
         Returns
-            list:  Arm ID(s) with (i)nclusion or (e)xclusion information.
+            list:  
+            Arm ID(s) with (i)nclusion or (e)xclusion information, or ``None``
+            if the variant is not an aMOI.
 
         Examples:
             >>> variant = { 
@@ -309,28 +375,52 @@ class TreatmentArms(object):
             self.map_amoi(variant)
             ['EAY131-Y(e)', 'EAY131-P(e)', 'EAY131-N(e)', 'EAY131-H(i)']
 
-        Todo:
-           Check the examples work.
+            >>> variant = { 
+                'type' : 'snvs_indels', 
+                'gene' : 'TP53', 
+                'identifier' : 'COSM10660', 
+                'exon' : '-', 
+                'function' : 'missense' , 
+                'oncominevariantclass' : '-' 
+            }
+            self.map_amoi(variant)
+            None
 
         """
+
         self.__validate_variant_dict(variant)
 
         result = []
         if variant['type'] == 'snvs_indels':
-            if variant['oncominevariantclass'] == 'Hotspot' and variant['identifier'] in self.amoi_lookup_table['hotspot']:
-                result = self.amoi_lookup_table['hotspot'][variant['identifier']]
+            if (
+                variant['oncominevariantclass'] == 'Hotspot' 
+                and variant['identifier'] in self.amoi_lookup_table['hotspot']
+            ):
+                result=self.amoi_lookup_table['hotspot'][variant['identifier']]
 
-            elif variant['oncominevariantclass'] == 'Deleterious' and variant['gene'] in self.amoi_lookup_table['deleterious']:
+            elif (
+                variant['oncominevariantclass'] == 'Deleterious' 
+                and variant['gene'] in self.amoi_lookup_table['deleterious']
+            ):
                 result = self.amoi_lookup_table['deleterious'][variant['gene']]
 
             else:
                 for v in self.amoi_lookup_table['positional']:
                     if v.startswith(variant['gene']):
                         gene,exon,func = v.split('|')
-                        if variant['exon'] == exon and variant['function'] == func:
+                        if (
+                            variant['exon'] == exon 
+                            and variant['function'] == func
+                        ):
                             result = self.amoi_lookup_table['positional'][v]
 
         elif variant['type'] == 'cnvs':
+            # Sometimes the MATCHBox team is inserting these data as "gene" (
+            # the way it was originally intended!) and sometimes it's as 
+            # "identifier".  Need to be able to handle both.
+            if variant['gene'] in ('-', '.', None, 'null', ''):
+                variant['gene'] = variant['identifier']
+
             if variant['gene'] in self.amoi_lookup_table['cnv']:
                 result = self.amoi_lookup_table['cnv'][variant['gene']]
 
@@ -339,23 +429,31 @@ class TreatmentArms(object):
                 result = self.amoi_lookup_table['fusion'][variant['identifier']]
 
         if result:
-            return result
+            return sorted(result)
         else:
             return None
 
-    def map_drug_arm(self,armid=None,drugname=None):
+    def map_drug_arm(self, armid=None, drugname=None, drugcode=None):
         """
-        Input an Arm ID or a drug name, and retun a tuple of arm, drugname, and 
-        ID. If no arm ID or drug name is input, will return a whole table of all 
-        arm data.
+        Input an Arm ID or a drug name, and return a tuple of arm, drugname,
+        and ID. If no arm ID or drug name is input, will return a whole table
+        of all arm data.
 
         Args:
-            armid (str): Offcial NCI-MATCH Arm ID in the form of `EAY131-xxx` (e.g. 
-                'EAY131-Z1A').
-            drugname (str): Drug name as registered in the NCI-MATCH subprotocols.  
-                Right now, required to have the full string (e.g. 'MLN0128(TAK-228)' 
-                or, unfortunately, 'Sunitinib malate (SU011248 L-malate)'), but 
-                will work on a regex to help make this easier later on.
+            armid (str): Offcial NCI-MATCH Arm ID in the form of `EAY131-xxx`
+                (e.g. 'EAY131-Z1A').
+
+            drugname (str): Drug name as registered in the NCI-MATCH 
+                subprotocols. Right now, required to have the full string (e.g.
+                'MLN0128(TAK-228)' or, unfortunately, 'Sunitinib malate 
+                (SU011248 L-malate)'), but will work on a regex to help make 
+                this easier later on.
+
+            drugcode (str): Use the 6-digit drug code to pull results.
+
+        .. note::
+            Note that using the ``drugname`` or ``drugcode`` option may return
+            more than one result as we can have more than one arm per drug.
 
         Returns:
             list: List of tuples or ``None``.
@@ -364,27 +462,44 @@ class TreatmentArms(object):
             >>> map_drug_arm(armid='EAY131-Z1A')
             (u'EAY131-Z1A', 'Binimetinib', u'788187')
 
-        Todo:
-            Write regex for drug name mapping so that we don't need to deal with 
-            long, cryptic strings.
+            >>> map_drug_arm(drugname='Afatinib')
+            [('EAY131-A', 'Afatinib', '750691'),
+             ('EAY131-B', 'Afatinib', '750691'),
+             ('EAY131-BX1', 'Afatinib', '750691')]
+
+            >>> map_drug_arm(drugcode='750691')
+            [('EAY131-A', 'Afatinib', '750691'),
+             ('EAY131-B', 'Afatinib', '750691'),
+             ('EAY131-BX1', 'Afatinib', '750691')]
+
+            >>> map_drug_arm(drugname='Tylenol')
+            None
 
         """
 
-        if all(x is None for x in [armid,drugname]):
+        if all(x is None for x in [armid, drugname, drugcode]):
             return [(arm, self.data[arm]['drug_name'], 
                 self.data[arm]['drug_id']) for arm in sorted(self.data)]
         elif armid:
             if armid in self.data:     
                 return (armid, self.data[armid]['drug_name'], 
                         self.data[armid]['drug_id'])
-        elif drugname: 
+        elif drugname or drugcode: 
+            results = [] 
             for arm in self.data:
-                if self.data[arm]['drug_name'] == drugname:
-                    return (self.data[arm]['arm_id'],drugname, 
-                            self.data[arm]['drug_id'])
+                if drugname and self.data[arm]['drug_name'] != drugname:
+                    continue
+                elif drugcode and self.data[arm]['drug_id'] != drugcode:
+                    continue
+                results.append(
+                    (self.data[arm]['arm_id'], self.data[arm]['drug_name'], 
+                    self.data[arm]['drug_id']))
+            if not results:
+                results = None
+            return results
         return None
     
-    def get_exclusion_disease(self,armid):
+    def get_exclusion_disease(self, armid):
         """
         Input an arm ID and return a list of exclusionary diseases for the arm, 
         if there are any. Otherwise return ``None``.
@@ -393,22 +508,31 @@ class TreatmentArms(object):
             armid (str): Full identifier of the arm to be queried.
 
         Returns:
-            list: List of exclusionary diseases for the arm, or ``None`` if there 
-            aren't any.
+            list: List of exclusionary diseases for the arm, or ``None`` if 
+            there aren't any.
 
         Example:
-            >>> get_exclusion_disease('EAY131-Z1A')
-            [u'Melanoma', u'Colorectal Cancer']
+            >>> self.get_exclusion_disease('EAY131-Z1A')
+            ['Melanoma']
 
-            >>> get_exclusion_disease('EAY131-Y')
+            >>> self.get_exclusion_disease('EAY131-Y')
             None
+
+            >>> self.get_exclusion_disease('EAY131-A')
+            ['Bronchioloalveolar carcinoma',
+             'Lung adenocar. w/ bronch. feat.',
+             'Lung adenocarcinoma',
+             'Non-small cell lung cancer, NOS',
+             'Small Cell Lung Cancer',
+             'Squamous cell lung carcinoma']
 
         """
         if armid in self.data:
-            if self.data[armid]['excl_diseases']:
-                return self.data[armid]['excl_diseases'].keys()
+            excl_diseases = self.data[armid].get('excl_diseases', None)
+            if excl_diseases is not None:
+                return list(excl_diseases.keys())
             else:
-                return None
+                return excl_diseases
         else:
             print('ERROR: No arm with ID: "%s" found in study!' % armid)
             return None
@@ -422,22 +546,52 @@ class TreatmentArms(object):
             arm (str):  Arm identifier to query
 
         Returns:
+            dict: All aMOIs indicated for an arm.
 
-        Todo:
-            Need to finish implementing this method.  Currently only dumping a 
-            dict.
-            
         """
 
         try:
             arm_data = self.data[arm]
         except KeyError:
-            sys.stderr.write('ERROR: No arm with ID: "%s" found in study!\n' % arm)
+            sys.stderr.write('ERROR: No arm with ID: "%s" found in '
+                'study!\n' % arm)
             return None
 
         # Iterate through hotspots, cnvs, fusions, and non-hs aMOIs and generate
         # a list of tuples of data that can be printed easily later.
-
-        #TODO: implement this.  For now just dump out dict.
         return dict(arm_data['amois'])
+
+    def get_arm_by_amoi(self, gene=None, hotspot=None):
+        """
+        Query study arms by gene or hotspot ID
+
+        Input either a HUGO gene name or a hotspot ID as it is represented in
+        the hotspots BED file (e.g. COSM476, MCH12, etc.), and return a list of
+        arms for which that variant is a part, along with the type of variant 
+        represented by the identifier.  If one were to enter BRAF, then all arms
+        that contain BRAF mutations, along with the categories of `Hotspot` and 
+        `Fusion` would be indicated, as BRAF can be activating in either of 
+        those categories.  
+
+        Args:
+            gene (str): HUGO genename to use for querying the database.
+
+            hotspot (str): NCI-MATCH assay hotspots BED file identifier to use
+                query the database.
+
+        Returns:
+            list: List of study arms for which the query variants are aMOIs.
+
+        Examples:
+
+            >>> # Need to put an example here.
+
+        .. attention::
+            This method is not yet functional and is only a placeholder for
+            now.  Intend to code and implement soon!
+
+        """
+        
+        if gene:
+            pass
 

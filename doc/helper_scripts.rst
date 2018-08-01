@@ -1,5 +1,9 @@
 MATCHBox API Utils Helper Scripts
 =================================
+Included in the package are a few pre-made helper scripts for routine work. In
+general you'll get more mileage out of just loading the modules and rolling 
+your own.  However, there are some very frequent use cases where one of these 
+pre-made scripts might be helpful.
 
 MATCHBox JSON Dump (matchbox_json_dump.py)
 ------------------------------------------
@@ -12,32 +16,49 @@ into the system (at least until lockdown occurs).  This will put the resultant
 JSON file into the current directory, where it should probably be migrated into 
 ``$HOME/.mb_utils/`` to be picked up by the rest of the system.
 
+.. note::
+    The older JSON database files are retained with the new one, and as such
+    can be loaded into the API at any time, in the event that one requires
+    older data.
+
 MATCHBox JSON Dump Help Doc
 ***************************
 .. code-block:: python
 
-    Usage: 
-        matchbox_json_dump.py [-h] [-d <raw_mb_datafile.json>] [-r] [-p <psn>]
-        [-t <ta_obj.json>] [-a <amoi_obj.json>]
-        [-m <mb_obj.json>] [-v]
+    usage: matchbox_json_dump.py [-h] [-d <raw_mb_datafile.json>] [-r] [-p <psn>]
+                                 [-t <ta_obj.json>] [-a <amoi_obj.json>]
+                                 [-m <mb_obj.json>] [-v]
+                                 <matchbox>
 
-    Optional Arguments:
-        -r, --raw        Generate a raw dump of MATCHBox for debugging and dev 
-                         purposes.
-                         No filtering or condensing of data at all.
-        -d, --data       Load a raw MATCHBox database file (usually after running
-                         with the -r option.
-        -p, --patient    Patient sequence number used to limit output for testing
-                         and dev purposes
-        -t, --ta_json    Treatment Arms obj JSON filename. DEFAULT: 
-                         ta_obj_<datestring>.json
-        -a, --amoi_json  aMOIs lookup filename. DEFAULT: 
-                         "amois_lookup_<datestring>.json".
-        -m, --mb_json    Name of Match Data obj JSON file. DEFAULT: 
-                         "mb_obj_<datestring>.json".
+    Get parsed dataset from MATCHBox and dump as a JSON object that we can use
+    later on to speed up development and periodic searching for data.
 
-    -h, --help           Show this help message and exit
-    -v, --version        Show program's version number and exit
+    positional arguments:
+      <matchbox>            Name of MATCHBox to which we make the file. Valid
+                            systems are: "adult-matchbox", "adult-matchbox-uat",
+                            "ped-matchbox". DEFAULT: adult-matchbox
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -d <raw_mb_datafile.json>, --data <raw_mb_datafile.json>
+                            Load a raw MATCHBox database file (usually after
+                            running with the -r option).
+      -r, --raw             Generate a raw dump of MATCHbox for debugging and dev
+                            purposes.
+      -p <psn>, --patient <psn>
+                            Patient sequence number used to limit output for
+                            testing and dev purposes
+      -t <ta_obj.json>, --ta_json <ta_obj.json>
+                            Treatment Arms obj JSON filename. DEFAULT:
+                            ta_obj_<datestring>.json
+      -a <amoi_obj.json>, --amoi_json <amoi_obj.json>
+                            aMOIs lookup filename. DEFAULT:
+                            "amois_lookup_<datestring>.json".
+      -m <mb_obj.json>, --mb_json <mb_obj.json>
+                            Name of Match Data obj JSON file. DEFAULT:
+                            "mb_obj_<datestring>.json".
+      -v, --version         show program's version number and exit
+
 
 MAP MSN PSN (map_msn_psn.py)
 ----------------------------
@@ -47,6 +68,10 @@ to retrieve the correct dataset and you only know one piece of information.
 .. note::
     We are only working with internal BSN, MSN, and PSN numbers for now and
     can not return Outside Assay identifiers at this time.
+
+.. todo::
+    Need to add a MATCHBox variable here probably so that we can specify which 
+    study to look in.
 
 MAP MSN PSN Help Doc
 ********************
@@ -77,10 +102,13 @@ MATCH Variant Frequency (match_variant_frequency.py)
 ----------------------------------------------------
 
 Input a list of genes by variant type and get back a table of NCI-MATCH hits
-that can be further analyzed in Excel or some other tool. Can either input a patient
-(or comma separated list of patients) to query, or query the entire dataset. Will 
-limit the patient set to the non-outside assay results only, as the Outside Assay
-data is very unreliable.
+that can be further analyzed in Excel or some other tool. Can either input a 
+patient (or comma separated list of patients) to query, or query the entire 
+dataset. Will limit the patient set to the non-outside assay results only, 
+as the Outside Assay data is very unreliable.
+
+.. todo::
+   Update once we get the script updated.
 
 MATCH Variant Frequency Help Docs
 *********************************
@@ -140,5 +168,4 @@ MATCHBox Patient Summary Help Docs
 
     -h, --help     Show this help message and exit
     -v, --version  Show program's version number and exit
-
 
