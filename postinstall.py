@@ -90,8 +90,8 @@ def make_config_file(root_dir):
         'ped' : {
             'client_name' : 'MATCH-Production',
             'client_id' : 'aD7QAC2p8tsR9cd8UZTAMnIEcJrj2tgS',
-            'url' : 'https://match-uat.nci.nih.gov/api/v1/patients',
-            'arms_url' : 'https://match-uat.nci.nih.gov/api/v1/treatment_arms',
+            'url' : 'https://pedmatch.nci.nih.gov/api/v1/patients',
+            'arms_url' : 'https://pedmatch.nci.nih.gov/api/v1/treatment_arms',
             'version' : '2.0'
         }
     }
