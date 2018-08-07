@@ -1440,7 +1440,8 @@ class MatchData(object):
                 results[p] = self.data[p]['ta_arms']
         return results 
     
-    def get_patients_by_disease(self, histology=None, medra_code=None):
+    def get_patients_by_disease(self, histology=None, medra_code=None, 
+            outside=False):
         """
         Input a disease and return a list of patients that were registered with 
         that disease type. For histology query, we can do partial matching 
@@ -1460,6 +1461,7 @@ class MatchData(object):
         Args:
             histology (str):  One of the CTEP shotname disease codes.
             medra_code (str): A MEDRA code to query rather than histology.
+            outside (bool):   Include Outside Assays patients in the results.
 
         Returns:
             dict: Dict of Patient : Histology Mapping
@@ -1521,10 +1523,14 @@ class MatchData(object):
         results = {}
         if histology:
             for pt in self.data:
+                if outside is False and 'OUTSIDE' in self.data[pt]['source']:
+                    continue
                 if histology.lower() in self.data[pt]['ctep_term'].lower():
                     results[pt] = self.data[pt]['ctep_term']
         elif medra_code:
             for pt in self.data:
+                if outside is False and 'OUTSIDE' in self.data[pt]['source']:
+                    continue
                 if medra_code == self.data[pt]['medra_code']:
                     results[pt] = self.data[pt]['ctep_term']
         return results
