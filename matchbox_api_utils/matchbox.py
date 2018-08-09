@@ -175,7 +175,7 @@ class Matchbox(object):
             "username" : self._username,
             "password" : self._password,
             "grant_type" : "password",
-            "scope" : "openid roles email",
+            "profile" : "openid roles email profile",
             "connection" : self._client_name,
         }
         url = 'https://ncimatch.auth0.com/oauth/ro'
