@@ -10,7 +10,7 @@ from matchbox_api_utils.match_arms import TreatmentArms
 
 from ._version import __version__ 
 
-__all__ = ['Matchbox','MatchData','TreatmentArms','matchbox_conf']
+__all__ = ['Matchbox','MatchData','TreatmentArms','matchbox_conf', 'utils']
 
 mb_utils_root = os.path.join(os.environ['HOME'], '.mb_utils')
 if not os.path.isdir(mb_utils_root):
