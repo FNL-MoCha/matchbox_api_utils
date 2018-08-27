@@ -179,7 +179,7 @@ class MatchData(object):
 
         if self.data is None:
             return None
-        # Load up a medra : ctep term db based on entries so that we can look
+        # Load up a meddra : ctep term db based on entries so that we can look
         # data up on the fly.
         self._disease_db = self.__make_disease_db()
 
@@ -193,18 +193,18 @@ class MatchData(object):
         return self.data.itervalues()
 
     def __make_disease_db(self):
-        # Make an on the fly mapping of medra to ctep term db for mapping later
+        # Make an on the fly mapping of meddra to ctep term db for mapping later
         # on.  Might make a class and all that later, but for now, since we do
         # not know how this will be displayed later, this is good enough.
         med_map = {}
         for pt in self.data.values():
-            medra = pt.get('medra_code', None)
-            if medra is None:
+            meddra = pt.get('meddra_code', None)
+            if meddra is None:
                 print('Offending record:')
                 utils.pp(pt)
                 sys.exit()
-            if medra != 'null':
-                med_map.update({pt['medra_code'] : pt['ctep_term']})
+            if meddra != 'null':
+                med_map.update({pt['meddra_code'] : pt['ctep_term']})
         return med_map
 
     def __get_record(self, psn):
@@ -389,7 +389,7 @@ class MatchData(object):
                 latest_disease = {}
 
             patients[psn]['ctep_term'] = latest_disease.get('ctepTerm', 'null')
-            patients[psn]['medra_code'] = latest_disease.get('_id', 'null')
+            patients[psn]['meddra_code'] = latest_disease.get('_id', 'null')
 
             patients[psn]['all_msns']     = []
             patients[psn]['all_biopsies'] = []
@@ -419,6 +419,10 @@ class MatchData(object):
             else:
                 for biopsy in record['biopsies']:
                     bsn = biopsy['biopsySequenceNumber']
+                    # XXX: manual skip for now; will have to find a way to clean up
+                    #      database later.
+                    if bsn == 'T-16-002080' and psn == '12850':
+                        continue
                     patients[psn]['all_biopsies'].append(bsn)
                 
                     biopsy_data = defaultdict(dict)
@@ -777,6 +781,11 @@ class MatchData(object):
             >>> print(get_psn(msn='57471'))
             PSN15971
 
+        .. warning::
+            I have found at least one example where there was a duplicate BSN used
+            for a patient, and so great care must be used if trying to map this 
+            BSN to other data (see PSNs 12913 and 12850)!
+
         """
         query_term = ''
         for p in self.data:
@@ -910,33 +919,33 @@ class MatchData(object):
         sys.stderr.write('No result for id %s\n' % query_term)
         return None
 
-    def get_disease_summary(self, query_disease=None, query_medra=None, 
+    def get_disease_summary(self, query_disease=None, query_meddra=None, 
             outside=False):
         """
         Return a summary of registered diseases and counts. With no args, will 
         return a list of all diseases and counts as a dict. One can also limit 
-        output to a list of diseases or medra codes and get counts for those 
+        output to a list of diseases or meddra codes and get counts for those 
         only. 
 
         Args:
             query_disease (list): List of diseases to filter on.
-            query_medra   (list): List of MEDRA codes to filter on.
+            query_meddra   (list): List of MEDDRA codes to filter on.
             outside (bool): Include patients registered under outside assay
                 initiative in counts. DEFAULT: False
 
         Returns:
             dict: Dictionary of disease(s) and counts in the form of: ::
 
-            {medra_code : (ctep_term, count)}
+            {meddra_code : (ctep_term, count)}
 
         Examples:
-            >>> data.get_disease_summary(query_medra=['10006190'])
+            >>> data.get_disease_summary(query_meddra=['10006190'])
             {'10006190': (u'Invasive breast carcinoma', 605)}
 
             >>> data.get_disease_summary(query_disease=['Invasive breast carcinoma'])
             {u'10006190': ('Invasive breast carcinoma', 605)} 
 
-            >>> data.get_disease_summary(query_medra=[10006190,10024193,10014735])
+            >>> data.get_disease_summary(query_meddra=[10006190,10024193,10014735])
             {'10006190': (u'Invasive breast carcinoma', 605),
              '10014735': (u'Endometrioid endometrial adenocarcinoma', 111),
               '10024193': (u'Leiomyosarcoma (excluding uterine leiomyosarcoma)', 55)}
@@ -950,21 +959,21 @@ class MatchData(object):
                 continue
 
             # Skip the registered but not yet biopsied patients.
-            if psn['medra_code'] == 'null': 
+            if psn['meddra_code'] == 'null': 
                 continue
-            disease_counts[psn['medra_code']] += 1
+            disease_counts[psn['meddra_code']] += 1
 
-        if query_medra:
-            if isinstance(query_medra, list) is False:
+        if query_meddra:
+            if isinstance(query_meddra, list) is False:
                 sys.stderr.write('ERROR: arguments to get_disease_summary() '
                     'must be lists!\n') 
                 return None
-            for q in query_medra:
+            for q in query_meddra:
                 q = str(q)
                 if q in disease_counts:
                     results[q] = (self._disease_db[q], disease_counts[q])
                 else:
-                    sys.stderr.write('MEDRA code "%s" was not found in the '
+                    sys.stderr.write('MEDDRA code "%s" was not found in the '
                         'MATCH study dataset.\n' % q)
         elif query_disease:
             if isinstance(query_disease, list) is False:
@@ -973,16 +982,16 @@ class MatchData(object):
                 return None
             for q in query_disease:
                     q = str(q)
-                    medra = next((medra for medra, term in self._disease_db.items() if q == term), None)
-                    if medra is not None:
-                        results[medra] = (q, disease_counts[medra])
+                    meddra = next((meddra for meddra, term in self._disease_db.items() if q == term), None)
+                    if meddra is not None:
+                        results[meddra] = (q, disease_counts[meddra])
                     else:
                         sys.stderr.write('CTEP Term "%s" was not found in the '
                             'MATCH study dataset.\n' % q)
         else:
-            for medra in self._disease_db:
-                results[medra] = (self._disease_db[medra], 
-                    disease_counts[medra])
+            for meddra in self._disease_db:
+                results[meddra] = (self._disease_db[meddra], 
+                    disease_counts[meddra])
 
         if results:
             return dict(results)
@@ -990,7 +999,7 @@ class MatchData(object):
             return None
 
     def get_histology(self, psn=None, msn=None, bsn=None, outside=False, 
-            no_disease=False):
+            no_disease=False, ret_type='ctep_term'):
         """
         Return dict of PSN:Disease for valid biopsies.  Valid biopsies are 
         defined as being only `Passed`,  and can not be `Failed`, `No Biopsy`,
@@ -1010,6 +1019,9 @@ class MatchData(object):
 
             no_disease (bool): Return all data, even if there is no disease 
                 indicated for the patient specimen. Default: ``False``
+
+            ret_type (str): Type of data to return.  Can only either be one
+                of 'ctep_term' or 'meddra_code'
 
         Returns:
             dict: Dict of ID : Disease mappings. If no match for input ID, 
@@ -1041,6 +1053,9 @@ class MatchData(object):
             No result for id MSN3060
             {'MSN3060': None}
 
+            >>> data.get_histology(psn='11352', ret_type='meddra_code')
+            {'PSN11352' : '10033700'}
+
         """
 
         # Don't want to allow for mixed query types. So, number of None args 
@@ -1049,6 +1064,11 @@ class MatchData(object):
         if count_none < 2:
             sys.stderr.write('Error: Mixed query types detected. Please only '
                 'use one type of query ID in this function.\n')
+            return None
+
+        if ret_type not in ('ctep_term', 'meddra_code'):
+            sys.stderr.write('Error: Choose either "ctep_term" or "meddra_code"'
+                ' as the ret_type.')
             return None
 
         # Prepare an ID list dict if one is provided. Need some special mapping 
@@ -1100,7 +1120,8 @@ class MatchData(object):
                 if no_disease is False and self.data[psn]['ctep_term']=='null':
                     filtered.append(psn)
                     continue
-                output_data[query_list[psn]] = self.data[psn]['ctep_term']
+
+                output_data[query_list[psn]] = self.data[psn][ret_type]
 
         if filtered: 
             if len(filtered) > 10:
@@ -1440,7 +1461,7 @@ class MatchData(object):
                 results[p] = self.data[p]['ta_arms']
         return results 
     
-    def get_patients_by_disease(self, histology=None, medra_code=None, 
+    def get_patients_by_disease(self, histology=None, meddra_code=None, 
             outside=False):
         """
         Input a disease and return a list of patients that were registered with 
@@ -1448,19 +1469,19 @@ class MatchData(object):
         based on the python ``in`` function. So, if one were to query `Lung 
         Adenocarcinoma`, `Lung` , `Lung Adeno`, or `Adeno`, all Lung 
         Adenocarinoma cases would be returned. It may be more robust to just 
-        stick with MEDRA codes as they would to be more precise 
+        stick with MEDDRA codes as they would to be more precise 
         
         .. note:: 
             Simply inputting `Lung`, would also return `Non-small Cell Lung 
             Adenocarinoma`, `Squamous Cell Lung Adenocarcinoma`, etc, and 
             querying `Adeno` would return anything that had `adeno`. So, care 
             must be taken with the query, and secondary filtering may be 
-            necessary. Querying based on MEDRA codes is specific and only an 
+            necessary. Querying based on MEDDRA codes is specific and only an 
             exact match will return results; **This is the preferred method.**
 
         Args:
             histology (str):  One of the CTEP shotname disease codes.
-            medra_code (str): A MEDRA code to query rather than histology.
+            meddra_code (str): A MEDDRA code to query rather than histology.
             outside (bool):   Include Outside Assays patients in the results.
 
         Returns:
@@ -1485,11 +1506,11 @@ class MatchData(object):
             {'Small cell lung cancer', 'Non-small cell lung cancer, NOS'}
 
             Here we distinguish and only get the Non-small cell cases, by 
-            using a MEDRA code
-            >>> medra = utils.map_histology(
+            using a MEDDRA code
+            >>> meddra = utils.map_histology(
             ...    self._disease_db, 
             ...    histology='Non-small cell lung cancer, NOS')
-            >>> data.get_patients_by_disease(medra_code=medra)
+            >>> data.get_patients_by_disease(meddra_code=meddra)
             {'10196': 'Non-small cell lung cancer, NOS',
              '10312': 'Non-small cell lung cancer, NOS',
              '10540': 'Non-small cell lung cancer, NOS',
@@ -1515,9 +1536,9 @@ class MatchData(object):
 
         """
 
-        if not any(x for x in [histology, medra_code]):
+        if not any(x for x in [histology, meddra_code]):
             sys.stderr.write("ERROR: You must input either a histology or "
-                "medra code to query!\n")
+                "meddra code to query!\n")
             return None
 
         results = {}
@@ -1527,11 +1548,11 @@ class MatchData(object):
                     continue
                 if histology.lower() in self.data[pt]['ctep_term'].lower():
                     results[pt] = self.data[pt]['ctep_term']
-        elif medra_code:
+        elif meddra_code:
             for pt in self.data:
                 if outside is False and 'OUTSIDE' in self.data[pt]['source']:
                     continue
-                if medra_code == self.data[pt]['medra_code']:
+                if meddra_code == self.data[pt]['meddra_code']:
                     results[pt] = self.data[pt]['ctep_term']
         return results
 
@@ -1722,6 +1743,7 @@ class MatchData(object):
             ERROR: No such term 'foo' in data structure!
         
         """
+        print('incoming bsn: %s' % bsn)
         metaval = defaultdict(dict)
         wanted_data = ('biopsy_source', 'biopsy_status')
         psn = self.__format_id('rm', psn=self.get_psn(bsn=bsn))
