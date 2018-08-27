@@ -1743,7 +1743,6 @@ class MatchData(object):
             ERROR: No such term 'foo' in data structure!
         
         """
-        print('incoming bsn: %s' % bsn)
         metaval = defaultdict(dict)
         wanted_data = ('biopsy_source', 'biopsy_status')
         psn = self.__format_id('rm', psn=self.get_psn(bsn=bsn))
