@@ -646,7 +646,7 @@ class MatchData(object):
                 * sequenced - Number of sequencing results available.
                 * outside - Number of outside assay cases.
                 * confirmation - Number of confirmation sequences for outside
-                    assay results.
+                  assay results.
                 * progression - Number of progression biopsy cases.
                 * initial - Number of non-outside assay cases.
 
@@ -1497,7 +1497,7 @@ class MatchData(object):
              '16248': 'Anaplastic oligodendroglioma'}
 
             We see here that Small Cell and Non-small cell get combined.
-            >>> 
+
             >>> ret_list = data.get_patients_by_disease(
             ...     histology='Small cell lung cancer').values()
             >>> print('Total returned: {}'.format(len(ret_list)))
@@ -1507,9 +1507,11 @@ class MatchData(object):
 
             Here we distinguish and only get the Non-small cell cases, by 
             using a MEDDRA code
+
             >>> meddra = utils.map_histology(
             ...    self._disease_db, 
             ...    histology='Non-small cell lung cancer, NOS')
+
             >>> data.get_patients_by_disease(meddra_code=meddra)
             {'10196': 'Non-small cell lung cancer, NOS',
              '10312': 'Non-small cell lung cancer, NOS',
@@ -1585,7 +1587,9 @@ class MatchData(object):
                 (u'16472', 'EAY131-E', u'FORMERLY_ON_ARM_OFF_TRIAL')
             ]
 
-            Note: we use default outside assay filter in this case.
+            .. note:: 
+                we use default outside assay filter in this case.
+
             >>> data.get_patients_by_arm(arm='EAY131-E')
             [
                 ('10626', 'EAY131-E', 'ON_TREATMENT_ARM'), 
