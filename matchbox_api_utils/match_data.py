@@ -9,6 +9,7 @@ from matchbox_api_utils import matchbox_conf
 
 from matchbox_api_utils.matchbox import Matchbox
 from matchbox_api_utils.match_arms import TreatmentArms
+import matchbox_api_utils._version
 
 
 class MatchData(object):
@@ -76,6 +77,9 @@ class MatchData(object):
     def __init__(self, matchbox='adult', config_file=None, 
             username=None, password=None, patient=None, json_db='sys_default', 
             load_raw=None, make_raw=None, quiet=True):
+
+        sys.stderr.write('Welcome to MATCHBox API Utils Version %s\n' % 
+            matchbox_api_utils._version.__version__)
 
         # Determine which MATCHBox we'll be using and validate the entry.
         self._matchbox = matchbox
