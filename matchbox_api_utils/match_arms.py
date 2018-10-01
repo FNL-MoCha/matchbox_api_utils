@@ -129,7 +129,6 @@ class TreatmentArms(object):
                 password,
                 client_name, 
                 client_id, 
-                'sync', 
                 params=params, 
                 make_raw=make_raw
             ).api_data

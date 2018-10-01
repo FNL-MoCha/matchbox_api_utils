@@ -154,9 +154,6 @@ class MatchData(object):
 
             if self._patient:
                 url += '/%s' % self._patient
-                __method='sync'
-            else:
-                __method='async'
             
             params = {
                 'size' : '500',
@@ -169,7 +166,6 @@ class MatchData(object):
                 password, 
                 client_name, 
                 client_id, 
-                method=__method, 
                 params=params, 
                 make_raw=make_raw
             ).api_data
