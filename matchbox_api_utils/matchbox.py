@@ -2,8 +2,6 @@
 import os
 import sys
 import json
-import asyncio
-import concurrent.futures
 import requests
 
 from matchbox_api_utils import utils
@@ -40,12 +38,6 @@ class Matchbox(object):
              MATCHBox to which you are connecting.  As with the client name,
              this is established in the configuration file typically.
 
-        method (str): Method by which we'll make HTTP requests to the client.
-            Valid values are 'sync' for synchronous requests (usually when 
-            there is only one request to be made), or 'async' for asynchronous
-            requests (usually when we're trying to get the whole DB and have
-            to make many calls to the server).
-
         params (dict): Parameters to pass along to the API in the request. For
             example, if you wanted to add "&is_oa=True" to the API URL, you can
             add: ::
@@ -64,7 +56,7 @@ class Matchbox(object):
     """
 
     def __init__(self, url, username, password, client_name, client_id, 
-            method='sync', params=None, make_raw=None, quiet=True):
+        params=None, make_raw=None, quiet=True):
 
         self._url = url
         self._username = username
@@ -73,28 +65,16 @@ class Matchbox(object):
         self._client_id = client_id
         self._params = params
         self._quiet = quiet
-        self._method = method
         self._token = self.__get_token()
         self.api_data = []
 
-        # TODO: For now, keep the the async code, but don't run asynchronously;
-        #       The MATCHBox API is not build to handle this correctly.
-        if self._method == 'sync':
-            if not self._quiet:
-                sys.stderr.write("** DEBUG: Making synchronous HTTP request. "
-                    "**\n")
-            self.api_data = self.__api_call()
-        elif self._method == 'async':
-            for page in range(1, 15):
-                self.api_data += self.__api_call(page)
-
-            '''
-            if not self._quiet:
-                sys.stderr.write("** DEBUG: Making an asynchronous HTTP "
-                    "request.  **\n")
-            loop = asyncio.get_event_loop()
-            self.api_data = loop.run_until_complete(self.__async_caller(loop))
-            '''
+        # XXX: For some reason (probably how the MATCHBox team has done 
+        # pagination), can not get last partial page, no matter how large the
+        # page size is.  So, skip those records, since they're only outside 
+        # assay results that we normally skip anyway.  Would be good to see if
+        # there can be a real fix for it, though.
+        for page in range(1, 14):
+            self.api_data += self.__api_call(page)
 
         if not self._quiet:
             sys.stdout.write("Completed the call successfully!\n")
@@ -154,28 +134,13 @@ class Matchbox(object):
             sys.exit(1)
         return response.json()
         
-    async def __async_caller(self, loop):
-        # TODO: probably will purge this; can't work with MATCHBox.
-        # Set up an asynchronous method to make HTTP requests in order to get 
-        # the DB more quickly. 
-        gathered_data = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=24) as executor:
-            futures = [
-                loop.run_in_executor(executor, self.__api_call, page)
-                for page in range(1, 15)
-            ]
-            for response in await asyncio.gather(*futures):
-                gathered_data.extend(response)
-                gathered_data+=response
-        return gathered_data
-
     def __get_token(self):
         body = {
             "client_id" : self._client_id,
             "username" : self._username,
             "password" : self._password,
             "grant_type" : "password",
-            "scope" : "openid roles email",
+            "scope" : "openid roles email profile",
             "connection" : self._client_name,
         }
         url = 'https://ncimatch.auth0.com/oauth/ro'
