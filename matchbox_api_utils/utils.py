@@ -5,6 +5,7 @@ import sys
 import re
 import json
 import datetime
+import inspect
 
 from termcolor import colored, cprint
 from pprint import pprint
@@ -98,8 +99,23 @@ def map_fusion_driver(gene1, gene2):
         driver = partner = 'NA'
     return driver, partner
 
-def __exit__(line, msg=None):
+def __exit__(line=None, msg=None):
+    '''
+    Better exit method than sys.exit() since we can determine just where the 
+    exit was called in the script.  This is useful for development where we 
+    want to term the script at various phases during writing / testing, and can
+    often lose track.
+    '''
+    if line is None:
+        line = inspect.stack()[1][2]
     output = ('Script stopped at line: {} with message: "{}".'.format(line, msg))
     sys.stderr.write('\n')
     cprint(output, 'white', 'on_green', attrs=['bold'], file=sys.stderr)
     sys.exit()
+
+def msg(msg, verbosity):
+    if verbosity == 0:
+        return
+    else:
+        sys.stderr.write(msg)
+        sys.stderr.flush()
