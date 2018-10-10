@@ -76,10 +76,11 @@ class MatchData(object):
 
     def __init__(self, matchbox='adult', config_file=None, 
             username=None, password=None, patient=None, json_db='sys_default', 
-            load_raw=None, make_raw=None, quiet=True):
+            load_raw=None, make_raw=None, quiet=False):
 
         sys.stderr.write('Welcome to MATCHBox API Utils Version %s\n' % 
             matchbox_api_utils._version.__version__)
+        sys.stderr.flush()
 
         # Determine which MATCHBox we'll be using and validate the entry.
         self._matchbox = matchbox
