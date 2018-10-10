@@ -63,7 +63,7 @@ if os.path.isdir(mb_utils_root):
 
     # Set up default JSON files.
     for f in json_files:
-        if 'mb2.0_config.json' in f:
+        if 'mb3.0_config.json' in f:
             mb_config_file = f
 
     mb_data_files = get_files('mb_obj', json_files)
