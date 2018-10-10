@@ -65,8 +65,8 @@ if __name__=='__main__':
         sys.stdout.write('Done!\n')
         sys.exit()
 
-    sys.stdout.write('\nRetrieving data from MATCHBox (%s)...' % args.matchbox)
-    sys.stdout.flush()
+    # sys.stdout.write('\nRetrieving data from MATCHBox (%s)...' % args.matchbox)
+    # sys.stdout.flush()
 
     data = MatchData(matchbox=args.matchbox, json_db=None, load_raw=args.data,
         patient=args.patient)
