@@ -9,27 +9,38 @@ from matchbox_api_utils import utils
 
 
 class Config(object):
-    def __init__(self, matchbox_name, config_file=None, mb_json_data=None, 
-            ta_json_data=None, amois_lookup=None):
+    def __init__(self, matchbox_name, connection, config_file=None, 
+            mb_json_data=None, ta_json_data=None, amois_lookup=None):
         """
         MATCHBox Configuration Class
 
         Allow for import of custon configuration and mb.json data, or else just
         load the standard dataset deployed during package installation.
 
+        Args:
+            matchbox_name (str) Name of the MATCHBox to which we'll make the 
+                connection. 
+
+            connection (str): Type of connection to be made.  Choose only from
+                'api' or 'mongo'. 
+                .. note::
+                    The `api` method is to be deprecated, and connections using
+                    `mongo` will be preferred.
+
         """
 
         self._matchbox_name = matchbox_name
+        self._connection = connection
         if config_file is not None:
             self._config_file = config_file
         else: 
             self._config_file = matchbox_api_utils.mb_config_file
         self.config_data = self.read_config()
 
-        # This might fail when we are running the package setup post installer for
-        # brand new installs on systems where we have never installed the package.
-        # But the failure is OK, because the rest of the steps will take care of 
-        # filling in the blanks.
+        # This might fail when we are running the package setup post installer 
+        # for brand new installs on systems where we have never installed the 
+        # package. But the failure is OK, because the rest of the steps will 
+        # take care of filling in the blanks.
         try:
             if mb_json_data:
                 self.config_data['mb_json_data'] = mb_json_data
@@ -47,9 +58,8 @@ class Config(object):
                 self.config_data['amois_lookup'] = matchbox_api_utils.amoi_json_data
         except AttributeError:
             sys.stderr.write('Have not yet established initial MATCHBox JSON DB '
-                'files. If this is not a package\nsetup message, then we may have '
-                'a problem and setup needs to be re-run.\n')
-
+                'files. If this is not a package\nsetup message, then we may '
+                'have a problem and setup needs to be re-run.\n')
 
     def __repr__(self):
         return '%s:%s' % (self.__class__, self.__dict__)
@@ -74,4 +84,4 @@ class Config(object):
                 'either run the package configuration tools or provide a config'
                 ' file using the "config" option. Can not continue!\n')
             sys.exit(1)
-        return data[self._matchbox_name]
+        return data[self._matchbox_name][self._connection]
