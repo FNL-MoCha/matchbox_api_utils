@@ -28,7 +28,6 @@ def load_dumped_json(json_file):
 
 def get_today(outtype):
     if outtype == 'long':
-        # return datetime.date.today().strftime('%m/%d/%Y')
         return datetime.date.today().strftime('%Y-%m-%d')
     elif outtype == 'short':
         return datetime.date.today().strftime('%m%d%y')
@@ -70,7 +69,7 @@ def read_json(json_file):
         return json.load(fh)
 
 def pp(data):
-    pprint(data)
+    pprint(data, stream=sys.stderr)
 
 def map_fusion_driver(gene1, gene2):
     # From two gene ids derived from a fusion identifier or the like, determine
