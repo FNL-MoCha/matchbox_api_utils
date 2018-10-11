@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import requests
+import subprocess
 
 from matchbox_api_utils import utils
 
@@ -55,54 +56,124 @@ class Matchbox(object):
 
     """
 
-    def __init__(self, url, username, password, client_name, client_id, 
-        params=None, make_raw=None, quiet=True):
-
-        self._url = url
-        self._username = username
-        self._password = password
-        self._client_name = client_name
-        self._client_id = client_id
+    def __init__(self, method, config, params=None, mongo_collection=None, 
+        make_raw=None, quiet=False):
+        '''
+            method: str ('mongo', or 'api')
+            config: dict Contains all of the information necessary for the
+                connection.
+        '''
         self._params = params
         self._quiet = quiet
-        self._token = self.__get_token()
+        self.today = utils.get_today('short')
         self.api_data = []
 
-        # XXX: For some reason (probably how the MATCHBox team has done 
-        # pagination), can not get last partial page, no matter how large the
-        # page size is.  So, skip those records, since they're only outside 
-        # assay results that we normally skip anyway.  Would be good to see if
-        # there can be a real fix for it, though.
-        for page in range(1, 14):
-            self.api_data += self.__api_call(page)
+        if method == 'api':
+            sys.stderr.write("WARN: API calls are soon to be deprecated. Please "
+                "transition to MongoDB calls.\n")
 
-        if not self._quiet:
-            sys.stdout.write("Completed the call successfully!\n")
-            sys.stdout.write('   -> return len: %s\n' % str(len(self.api_data)))
+            self._url = config.get('url', None)
+            self._username = config.get('username', None)
+            self._password = config.get('password', None)
+            self._client_name = config.get('client_name', None)
+            self._client_id = config.get('client_id', None)
 
-        # For debugging purposes, we may want to dump the whole raw dataset out 
-        # to see what keys / vals are availble.  
-        today = utils.get_today('short')
-        raw_files = {
-            'mb' : 'raw_mb_dump_' + today + '.json',
-            'ta' : 'raw_ta_dump_' + today + '.json',
-        }
-        if make_raw:
-            try:
-                filename = raw_files[make_raw]
-            except KeyError:
-                sys.stderr.write('ERROR: You must choose from "mb" or "ta" '
-                    'only when using the "make_raw" argument.\n')
+            self._token = self.__get_token()
+            # TODO: Remove this. to be replaced by a mongodb call.
+            for page in range(1, 15):
+                self.api_data += self.__api_call(page)
+            if not self._quiet:
+                sys.stdout.write("Completed the call successfully!\n")
+                sys.stdout.write('   -> return len: %s\n' % str(
+                    len(self.api_data))
+                )
+            if make_raw:
+                # TODO:  Clean this up a bit.  Need to handle a "make_raw" call 
+                #        in both methods.  Make a function and handle wiht args.
+                raw_files = {
+                    'mb' : 'raw_mb_dump_%s.json' % self.today,
+                    'ta' : 'raw_ta_dump_%s.json' % self.today
+                }
+                try:
+                    filename = raw_files[make_raw]
+                except KeyError:
+                    sys.stderr.write('ERROR: You must choose from "mb" or "ta" '
+                        'only when using the "make_raw" argument.\n')
+                    return None
+
+                sys.stdout.write('Making a raw MATCHBox API dump that can be '
+                    'loaded for development purposes\nrather than a live call '
+                    'to MATCHBox prior to parsing and filtering.\n')
+                utils.make_json(outfile=filename, data=self.api_data, sort=True)
+                return
+        elif method == 'mongo':
+            # Only keep patient in here for now.  Will add more as we go.
+            collections = ('patient')
+            if mongo_collection is None:
+                sys.stderr.write('ERROR: You must input a collection when '
+                    'making the MongoDB call.\n')
                 return None
+            elif mongo_collection not in collections:
+                sys.stderr.write('ERROR: collection %s is not valid. Please '
+                    'only choose from:\n')
+                sys.stderr.write('\n'.join(collections))
 
-            sys.stdout.write('Making a raw MATCHBox API dump that can be '
-                'loaded for development purposes\nrather than a live call to '
-                'MATCHBox prior to parsing and filtering.\n')
-            utils.make_json(outfile=filename, data=self.api_data, sort=True)
-            return
+            outfile = 'raw_%s_dump_%s.json' % (mongo_collection, self.today)
+            self._mongo_user = config.get('mongo_user', None)
+            self._mongo_pass = config.get('mongo_pass', None)
+            self.api_data = self.__mongo_call(mongo_collection, outfile)
+            if make_raw is None:
+                os.remove(outfile)
+        else:
+            sys.stderr.write('ERROR: method %s is not a valid method! Choose '
+                'only from "api" or "mongo".\n')
+            return None
+
 
     def __str__(self):
         return utils.print_json(self.api_data)
+
+    def __mongo_call(self, collection, outfile):
+        '''
+        Now the better way to get a whole DB dump is to make a call to the 
+        MongoDB directly.  Will need different creds for this that may not be
+        easily obtained for all users, and it may be more difficult to get 
+        smaller bits of data, so I'll leave the API call in here.  But, for main
+        data export / import, I will start calling this instead now.
+        '''
+
+        cmd = [
+            'mongoexport',
+            '--host', 'adultmatch-production-shard-00-00-tnrm0.mongodb.net:27017,adultmatch-production-shard-00-01-tnrm0.mongodb.net:27017,adultmatch-production-shard-00-02-tnrm0.mongodb.net:27017',
+            '--ssl',
+            '--username', self._mongo_user,
+            '--password', self._mongo_pass,
+            '--authenticationDatabase', 'admin',
+            '--db', 'Match',
+            '--collection', collection,
+            '--type', 'json', '--jsonArray',
+            '--out', outfile
+        ]
+
+        tries = 0
+        while tries < 4:
+            p = subprocess.Popen(cmd, stderr=subprocess.PIPE, 
+                stdout=subprocess.PIPE)
+            out, err = p.communicate()
+            tries += 1
+            if p.returncode != 0:
+                sys.stderr.write('Error getting data from mongoDB. Trying '
+                    'again ({}/{} tries).\n'.format(tries, '4'))
+                # TODO: have this output to debug log.
+                # sys.stderr.write(err.decode('utf-8'))
+                sys.stderr.flush()
+            else:
+                if self._quiet is False:
+                    sys.stderr.write('Completed the Mongo export call '
+                        'successfully.\n')
+                    sys.stderr.flush()
+                break
+        self.api_data = utils.read_json(outfile)
 
     def __api_call(self, page=None):
         header = {'Authorization' : 'bearer %s' % self._token}

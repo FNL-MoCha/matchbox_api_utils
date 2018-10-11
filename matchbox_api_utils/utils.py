@@ -108,7 +108,8 @@ def __exit__(line=None, msg=None):
     '''
     if line is None:
         line = inspect.stack()[1][2]
-    output = ('Script stopped at line: {} with message: "{}".'.format(line, msg))
+    output = ('Script stopped at line: {} with message: "{}".'.format(
+        line, msg))
     sys.stderr.write('\n')
     cprint(output, 'white', 'on_green', attrs=['bold'], file=sys.stderr)
     sys.exit()
