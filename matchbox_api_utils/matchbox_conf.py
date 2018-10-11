@@ -74,7 +74,11 @@ class Config(object):
         return self.config_data.itervalues()
 
     def get_config_item(self, item):
-        return self.config_data[item]
+        # return self.config_data[item]
+        return self.config_data.get(item, None)
+
+    def put_config_item(self, key, val):
+        self.config_data.update({key: val})
 
     def read_config(self):
         try:
