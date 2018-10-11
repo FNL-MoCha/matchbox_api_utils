@@ -74,11 +74,11 @@ class MatchData(object):
 
     """
 
-    def __init__(self, matchbox='adult', config_file=None, 
-            username=None, password=None, patient=None, json_db='sys_default', 
-            load_raw=None, make_raw=None, quiet=False):
+    def __init__(self, matchbox='adult', method='mongo', config_file=None, 
+        username=None, password=None, patient=None, json_db='sys_default', 
+        load_raw=None, make_raw=None, quiet=False):
 
-        sys.stderr.write('Welcome to MATCHBox API Utils Version %s\n' % 
+        sys.stderr.write('\nWelcome to MATCHBox API Utils Version %s\n' % 
             matchbox_api_utils._version.__version__)
         sys.stderr.flush()
 
@@ -102,17 +102,14 @@ class MatchData(object):
             make_raw = 'mb'
 
         if not self._quiet:
-            sys.stderr.write('INFO: Loading MATCHBox: %s\n' % self._matchbox)
-        self._config_data = matchbox_conf.Config(self._matchbox, config_file)
+            sys.stderr.write('[ INFO ]  Loading MATCHBox: %s\n' % 
+                self._matchbox)
 
-        url = self._config_data.get_config_item('url')
-
-        if username is None:
-            username = self._config_data.get_config_item('username')
-        if password is None:
-            password = self._config_data.get_config_item('password')
-        client_name = self._config_data.get_config_item('client_name')
-        client_id = self._config_data.get_config_item('client_id')
+        # Get some configs from the input (or default config file).
+        self._config_data = matchbox_conf.Config(self._matchbox, method,
+            config_file=config_file)
+        sys.stderr.write('[ DEBUG ]  Config data:\n')
+        utils.pp(self._config_data.config_data)
 
         # If json_db is 'sys_default', get json file from matchbox_conf.Config, 
         # which is from matchbox_api_util.__init__.mb_json_data.  Otherwise use 
@@ -152,33 +149,41 @@ class MatchData(object):
         else:
             if self._quiet is False:
                 sys.stderr.write('\n  ->  Starting from a live MB instance\n')
-
+                
             if self._patient:
-                url += '/%s' % self._patient
-            
+                if method == 'api':
+                    url = self._config_data.get_config_item('url')
+                    url += '/%s' % self._patient
+                    self._config_data.put_config_item('url', url)
+                else:
+                    sys.stderr.write('[ WARN ]  We can not make an API call '
+                        'with a patient identifier when using the "mongo"\n'
+                        'method at this time.\n')
+                
             params = {
                 'size' : '500',
                 'sort' : 'patientSequenceNumber',
             }
 
             matchbox_data = Matchbox(
-                url, 
-                username, 
-                password, 
-                client_name, 
-                client_id, 
+                method=method,
+                mongo_collection='patient',
+                config=self._config_data,
                 params=params, 
-                make_raw=make_raw
+                make_raw=make_raw,
+                quiet=self._quiet,
             ).api_data
 
             # If we are filtering on a patient, then we don't get a list of 
             # dicts, so we need to convert the data before passing or else 
             # problems.
-            if self._patient:
+            if self._patient and method == 'api':
                 matchbox_data = [matchbox_data]
             self.data = self.__gen_patients_list(matchbox_data, self._patient)
 
         if self.data is None:
+            sys.stderr.write('[ ERROR ]  No data returned from MATCHBox call! '
+                'Something seems to have gone wrong here.\n')
             return None
         # Load up a meddra : ctep term db based on entries so that we can look
         # data up on the fly.
