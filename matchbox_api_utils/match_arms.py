@@ -65,9 +65,14 @@ class TreatmentArms(object):
 
     """
 
-    def __init__(self, matchbox='adult', config_file=None, 
+    def __init__(self, matchbox='adult', method='api', config_file=None, 
         username=None, password=None, json_db='sys_default', load_raw=None, 
-        make_raw=False, quiet=True):
+        make_raw=None, quiet=True):
+
+        # TODO:
+        #    For now we'll just keep the old API call method since this is 
+        #    working and easy to maintain. But, once we finish the other bits, 
+        #    let's transition this over to a MongoDB call too.
 
         self._matchbox = matchbox
         self._json_db = json_db
@@ -79,18 +84,22 @@ class TreatmentArms(object):
             make_raw = 'ta'
         
         if quiet is False:
-            sys.stderr.write('INFO: Loading Treatment Arm data from MATCHBox: '
-                '%s\n' % self._matchbox)
-        self._config_data = matchbox_conf.Config(self._matchbox, config_file)
+            sys.stderr.write('[ INFO ]  Loading Treatment Arm data from '
+                'MATCHBox: %s\n' % self._matchbox)
+        self._config_data = matchbox_conf.Config(self._matchbox, method, 
+            config_file)
 
-        url = self._config_data.get_config_item('arms_url')
 
-        if username is None:
-            username = self._config_data.get_config_item('username')
-        if password is None:
-            password = self._config_data.get_config_item('password')
-        client_name = self._config_data.get_config_item('client_name')
-        client_id = self._config_data.get_config_item('client_id')
+        if username:
+            if method == 'mongo':
+                self._config_data.put_config_item('mongo_user', username)
+            else:
+                self._config_data.put_config_item('username', username)
+        if password:
+            if method == 'mongo':
+                self._config_data.put_config_item('mongo_pass', password)
+            else:
+                self._config_data.put_config_item('password', password)
 
         if self._json_db == 'sys_default':
             self._json_db = self._config_data.get_config_item('ta_json_data')
@@ -122,15 +131,23 @@ class TreatmentArms(object):
             # make api call to get json data; load and present to self.data.
             if self._quiet is False:
                 sys.stderr.write('  ->  Starting from a live MB instance.\n')
+            if method == 'api':
+                self._config_data.put_config_item(
+                    'url', 
+                    '%s%s' % (
+                        self._config_data.get_config_item('baseurl'),
+                        'treatment_arms'
+                    )
+                )
+
             params = {'active' : True}
             matchbox_data = Matchbox(
-                url, 
-                username, 
-                password,
-                client_name, 
-                client_id, 
+                method=method,
+                mongo_collection='treatmentArms',
+                config=self._config_data,
                 params=params, 
-                make_raw=make_raw
+                make_raw=make_raw,
+                quiet=self._quiet,
             ).api_data
             self.data = self.make_match_arms_db(matchbox_data)
         
@@ -139,6 +156,9 @@ class TreatmentArms(object):
 
     def __str__(self):
         return utils.print_json(self.data)
+
+    def __repr__(self):
+        return '%s: %s' % (self.__class__, self.__dict__)
 
     def __getitem__(self,key):
         return self.data[key]
@@ -173,7 +193,9 @@ class TreatmentArms(object):
         utils.make_json(outfile=amois_filename, data=self.amoi_lookup_table)
         utils.make_json(outfile=ta_filename, data=self.data)
 
-    def __retrive_data_with_keys(self, data, k1, k2):
+    @staticmethod
+    # XXX
+    def __retrieve_data_with_keys(data, k1, k2):
         results = {}
         for elem in data:
             results[elem[k1]] = elem[k2]
@@ -268,9 +290,17 @@ class TreatmentArms(object):
             elif amoi_data[var]:
                 # Now we have the unreliable and random "NOVEL" variants from
                 # outside labs.  Skip all of these since you can't do a 
-                # uniform analysis with the data.
+                # uniform analysis with the data. As an idea of how unreliable
+                # this all is, the "metadata", "variantSource", etc. info isn't
+                # even in every variant entry.  This database is a mess!
                 for entry in amoi_data[var]:
-                    source = entry['metadata']['variantSource']
+                    try:
+                        source = entry['metadata']['variantSource']
+                    except KeyError:
+                        # Not all entries have this information for some reason!
+                        # Let's just assume it's not Novel or whatever.
+                        source = None
+
                     if source == 'NOVEL':
                         continue
                     else:
@@ -300,17 +330,16 @@ class TreatmentArms(object):
         arm_data = defaultdict(dict)
         for arm in api_data:
             arm_id = arm['treatmentArmId']
-            # if arm_id != 'EAY131-Z1G':
+            # if arm_id != 'EAY131-H':
                 # continue
-
             arm_data[arm_id]['name']      = arm['name']
             arm_data[arm_id]['arm_id']    = arm_id
             arm_data[arm_id]['drug_name'] = arm['targetName']
             arm_data[arm_id]['drug_id']   = arm['treatmentArmDrugs'][0]['drugId']
             arm_data[arm_id]['assigned']      = arm['numPatientsAssigned']
-            arm_data[arm_id]['excl_diseases'] = self.__retrive_data_with_keys(
-                arm['exclusionDiseases'], 'shortName', '_id')
-            arm_data[arm_id]['ihc']           = self.__retrive_data_with_keys(
+            arm_data[arm_id]['excl_diseases'] = self.__retrieve_data_with_keys(
+                arm['exclusionDiseases'], 'ctepCategory', '_id')
+            arm_data[arm_id]['ihc']           = self.__retrieve_data_with_keys(
                 arm['assayResults'], 'gene', 'assayResultStatus')
             arm_data[arm_id]['amois'] = self.__parse_amois(arm['variantReport'])
         return arm_data
