@@ -37,11 +37,19 @@ class MatchData(object):
     with a call to the aforementioned script.
 
     Args:
-        matchbox (str) : Name of the MATCHBox system from which we want to
+        matchbox (str): Name of the MATCHBox system from which we want to
             get data. This is required now that we have several systems to
             choose from.  Valid names are ``adult``, ``ped``, and 
             ``adult-uat`` for those that have access to the adult MATCHBox
             test system. **DEFAULT:** ``adult``.
+
+        method (str): MATCHBox connection method. Can choose from ``api`` or
+            ``mongo`` if one wants to use the old API method or the new 
+            MongoDB connection method.  
+
+            .. note::
+                The API method is to be deprecated and using the MongoDB method
+                is much preferred.
 
         config_file (file): Custom config file to use if not using system 
             default.
@@ -56,11 +64,17 @@ class MatchData(object):
 
         patient (str): Limit data to a specific PSN.
 
+            .. note::
+                When trying to limit the database data to only one patient,
+                this only works for the API call method. However, limiting 
+                data to one patient is capable in most of the package methods
+                and the ``mongo`` method is fast, so this is not an issue.
+
         json_db (file): MATCHbox processed JSON file containing the whole
             dataset. This is usually generated from 'matchbox_json_dump.py'. 
-            The default value is ``'sys_default'`` which loads the default 
-            package data. If you wish you get a live call, set this variable 
-            to ``None``.
+            By default the package JSON file, located in ``mb_root`` is loaded
+            if no value passed to this argument. If you wish you get a live 
+            call, set this variable to ``None``.
 
         load_raw (file): Load a raw API dataset rather than making a fresh
             call to the API. This is intended for dev purpose only and may 
@@ -108,6 +122,19 @@ class MatchData(object):
         # Get some configs from the input (or default config file).
         self._config_data = matchbox_conf.Config(self._matchbox, method,
             config_file=config_file)
+        # Allow for custom username / password combos in case they're not 
+        # yet in the config file.
+        if username:
+            if method == 'mongo':
+                self._config_data.put_config_item('mongo_user', username)
+            else:
+                self._config_data.put_config_item('username', username)
+        if password:
+            if method == 'mongo':
+                self._config_data.put_config_item('mongo_pass', password)
+            else:
+                self._config_data.put_config_item('password', password)
+
         sys.stderr.write('[ DEBUG ]  Config data:\n')
         utils.pp(self._config_data.config_data)
 
