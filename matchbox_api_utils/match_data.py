@@ -215,6 +215,9 @@ class MatchData(object):
     def __str__(self):
         return utils.print_json(self.data)
 
+    def __repr__(self):
+        return '%s: %s' % (self.__class__, self.__dict__)
+
     def __getitem__(self,key):
         return self.data[key]
 
