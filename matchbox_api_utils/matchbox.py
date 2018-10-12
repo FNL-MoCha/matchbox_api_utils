@@ -34,8 +34,9 @@ class Matchbox(object):
 
         mongo_collection (str): This is the name of the MongoDB database 
             collection for which you want to get data. For now, we are only
-            using the ``patients`` table, and this is the only accepted value. 
-            In the near future, though, all tables will be incorporated.
+            using the ``patients`` and ``treatmentArms`` tables, and these are
+            the only accepted value. In the near future, though, all tables 
+            will be incorporated.
 
         params (dict): Parameters to pass along to the API in the request. This
             is only used when using ``api`` with the ``method`` arg. For example,
@@ -105,7 +106,7 @@ class Matchbox(object):
                 return
         elif method == 'mongo':
             # Only keep patient in here for now.  Will add more as we go.
-            collections = ('patient')
+            collections = ('patient', 'treatmentArms')
             if mongo_collection is None:
                 sys.stderr.write('ERROR: You must input a collection when '
                     'making the MongoDB call.\n')
