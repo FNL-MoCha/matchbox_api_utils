@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Input a list of genes by variant type and get back a table of NCI-MATCH hits 
-that can't be further analyzed in Excel. Can either input a patient (or comma 
+that can be further analyzed in Excel. Can either input a patient (or comma 
 separated list of patients) to query, or query the entire dataset.  Will limit
 the patient set to the non-outside assay results only.
 """
@@ -15,16 +15,16 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData
 
-version = '1.0.042418'
+version = '2.0.101218'
 
 def get_args():
     parser = argparse.ArgumentParser(description=__doc__,)
     parser.add_argument('matchbox', metavar='<matchbox>', help='Name of '
         'MATCHBox system to which the connection should be made.  Valid names '
         'are "adult", "ped", adult-uat".')
-    parser.add_argument('-j', '--json', metavar='<mb_json_file>', 
-        default='sys_default', help='Load a MATCHBox JSON file derived from '
-        '"matchbox_json_dump.py" instead of a live query')
+    parser.add_argument('-l', '--live', action='store_true',
+        help='Get a live MATCHBox query instead of loading a local JSON file' 
+        'derived from "matchbox_json_dump.py"')
     parser.add_argument('-p', '--psn', metavar='<PSN>', help='Only output data '
         'for a specific patient or comma separated list of patients')
     parser.add_argument('-s', '--snv', metavar='<gene_list>', 
@@ -35,6 +35,10 @@ def get_args():
         help='Comma separated list of Fusions to look up in MATCHBox data.')
     parser.add_argument('-i', '--indel', metavar='<gene_list>', 
         help='Comma separated list of Fusions to look up in MATCHBox data.')
+    parser.add_argument('-a', '--all', metavar='<all_types>', 
+        help='Query variants across all variant types for a set of genes, '
+        'rather than one by one.  Helpful if one wants to find any BRAF '
+        'MOIs, no matter what type, for example.')
     parser.add_argument('--style', metavar='<pp,csv,tsv>', default='csv',
         help='Format for output. Can choose pretty print (pp), CSV, or TSV')
     parser.add_argument('-o', '--output', metavar='<output_file>',
@@ -44,10 +48,19 @@ def get_args():
         version = '%(prog)s - ' + version)
     args = parser.parse_args()
 
-    #if args.snv == args.indel == args.cnv == args.fusion == None:
-    if all(x == None for x in [args.snv, args.indel, args.cnv, args.fusion]):
+    '''
+    # TODO: Maybe....allow an option to print out all of the MOIs reported in
+            MATCHBox in total.  I think this is not useful, and it's hard to
+            know what to print as the find_variant_frequency() method does not
+            have a way to handle this.  Maybe we can get some kind of large 
+            gene list from somewhere to do this.  But, it's going to be such a
+            rare request that I'm not sure it's worth it.
+    if all(x == None for x in [args.snv, args.indel, args.cnv, args.fusion, 
+        args.all]):
         sys.stderr.write('WARN: No SNV, Indel, CNV, or Fusion gene(s) added '
             'to query. Will output all MOIs.\n')
+    '''
+
     return args
 
 def parse_query_results(data,vartype):
@@ -106,11 +119,14 @@ if __name__=='__main__':
     args = get_args()
 
     # Make a call to MATCHbox to get a JSON obj of data.
-    if not args.json:
+    json_db = 'sys_default'
+    if args.live:
         sys.stdout.write('Retrieving MATCHBox data object.  This will take a '
             'few minutes...')
         sys.stdout.flush()
-    data = MatchData(matchbox=args.matchbox, json_db=args.json, quiet=True)
+
+    data = MatchData(matchbox=args.matchbox, method='mongo', json_db=json_db, 
+        quiet=True)
     sys.stdout.write('Database date: %s.\n' % data.db_date)
 
     query_list = {}
@@ -122,18 +138,17 @@ if __name__=='__main__':
         query_list['cnvs'] = split_genes(args.cnv)
     if args.fusion:
         query_list['fusions'] = split_genes(args.fusion)
+    if args.all:
+        for vtype in ('snvs', 'indels', 'cnvs', 'fusions'):
+            query_list[vtype] = split_genes(args.all)
 
     print("Variants to query: ")
-    if query_list:
-        pp(query_list)
-    else:
-        sys.stdout.write("\t-> Output all MOIs\n")
-    patient_list = []
+    pp(query_list)
 
+    patient_list = []
     if args.psn:
         patient_list = [str(x) for x in args.psn.split(',')]
     else:
-        
         patient_list = None
     
     print("Patients to query: {}".format(patient_list))
