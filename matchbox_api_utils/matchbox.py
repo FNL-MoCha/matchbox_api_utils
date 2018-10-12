@@ -223,7 +223,7 @@ class Matchbox(object):
             try:
                 response.raise_for_status()
                 break
-            except HTTPError as error:
+            except requests.exceptions.HTTPError as error:
                 sys.stderr.write("ERROR: Got an error trying to get an Auth0 "
                     "token! Attempt %s of 3.\n" % counter)
                 continue
