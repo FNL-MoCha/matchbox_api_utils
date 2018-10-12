@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Get patient or disease summary statistics and data from the MATCH dataset.  
+Get patient or disease summary statistics and data from the MATCH dataset. 
+
+Choosing the ``patient`` option will allow one to get a listing of patients in
+the study and their respective disease. One can also filter that list down by 
+specifying a PSN (or comma separated list of PSNs) of interest
+
+Choosing the ``disease`` option will give a summary of the types and counts of
+each disease in the study.  Similar to the patients query, one can filter the 
+list down by inputting MEDDRA codes or tumor hisologies.  Note that you must 
+quote tumor names with spaces in them, and they must exactly match the string
+indicated in MATCHBox.  The use of MEDDRA codes is recommended and preferred.
 """
 import sys
 import os
@@ -15,43 +25,66 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData
 
-version = '2.3.042418'
+version = '3.0.101218'
 
 def get_args():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('matchbox', metavar='<matchbox>', help='Name of '
-        'MATCHBox system to which the connection will be made. Valid systems '
-        'are "adult", "ped", "adult-uat".')
-    parser.add_argument('result_type', choices=['patient','disease'], 
-            help='Category of data to output. Can either be patient or disease '
-            'level.')
-    parser.add_argument('-j', '--json', metavar='<mb_json_file>', 
-            default='sys_default', help='MATCHBox JSON file containing patient '
-            'data, usually from matchbox_json_dump.py')
-    parser.add_argument('-p', '--psn', metavar='PSN', 
-            help='Filter patient summary to only these patients. Can be a comma '
-            'separated list')
-    parser.add_argument('-t', '--tumor', metavar='<tumor_type>', 
-            help='Retrieve data for only this tumor type or comma separate '
+    parser.add_argument(
+        'matchbox', 
+        metavar='<matchbox>', 
+        help='Name of MATCHBox system to which the connection will be made. '
+        'Valid systems are "adult", "ped", "adult-uat".'
+    )
+    parser.add_argument(
+        'result_type', 
+        choices=['patient','disease'], 
+        help='Category of data to output. Can either be patient or disease '
+            'level.'
+    )
+    parser.add_argument(
+        '-l', '--live', 
+        action='store_true',
+        help='Make a live call to MATCHBox rather than loading a local JSON '
+            'containing patient data, usually from matchbox_json_dump.py'
+    )
+    parser.add_argument(
+        '-p', '--psn', 
+        metavar='PSN', 
+        help='Filter patient summary to only these patients. Can be a comma '
+            'separated list'
+    )
+    parser.add_argument(
+        '-t', '--tumor', 
+        metavar='<tumor_type>', 
+        help='Retrieve data for only this tumor type or comma separate '
             'list of tumors. Note that you must quote tumors with names '
-            'containing spaces.')
-    parser.add_argument('-m', '--medra', metavar='<medra_code>', 
-            help='MEDRA Code or comma separated list of codes to search.')
-    parser.add_argument('-O','--Outside', action='store_true', 
-            help='Include Outside Assay study data (DEFAULT: False).')
-    parser.add_argument('-o', '--outfile', metavar='<output csv>', 
-            help='Name of output file. Output will be in CSV format. DEFAULT: '
-            'STDOUT.')
-    parser.add_argument('-v', '--version', action='version', 
-            version = '%(prog)s - v' + version)    
+            'containing spaces.'
+    )
+    parser.add_argument(
+        '-m', '--meddra', 
+        metavar='<meddra_code>', 
+        help='MEDDRA Code or comma separated list of codes to search.'
+    )
+    parser.add_argument(
+        '-O','--Outside',
+        action='store_true',
+        help='Include Outside Assay study data (DEFAULT: False).'
+    )
+    parser.add_argument(
+        '-o', '--outfile', 
+        metavar='<output csv>', 
+        help='Name of output file. Output will be in CSV format. DEFAULT: '
+        'STDOUT.'
+    )
+    parser.add_argument(
+        '-v', '--version', 
+        action='version', 
+        version = '%(prog)s - v' + version
+    )
     args = parser.parse_args()
-
-    if args.json == 'None':
-        args.json = None
-
     return args
 
-def disease_summary(data, outfh, ctep_term=None, medra=None):
+def disease_summary(data, outfh, ctep_term=None, meddra=None):
     '''
     Generate a summary report of MATCH patients that have been biopsied and the
     counts for each disease type. Data coming in from get_disease_summary() will
@@ -59,9 +92,9 @@ def disease_summary(data, outfh, ctep_term=None, medra=None):
     '''
     total = 0
     disease_counts = data.get_disease_summary(query_disease=ctep_term, 
-            query_medra=medra)
+            query_meddra=meddra)
 
-    outfh.writerow(['MEDRA_Code', 'Count', 'Disease'])
+    outfh.writerow(['MEDDRA_Code', 'Count', 'Disease'])
     for elem, val in sorted(
         disease_counts.items(),
         key=lambda vals: itemgetter(1)(vals[1]), reverse=True
@@ -110,13 +143,12 @@ def patient_summary(data, outfh, patients=None, outside=False):
                 # patient and we can skip the result
                 continue
             msn = data.get_msn(psn=res)
-            # If we got no MSN, that means we didn't get a successful sequencing 
-            # run, and the data is not going to be so useful. Skip those.
+            # If we got no MSN, that means we didn't get a successful 
+            # sequencing run, and the data is not going to be so useful. Skip 
+            # those.
             if len(msn) < 1:
                 continue
             outfh.writerow([res, bsn, '|'.join(msn), results[res]])
-            # outfh.write(','.join([res, bsn, '|'.join(msn), results[res]]))
-            # outfh.write('\n')
     else:
         sys.stderr.write("ERROR: No data for input patient list!\n")
         sys.exit(1)
@@ -129,12 +161,15 @@ if __name__=='__main__':
     if args.psn:
         patients = args.psn.split(',')
 
-    if not args.json:
+    json_db='sys_default'
+    if args.live:
         sys.stdout.write('Retrieving a live MATCHBox data object. This may '
             'take a few minutes...\n')
         sys.stdout.flush()
+        json_db = None
 
-    data = MatchData(matchbox=args.matchbox, json_db=args.json, quiet=True)
+    data = MatchData(matchbox=args.matchbox, method='mongo', json_db=json_db,
+        quiet=True)
     sys.stdout.write('Database date: %s.\n' % data.db_date)
 
     if args.outfile:
@@ -150,8 +185,8 @@ if __name__=='__main__':
         if args.tumor:
             tumor_list = args.tumor.split(',')
             disease_summary(data, outfh, ctep_term=tumor_list)
-        elif args.medra:
-            medra_list = args.medra.split(',')
-            disease_summary(data, outfh, medra=medra_list)
+        elif args.meddra:
+            meddra_list = args.meddra.split(',')
+            disease_summary(data, outfh, meddra=meddra_list)
         else:
             disease_summary(data, outfh)
