@@ -13,8 +13,9 @@ from pprint import pprint as pp
 import matchbox_api_utils
 from matchbox_api_utils import MatchData
 from matchbox_api_utils import TreatmentArms
+from matchbox_api_utils import utils
 
-version = '3.1.041718'
+version = '4.0.101218'
 
 def get_args():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -23,18 +24,25 @@ def get_args():
         '"adult", "adult-uat", "ped".')
     parser.add_argument('-d', '--data', metavar='<raw_mb_datafile.json>',
         help='Load a raw MATCHBox database file (usually after running with '
-            'the -r option).')
+        'the -r option).')
     parser.add_argument('-r', '--raw', action='store_true',
         help='Generate a raw dump of MATCHbox for debugging and dev purposes.')
     parser.add_argument('-p', '--patient', metavar='<psn>', 
         help='Patient sequence number used to limit output for testing and dev '
         'purposes')
     parser.add_argument('-t', '--ta_json' , metavar='<ta_obj.json>',
-        help='Treatment Arms obj JSON filename. DEFAULT: ta_obj_<datestring>.json')
+        help='Treatment Arms obj JSON filename. DEFAULT: ta_obj_<datestring>.'
+        'json')
     parser.add_argument('-a', '--amoi_json' , metavar='<amoi_obj.json>',
-        help='aMOIs lookup filename. DEFAULT: "amois_lookup_<datestring>.json".')
+        help='aMOIs lookup filename. DEFAULT: "amois_lookup_<datestring>.'
+        'json".')
     parser.add_argument('-m', '--mb_json', metavar='<mb_obj.json>', 
-        help='Name of Match Data obj JSON file. DEFAULT: "mb_obj_<datestring>.json".')
+        help='Name of Match Data obj JSON file. DEFAULT: "mb_obj_<datestring>.'
+        'json".')
+    parser.add_argument('-c', '--connection', metavar='<connection_method>', 
+        dest='method', choices=['api', 'mongo'], default='mongo', 
+        help='Connection method used to access MATCHBox data. Choose from '
+        'either "api" or "mongo". DEFAULT: %(default)s')
 
     parser.add_argument('-v', '--version', action='version', 
             version = '%(prog)s  -  ' + version)
@@ -61,16 +69,18 @@ if __name__=='__main__':
         sys.stdout.write('\n*** Making a raw dump of MATCHBox (%s) for dev and '
             'testing purposes ***\n' % args.matchbox)
         sys.stdout.flush()
-        MatchData(matchbox=args.matchbox, make_raw=True)
+        MatchData(matchbox=args.matchbox, method=args.method, json_db=None, 
+            make_raw=True)
         sys.stdout.write('Done!\n')
         sys.exit()
 
-    # sys.stdout.write('\nRetrieving data from MATCHBox (%s)...' % args.matchbox)
-    # sys.stdout.flush()
+    sys.stdout.write('\nRetrieving data from MATCHBox (%s)...' % args.matchbox)
+    sys.stdout.flush()
 
-    data = MatchData(matchbox=args.matchbox, json_db=None, load_raw=args.data,
-        patient=args.patient)
-    arms = TreatmentArms(matchbox=args.matchbox, json_db=None)
+    data = MatchData(matchbox=args.matchbox, method=args.method, json_db=None, 
+        load_raw=args.data, patient=args.patient)
+    arms = TreatmentArms(matchbox=args.matchbox, method=args.method, 
+        json_db=None)
     sys.stdout.write('Done!\n')
 
     main(data, arms, args.mb_json, args.ta_json, args.amoi_json)
