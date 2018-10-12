@@ -106,9 +106,6 @@ def __exit__(line=None, msg=None):
     often lose track.
     '''
     if line is None:
-        # filename = inspect.stack()[1][1]
-        # line = inspect.stack()[1][2]
-        # function = inspect.stack()[1][3]
         filename, line, function = inspect.stack()[1][1:4]
     output = ('Script "{}" stopped in `{}()` at line: {} with message: '
        '"{}".'.format(os.path.basename(filename), function, line, msg))
