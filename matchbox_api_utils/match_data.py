@@ -171,21 +171,17 @@ class MatchData(object):
                         '%s.\n' % self._patient)
                 self.data = self.__get_record(self._patient)
 
-        # Make a live query to MB and either create a new raw_db or parse it out
-        # and work from there.
+        # Make a live query to MB and either create a new raw_db or parse it 
+        # out and work from there.
         else:
             if self._quiet is False:
                 sys.stderr.write('\n  ->  Starting from a live MB instance\n')
                 
-            if self._patient:
-                if method == 'api':
-                    url = self._config_data.get_config_item('url')
+            if method == 'api':
+                url = self._config_data.get_config_item('baseurl') + 'patients'
+                if self._patient:
                     url += '/%s' % self._patient
-                    self._config_data.put_config_item('url', url)
-                else:
-                    sys.stderr.write('[ WARN ]  We can not make an API call '
-                        'with a patient identifier when using the "mongo"\n'
-                        'method at this time.\n')
+                self._config_data.put_config_item('url', url)
                 
             params = {
                 'size' : '500',
