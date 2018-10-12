@@ -21,7 +21,7 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData 
 
-version = '3.5.042418'
+version = '4.0.101218'
 
 def get_args():
     parser = argparse.ArgumentParser(description = __doc__)
@@ -31,15 +31,13 @@ def get_args():
     parser.add_argument('ids', metavar='<IDs>', nargs='?',
         help='MATCH IDs to query.  Can be single or comma separated list. '
         'Must be used with PSN or MSN option.')
-    parser.add_argument('-j', '--json', metavar='<mb_json_file>', 
-        default='sys_default', help='Load a MATCHBox JSON file derived from '
-        '"matchbox_json_dump.py" instead of a live query. By default will '
-        'load the "sys_default" created during package installation. If you '
-        'wish to do a live query (i.e. not load a previously downloaded JSON '
-        'dump, set -j to "None".')
     parser.add_argument('-t', '--type', choices=['psn','msn','bsn'], 
         required=True, type=str.lower, help='Type of query string input. Can '
         'be MSN, PSN, or BSN')
+    parser.add_argument('-l', '--live', action='store_true', 
+        help='Make a live call to MATCHbox instead of relying on local JSON '
+        'database. This is especially helpful for newly sequenced patients '
+        'since the last dump.')
     parser.add_argument('-f', '--file', metavar="<input_file>", 
         help='Load a batch file of all MSNs or PSNs to proc')
     parser.add_argument('-o', '--outfile', metavar='<outfile>', help='File to '
@@ -47,11 +45,6 @@ def get_args():
     parser.add_argument('-v','--version', action='version', 
         version = '%(prog)s  -  ' + version)
     args = parser.parse_args()
-
-    # Kludy way to use a sys default for the API, while still allowing for live 
-    # queries if need be.  Probably a better way, but whatever!
-    if args.json == 'None':
-        args.json = None
     return args
 
 def read_batchfile(input_file):
@@ -149,13 +142,15 @@ if __name__=='__main__':
         sys.stderr.write("ERROR: No valid IDs input!\n")
         sys.exit(1)
 
+    json_db = 'sys_default'
     # Make a call to MATCHbox to get a JSON obj of data.
-    if not args['json']:
+    if args['live']:
         sys.stdout.write('Retrieving a live MATCHBox data object. This may '
             'take a few minutes...\n')
         sys.stdout.flush()
+        json_db=None
 
-    data = MatchData(matchbox=args['matchbox'], json_db=args['json'], 
+    data = MatchData(matchbox=args['matchbox'], method='mongo', json_db=json_db,
         quiet=True)
     sys.stdout.write('\n')
 
