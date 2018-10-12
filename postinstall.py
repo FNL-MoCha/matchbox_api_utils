@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Post install script to set up environment
 import sys
@@ -19,16 +19,17 @@ else:
 
 config_stump = {
     'meta-info' : {
-        'name' : 'MATCHBox v2.0 API Tools Config File',
-        'version' : 'v2.0',
+        'name' : 'MATCHBox v3.0 API Tools Config File',
+        'version' : 'v3.0',
         'date' : matchbox_api_utils.utils.get_today('long'),
-        'description' : 'Config file for MATCHBox v2.0 API Utils package.'
+        'description' : 'Config file for MATCHBox v3.0 API Utils package.'
     }
 }
+config_filename = 'mb3.0_config.json'
 
 
 def write_json(config_data):
-    config_file = os.path.join(root_dir, 'mb2.0_config.json')
+    config_file = os.path.join(root_dir, config_filename)
     if os.path.exists(config_file):
         sys.stderr.write('WARN: Previously established config file detected. '
             'Making backup before\ncreating a new one.\n')
@@ -53,7 +54,7 @@ def test_config_file(config_file):
     sys.stdout.write('\nTesting new configuration file can be loaded.\n')
     try:
         config_data = matchbox_api_utils.matchbox_conf.Config(
-            matchbox_name='adult', config_file=config_file)
+            matchbox_name='adult', connection='mongo', config_file=config_file)
         matchbox_api_utils.utils.print_json(config_data.config_data)
         return True
     except:
@@ -74,41 +75,59 @@ def make_config_file(root_dir):
 
     matchboxes = {
         'adult' : {
-            'client_name' : 'Adult-MATCH-Production',
-            'client_id' : 'xIK6GfCwz87sq2vPd2CJpFtKwaDR32PH',
-            'url' : 'https://match.nci.nih.gov/api/v1/patients',
-            'arms_url' : 'https://match.nci.nih.gov/api/v1/treatment_arms',
-            'version' : '2.0'
+            'api' : {
+                'client_name' : 'Adult-MATCH-Production',
+                'client_id' : 'xIK6GfCwz87sq2vPd2CJpFtKwaDR32PH',
+                'baseurl' : 'https://match.nci.nih.gov/api/v1/patients',
+            },
+            'mongo' : {},
         },
         'adult-uat' : {
-            'client_name' : 'Adult-MATCH-UAT',
-            'client_id' : 'c5dUZ4aL5Bke9DNItN5VzWgcK07Djsh0',
-            'url' : 'https://match-uat.nci.nih.gov/api/v1/patients',
-            'arms_url' : 'https://match-uat.nci.nih.gov/api/v1/treatment_arms',
-            'version' : '2.0'
+            'api' : {
+                'client_name' : 'Adult-MATCH-UAT',
+                'client_id' : 'c5dUZ4aL5Bke9DNItN5VzWgcK07Djsh0',
+                'baseurl' : 'https://match-uat.nci.nih.gov/api/v1/patients',
+            },
+            'mongo' : {},
         },
         'ped' : {
-            'client_name' : 'MATCH-Production',
-            'client_id' : 'aD7QAC2p8tsR9cd8UZTAMnIEcJrj2tgS',
-            'url' : 'https://pedmatch.nci.nih.gov/api/v1/patients',
-            'arms_url' : 'https://pedmatch.nci.nih.gov/api/v1/treatment_arms',
-            'version' : '2.0'
+            'api' : {
+                'client_name' : 'MATCH-Production',
+                'client_id' : 'aD7QAC2p8tsR9cd8UZTAMnIEcJrj2tgS',
+                'baseurl' : 'https://pedmatch.nci.nih.gov/api/v1/patients',
+            }, 
+            'mongo' : {},
         }
     }
 
     for mb in matchboxes:
         sys.stdout.write('\nConfiguring %s:\n' % mb)
-        user = input('\tEnter the username for %s: ' % mb)
-        if not user:
-            sys.stdout.write('Skipping configuration of %s.\n' % mb)
+        resp = input('\tConfigure this MATCHBox? ')
+        if resp and resp.lower() in ('no', 'n'):
+            sys.stdout.write('\tSkipping.\n')
             continue
-        passwd = getpass('\tEnter the password for %s: ' % user)
-        matchboxes[mb]['username'] = user
-        matchboxes[mb]['password'] = passwd
-        config_stump.update({mb : matchboxes[mb]})
+        for conn in ('api', 'mongo'):
+            user, passwd = connector_conf(conn, mb)
+            if user is None:
+                continue
+            userkey = 'username' if conn == 'api' else 'mongo_user'
+            userpass = 'password' if conn == 'api' else 'mongo_pass'
+
+            matchboxes[mb][conn][userkey] = user
+            matchboxes[mb][conn][userpass] = passwd
+            config_stump.update({mb : matchboxes[mb]})
 
     sys.stdout.write('\n')
     write_json(config_stump)
+
+def connector_conf(connector, mb):
+    resp = input('\n\tConfigure the %s connector for MATCHBox "%s"? ' % (
+        connector, mb))
+    if resp and resp.lower() in ('no', 'n'):
+        return None, None
+    user = input('\tEnter the username for %s: ' % mb)
+    passwd = getpass('\tEnter the password for %s: ' % user)
+    return user, passwd
 
 def fix_perms(input_file):
     os.system('chown {} {}'.format(system_user, input_file))
@@ -153,6 +172,7 @@ def pre_build_mb_obj(root_dir, matchbox='adult'):
 
 if __name__=='__main__':
     root_dir = matchbox_api_utils.mb_utils_root
+    # root_dir = os.path.join(os.path.dirname(__file__), 'mb_tmp')
     print('    -> INFO: root dir: %s' % root_dir)
     if not os.path.isdir(root_dir):
         sys.stderr.write('INFO: Creating new MATCHBox API Utils Root dir.\n')
@@ -164,6 +184,15 @@ if __name__=='__main__':
         fix_perms(root_dir)
 
     sys.stdout.write('\n{0}  MATCHBox API Utils Setup  {0}\n'.format('-'*25))
-    make_config_file(root_dir)
+    # Make a new config file (or update on that exists) unless we don't want to.
+    if os.path.exists(os.path.join(root_dir, config_filename)):
+        sys.stdout.write('A configuration file already exists for this '
+            'package.\n')
+        resp = input('Do you want to make a new config file or make changes to '
+            'the existing one [y|N]? ')
+        if resp.lower() in ('y', 'yes'):
+            make_config_file(root_dir)
+
+    # Make the MATCHBox JSON objects for easy loading.
     pre_build_mb_obj(root_dir)
     sys.stdout.write('Done with post-install config tasks.\n' + '-'*78 + '\n\n')
