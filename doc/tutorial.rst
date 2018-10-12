@@ -52,12 +52,10 @@ which has not been parse and filtered, and can be accepted into the other
 modules as if they were making a live call.  In this case, one could run: ::
 
     >>> from matchbox_api_utils import Matchbox
-    >>> Matchbox(matchbox='adult-matchbox', username='user', 
-    ...     password='password', client_name='Adult-MATCH-Production',
-    ...     client_id='<long_id_string>', method='async', params=<API_params>,
-    ...     make_raw='raw_mb_dataset.json')
+    >>> Matchbox(matchbox='adult', method='mongo', mongo_collection='patient',
+    ...     make_raw='mb')
 
-This will create a raw complete JSON dump of MATCHBox.
+This will create a complete raw JSON dump of MATCHBox.
 
 .. warn:
     A raw MATCHBox data dump like this might be very large!
@@ -78,7 +76,7 @@ one needs only load the object into a variable, and then run the host of
 methods available: ::
 
     >>> from matchbox_api_utils import MatchData
-    >>> data = MatchData(matchbox='adult-matchbox')
+    >>> data = MatchData(matchbox='adult')
     >>> data.get_biopsy_summary(category='progression', ret_type='counts')
     {'progression': 19}
 
@@ -111,9 +109,15 @@ above.  You don't have any identifiers or other information to go on.
 
 Here's a way one might work through it: ::
 
+    .. note::
+        I am listing all of the options to call these methods, even when some 
+        of them are default, just to give a sense of what is possible.  See the 
+        detailed docs for a list of default args.
+
     >>> from matchbox_api_utils import MatchData
     >>> from pprint import pprint as pp
-    >>> data = MatchData()
+    >>> data = MatchData(matchbox='adult', method='mongo', json_db=None, 
+    ...    quiet=False)
     >>> results = {}  # Let's create a dict to put the results in.
     >>> biopsies = data.get_biopsy_summary(category='progression', ret_type='ids')
     >>> pp(biopsies)
@@ -296,10 +300,11 @@ As with the other modules, one can either make a live query to MATCHBox to
 generate a dataset: ::
 
     >>> from matchbox_api_utils import TreatmentArms
-    >>> ta_data = TreatmentArms(matchbox='adult-matchbox')
+    >>> ta_data = TreatmentArms(matchbox='adult', method='mongo', json_db=None,
+    ...    quiet=False)
     
-As with ``MatchData``, not specifying a JSON database will result in loading 
-the ``sys_default`` database which is built at the same time as the 
+Or, as with ``MatchData``, not specifying a JSON database will result in
+loading the ``sys_default`` database which is built at the same time as the 
 ``MatchData`` JSON database.  You'll see this file in 
 ``$HOME/.mb_utils/ta_obj_<date>.json``.  
 
@@ -344,7 +349,8 @@ as follows: ::
 
     >>> from matchbox_api_utils import TreatmentArms
     >>> from pprint import pprint as pp
-    >>> ta_data = TreatmentArms(matchbox='adult-matchbox')
+    >>> ta_data = TreatmentArms(matchbox='adult', method='mongo', json_db=None, 
+    ...   quiet=False)
     >>> variant = {
     ...    'type' : 'snvs_indels',
     ...    'gene' : 'BRAF',
@@ -368,13 +374,18 @@ potential match for Arm H only.  Now, let's see if their disease would qualify
 them for this arm: ::
 
     >>> pp(ta_data.get_exclusion_disease('EAY131-H'))
-    [u'Papillary thyroid carcinoma',
-     u'Melanoma',
-     u'Acral Lentiginous Melanoma',
-     u'Adenocarcinoma - colon',
-     u'Malignant Melanoma of sites other than skin or eye',
-     u'Adenocarcinoma - rectum',
-     u'Colorectal cancer, NOS']
+    ['Papillary thyroid carcinoma',
+     'Melanoma',
+     'Malignant Melanoma of sites other than skin or eye',
+     'Acral Lentiginous Melanoma',
+     'Adenocarcinoma of the colon',
+     'Adenocarcinoma of the rectum',
+     'Colorectal cancer, NOS',
+     'Bronchioloalveolar carcinoma',
+     'Lung adenocarcinoma',
+     'Lung adenocarcinoma with bronchioloalveolar features',
+     'Non-small cell lung cancer, NOS',
+     'Squamous cell lung carcinoma']
 
 Well, that's bad news!  Based on the fact that the patient has `Melanoma` and 
 it is an exclusionary disease for Arm H, the patient would not currently 
