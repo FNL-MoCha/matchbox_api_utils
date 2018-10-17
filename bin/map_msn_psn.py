@@ -21,29 +21,53 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import MatchData 
 
-version = '4.0.101218'
+version = '4.1.101218'
 
 def get_args():
     parser = argparse.ArgumentParser(description = __doc__)
-    parser.add_argument('matchbox', metavar='<matchbox>', help='Name of '
-        'MATCHBox to which we make the connection. Valid systems are: '
-        '"adult", "adult-uat", "ped".')
-    parser.add_argument('ids', metavar='<IDs>', nargs='?',
+    parser.add_argument(
+        'matchbox', 
+        metavar='<matchbox>', 
+        help='Name of MATCHBox to which we make the connection. Valid systems '
+            'are: "adult", "adult-uat", "ped".'
+    )
+    parser.add_argument(
+        'ids', 
+        metavar='<IDs>', 
+        nargs='?',
         help='MATCH IDs to query.  Can be single or comma separated list. '
-        'Must be used with PSN or MSN option.')
-    parser.add_argument('-t', '--type', choices=['psn','msn','bsn'], 
-        required=True, type=str.lower, help='Type of query string input. Can '
-        'be MSN, PSN, or BSN')
-    parser.add_argument('-l', '--live', action='store_true', 
-        help='Make a live call to MATCHbox instead of relying on local JSON '
-        'database. This is especially helpful for newly sequenced patients '
-        'since the last dump.')
-    parser.add_argument('-f', '--file', metavar="<input_file>", 
-        help='Load a batch file of all MSNs or PSNs to proc')
-    parser.add_argument('-o', '--outfile', metavar='<outfile>', help='File to '
-        'which output should be written. Default: STDOUT.')
-    parser.add_argument('-v','--version', action='version', 
-        version = '%(prog)s  -  ' + version)
+        'Must be used with PSN or MSN option.'
+    )
+    parser.add_argument(
+        '-t', '--type', 
+        choices=['psn','msn','bsn'], 
+        required=True, 
+        type=str.lower, 
+        help='Type of query string input. Can be MSN, PSN, or BSN'
+    )
+    parser.add_argument(
+        '-j,', '--json', 
+        metavar='<mb_obj.json>', 
+        default='sys_default',
+        help='MATCHBox JSON database to use for the lookup if one does not '
+            'want to use the system default.  If one would like to make a '
+            'live call instead, input `None`.'
+    )
+    parser.add_argument(
+        '-f', '--file', 
+        metavar="<input_file>", 
+        help='Load a batch file of all MSNs or PSNs to proc.'
+    )
+    parser.add_argument(
+        '-o', '--outfile', 
+        metavar='<outfile>', 
+        help='File to which output should be written. Default: STDOUT.'
+    )
+    parser.add_argument(
+        '-v','--version', 
+        action='version', 
+        version = '%(prog)s  -  ' + version
+    )
     args = parser.parse_args()
     return args
 
@@ -142,9 +166,9 @@ if __name__=='__main__':
         sys.stderr.write("ERROR: No valid IDs input!\n")
         sys.exit(1)
 
-    json_db = 'sys_default'
+    json_db = args['json']
     # Make a call to MATCHbox to get a JSON obj of data.
-    if args['live']:
+    if json_db is "None":
         sys.stdout.write('Retrieving a live MATCHBox data object. This may '
             'take a few minutes...\n')
         sys.stdout.flush()
