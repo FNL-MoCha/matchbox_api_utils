@@ -122,6 +122,11 @@ class Matchbox(object):
             self.api_data = self.__mongo_call(mongo_collection, outfile)
             if make_raw is None:
                 os.remove(outfile)
+            else:
+                # We want a pretty printed JSON file so that it's a bit more 
+                # human readable.
+                tmpdata = utils.read_json(outfile)
+                utils.make_json(outfile=outfile, data=tmpdata)
         else:
             sys.stderr.write('ERROR: method %s is not a valid method! Choose '
                 'only from "api" or "mongo".\n')
