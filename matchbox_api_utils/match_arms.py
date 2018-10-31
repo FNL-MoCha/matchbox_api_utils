@@ -333,6 +333,7 @@ class TreatmentArms(object):
             # if arm_id != 'EAY131-H':
                 # continue
             arm_data[arm_id]['name']      = arm['name']
+            arm_data[arm_id]['target']    = arm.get('gene', 'UNK')
             arm_data[arm_id]['arm_id']    = arm_id
             arm_data[arm_id]['drug_name'] = arm['targetName']
             arm_data[arm_id]['drug_id']   = arm['treatmentArmDrugs'][0]['drugId']
@@ -342,6 +343,8 @@ class TreatmentArms(object):
             arm_data[arm_id]['ihc']           = self.__retrieve_data_with_keys(
                 arm['assayResults'], 'gene', 'assayResultStatus')
             arm_data[arm_id]['amois'] = self.__parse_amois(arm['variantReport'])
+            arm_data[arm_id]['status'] = arm['treatmentArmStatus']
+            
         return arm_data
     
     @staticmethod
@@ -464,8 +467,7 @@ class TreatmentArms(object):
     def map_drug_arm(self, armid=None, drugname=None, drugcode=None):
         """
         Input an Arm ID or a drug name, and return a tuple of arm, drugname,
-        and ID. If no arm ID or drug name is input, will return a whole table
-        of all arm data.
+        and ID. 
 
         Args:
             armid (str): Offcial NCI-MATCH Arm ID in the form of `EAY131-xxx`
@@ -506,8 +508,9 @@ class TreatmentArms(object):
         """
 
         if all(x is None for x in [armid, drugname, drugcode]):
-            return [(arm, self.data[arm]['drug_name'], 
-                self.data[arm]['drug_id']) for arm in sorted(self.data)]
+            sys.stderr.write('ERROR: No Arm ID, Drugname, or Drug Code info '
+                'entered. Need to specify something to lookup!\n')
+            return None
         elif armid:
             if armid in self.data:     
                 return (armid, self.data[armid]['drug_name'], 
@@ -588,6 +591,31 @@ class TreatmentArms(object):
         # Iterate through hotspots, cnvs, fusions, and non-hs aMOIs and generate
         # a list of tuples of data that can be printed easily later.
         return dict(arm_data['amois'])
+
+    def get_match_arm_info(self, armid=None):
+        """
+        Get information about NCI-MATCH study arms.
+
+        This method will either return a full dictionary of study arms, with 
+        drug, target, short description information for the whole study, or 
+        filter out the data by arm using the ``armid`` argument.
+
+        Args:
+            armid (list): List of arms that you would like to filter on.
+
+        Returns:
+            dict: Dict of study arm data.
+
+        Example: 
+            >>> # Need to add example here.
+
+        """
+        results = defaultdict(dict)
+        wanted = ('drug_id', 'name', 'target', 'status')
+
+        for arm in self.data:
+            results[arm] = {x : self.data[arm].get(x, None) for x in wanted}
+        return dict(results)
 
     def get_arm_by_amoi(self, gene=None, hotspot=None):
         """
