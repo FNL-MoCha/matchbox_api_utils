@@ -135,8 +135,9 @@ class MatchData(object):
             else:
                 self._config_data.put_config_item('password', password)
 
-        sys.stderr.write('[ DEBUG ]  Config data:\n')
-        utils.pp(self._config_data.config_data)
+        # DEBUG
+        # sys.stderr.write('[ DEBUG ]  Config data:\n')
+        # utils.pp(self._config_data.config_data)
 
         # If json_db is 'sys_default', get json file from matchbox_conf.Config, 
         # which is from matchbox_api_util.__init__.mb_json_data.  Otherwise use 
