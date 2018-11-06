@@ -44,6 +44,7 @@ config = {
                               'bin/matchbox_json_dump.py',
                               'bin/match_variant_frequency.py',
                               'bin/matchbox_patient_summary.py',
+                              'bin/match_arm_enrollment.py',
                              ],
     'include_package_data' : True,
     'zip_safe'             : False,
