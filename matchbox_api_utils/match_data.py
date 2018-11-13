@@ -17,8 +17,7 @@ class MatchData(object):
     """
     **NCI-MATCH MATCHBox Data class**
 
-    Parsed MATCHBox Data from the API as collected from the Matchbox class. 
-    This class has methods to generate queries, further filtering, and 
+    Parsed MATCHBox Data from the API as collected from the Matchbox class.  This class has methods to generate queries, further filtering, and 
     heuristics on the dataset.
 
     Generate a MATCHBox data object that can be parsed and queried downstream 
@@ -92,7 +91,7 @@ class MatchData(object):
         username=None, password=None, patient=None, json_db='sys_default', 
         load_raw=None, make_raw=None, quiet=False):
 
-        sys.stderr.write('\nWelcome to MATCHBox API Utils Version %s\n' % 
+        sys.stderr.write('\nWelcome to MATCHBox API Utils Version %s\n\n' % 
             matchbox_api_utils._version.__version__)
         sys.stderr.flush()
 
@@ -1795,3 +1794,32 @@ class MatchData(object):
             for t in wanted_data:
                 metaval[t] = utils.get_vals(biopsy_record, t)[0]
         return {bsn : dict(metaval)}
+
+    def get_patient_demographics(self, psn):
+        """
+        Input a PSN, and get meta information about a patient, including gender,
+        ethnicity, any arms they've been on, etc.
+
+        Args
+            psn (str):    Patient Sequencing Number (PSN) for the query patient
+
+        Returns
+            dict: Dictionary of patient metadata
+
+        Examples
+            >>> self.get_patient_demographics(psn=13070)
+            # Add result here
+
+        """
+
+        wanted_elems = ('gender', 'ethnicity', 'race', 'source', 'progressed',
+            'ta_arms', 'current_trial_status')
+        query = self.__format_id('rm', psn=psn)
+
+        # if self._quiet is False:
+            # sys.stdout.write('querying patient %s' % query)
+            # sys.stdout.flush()
+
+        record = self.data.get(query)
+        results = {e : utils.get_vals(record, e)[0] for e in wanted_elems}
+        return results
