@@ -13,14 +13,15 @@ from pprint import pprint as pp
 
 from matchbox_api_utils import *
 
-version = '0.1.110218'
+version = '1.0.111318'
 
 def get_args():
     parser = argparse.ArgumentParser(description = __doc__)
     parser.add_argument(
         'armid', 
         metavar='<ARM ID>',
-        help='Valid NCI-MATCH study arm, in the format of EAY131-*.'
+        help='Valid NCI-MATCH study arm, or comma separated list of study arms, '
+            'in the format of EAY131-*.'
     )
     parser.add_argument(
         '-a', '--all', 
@@ -65,39 +66,45 @@ def filter_data(data):
     return filtered
 
 def print_data(results, outfile):
-    header = ['ArmID', 'PSN', 'MSN', 'Histology', 'Status']
+    header = ['ArmID', 'PSN', 'MSN', 'Histology', 'Status', 'Source']
     outfile.writerow(header)
-    for patient in results:
+    for record in results:
         outfile.writerow([
-            results[patient]['arm'],
-            patient,
-            results[patient]['msn'],
-            results[patient]['hist'],
-            results[patient]['status']
+            results[record]['arm'],
+            results[record]['psn'],
+            results[record]['msn'],
+            results[record]['hist'],
+            results[record]['status'],
+            results[record]['source']
         ])
 
-def main(match_data, armid, output_all, outside, outfile):
-    arm_results = match_data.get_patients_by_arm(arm=armid, outside=outside)
-    if len(arm_results) < 1:
-        sys.stderr.write('No results for MATCH arm %s.\n' % armid)
-    else:
-        results = {}
-        for rec in arm_results:
-            try:
-                # Might not get an MSN for outside assays.
-                msn = match_data.get_msn(psn = rec[0])[0] # Just take first one
-            except IndexError:
-                msn = 'unknown'
-                # print('error with psn %s' % rec[0])
-                # pp(match_data.get_msn(psn=rec[0]))
-                # sys.exit()
-            histology = match_data.get_histology(psn=rec[0], outside=outside)
-            results[rec[0]] = {
-                'arm' : rec[1],
-                'status' : rec[2],
-                'msn' : msn,
-                'hist' : histology['PSN%s' % rec[0]],
-        }
+def main(match_data, armids, output_all, outside, outfile):
+    results = {}
+
+    for arm in armids:
+        arm_results = match_data.get_patients_by_arm(arm=arm, outside=outside)
+        if len(arm_results) < 1:
+            sys.stderr.write('No results for MATCH arm %s.\n' % armid)
+        else:
+            for rec in arm_results:
+                try:
+                    # Might not get an MSN for outside assays.
+                    msn = match_data.get_msn(psn=rec[0])[0] # Just take first one
+                except IndexError:
+                    msn = 'unknown'
+
+                histology = match_data.get_histology(psn=rec[0], outside=outside)
+                source = match_data.get_patient_demographics(psn=rec[0])['source']
+
+                results['%s|%s' %(arm, rec[0])] = {
+                    'psn' : rec[0],
+                    'arm' : rec[1],
+                    'status' : rec[2],
+                    'msn' : msn,
+                    'hist' : histology['PSN%s' % rec[0]],
+                    'source' : source
+                }
+
     if output_all:
         print_data(results, outfile)
     else:
@@ -105,7 +112,6 @@ def main(match_data, armid, output_all, outside, outfile):
         print_data(filtered, outfile)
 
 if __name__ == '__main__':
-    match_data = MatchData()
     args = get_args()
     if args.outfile:
         sys.stderr.write('Writing results to file %s.\n' % args.outfile)
@@ -114,4 +120,7 @@ if __name__ == '__main__':
     else:
         csv_fh = csv.writer(sys.stdout, lineterminator='\n')
 
-    main(match_data, args.armid, args.all, args.outside, csv_fh)
+    arms = args.armid.split(',')
+    match_data = MatchData(quiet=True)
+
+    main(match_data, arms, args.all, args.outside, csv_fh)
