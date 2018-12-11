@@ -425,7 +425,7 @@ class TreatmentArms(object):
         if variant['type'] == 'snvs_indels':
             if (
                 variant['oncominevariantclass'] == 'Hotspot' 
-                and variant['identifier'] in self.amoi_lookup_table['hotspot']
+                or variant['identifier'] in self.amoi_lookup_table['hotspot']
             ):
                 result=self.amoi_lookup_table['hotspot'][variant['identifier']]
 
