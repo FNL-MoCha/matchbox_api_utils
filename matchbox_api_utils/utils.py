@@ -113,9 +113,31 @@ def __exit__(line=None, msg=None):
     cprint(output, 'white', 'on_green', attrs=['bold'], file=sys.stderr)
     sys.exit()
 
-def msg(msg, verbosity):
-    if verbosity == 0:
-        return
+def writelog(flag, msg):
+    """
+    Simple level based logging function. Needs to have a `loglevel` param as 
+    well as a `logfile` param set (usually through a global var). 
+    
+    TODO: Need to finish implmenting this function
+    """
+    now = datetime.datetime.now().strftime('%c')
+    log_levels = {
+        'info'  : (0, "INFO:"),
+        'warn'  : (1, 'WARN:'),
+        'error' : (2, 'ERROR:'),
+        'debug' : (3, "DEBUG:"),
+    }
+    log_threshold = log_levels[loglevel][0]
+
+    if flag is not None:
+        flag = flag.lower() # Make sure it's lowercase to avoid key error
+        tier, annot = log_levels.get(flag, None)
+        annot = 'something wrong' if annot == None else annot
+        logstr = '{:26s} {:6s} {}\n'.format(now, annot, msg)
+
+        if tier <= log_threshold:
+            logfile.write(logstr)
+            logfile.flush()
     else:
-        sys.stderr.write(msg)
-        sys.stderr.flush()
+        logfile.write('\t%s\n' % msg)
+        logfile.flush()
