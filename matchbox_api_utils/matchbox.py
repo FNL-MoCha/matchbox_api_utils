@@ -126,6 +126,8 @@ class Matchbox(object):
                 # human readable.
                 tmpdata = utils.read_json(outfile)
                 utils.make_json(outfile=outfile, data=tmpdata)
+                sys.stderr.write("Done making a raw MATCHBox data dump file.")
+                return
         else:
             sys.stderr.write('ERROR: method %s is not a valid method! Choose '
                 'only from "api" or "mongo".\n')
