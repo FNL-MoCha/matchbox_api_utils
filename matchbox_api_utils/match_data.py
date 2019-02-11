@@ -11,14 +11,17 @@ from matchbox_api_utils.matchbox import Matchbox
 from matchbox_api_utils.match_arms import TreatmentArms
 import matchbox_api_utils._version
 
+from pprint import pformat
+
 
 class MatchData(object):
 
     """
     **NCI-MATCH MATCHBox Data class**
 
-    Parsed MATCHBox Data from the API as collected from the Matchbox class.  This class has methods to generate queries, further filtering, and 
-    heuristics on the dataset.
+    Parsed MATCHBox Data from the API as collected from the Matchbox class.  This 
+    class has methods to generate queries, further filtering, and heuristics on 
+    the dataset.
 
     Generate a MATCHBox data object that can be parsed and queried downstream 
     with some methods. 
@@ -105,14 +108,19 @@ class MatchData(object):
             sys.stderr.write('\n')
             return None
 
-        self._patient = self.__format_id('rm', psn=patient)
         self._json_db = json_db
         self.db_date = utils.get_today('long')
         self._quiet = quiet
 
-        # Ensure that we pass "mb" to Matchbox()
+        self._patient = self.__format_id('rm', psn=patient)
+        if self._patient is not None and self._quiet is not None:
+            sys.stderr.write('Filtering on patient: {}\n'.format(self._patient))
+
+        # Ensure that we pass "mb" to Matchbox() and we do not use sys default
+        # JSON DB.
         if make_raw:
             make_raw = 'mb'
+            self._json_db = None
 
         if not self._quiet:
             sys.stderr.write('[ INFO ]  Loading MATCHBox: %s\n' % 
@@ -133,10 +141,6 @@ class MatchData(object):
                 self._config_data.put_config_item('mongo_pass', password)
             else:
                 self._config_data.put_config_item('password', password)
-
-        # DEBUG
-        # sys.stderr.write('[ DEBUG ]  Config data:\n')
-        # utils.pp(self._config_data.config_data)
 
         # If json_db is 'sys_default', get json file from matchbox_conf.Config, 
         # which is from matchbox_api_util.__init__.mb_json_data.  Otherwise use 
@@ -196,6 +200,14 @@ class MatchData(object):
                 make_raw=make_raw,
                 quiet=self._quiet,
             ).api_data
+            
+            if matchbox_data is None:
+                if make_raw:
+                    return
+                else:
+                    sys.stderr.write('[ ERROR ]  No data returned from MATCHBox'
+                        ' call! Something seems to have gone wrong here.\n')
+                    return None
 
             # If we are filtering on a patient, then we don't get a list of 
             # dicts, so we need to convert the data before passing or else 
@@ -204,10 +216,6 @@ class MatchData(object):
                 matchbox_data = [matchbox_data]
             self.data = self.__gen_patients_list(matchbox_data, self._patient)
 
-        if self.data is None:
-            sys.stderr.write('[ ERROR ]  No data returned from MATCHBox call! '
-                'Something seems to have gone wrong here.\n')
-            return None
         # Load up a meddra : ctep term db based on entries so that we can look
         # data up on the fly.
         self._disease_db = self.__make_disease_db()
@@ -330,6 +338,7 @@ class MatchData(object):
         arm_hist = {}
         progressed = False
         tot_msgs = len(triggers)
+        counter = 0
 
         # If we only ever got to registration and not further (so there's only 
         # 1 message), let's bail out
@@ -337,14 +346,14 @@ class MatchData(object):
             return (triggers[0]['patientStatus'], triggers[0]['message'], {}, 
                 False)
 
-        counter = 0
-        curr_arm = ''
         for i, msg in enumerate(triggers):
             # On a rare occassion, we get two of the same messages in a row. 
-            # Just skip the redundant message?
+            # Skip the redundant message unless it's the last one (have to proc
+            # the data for output.
             if triggers[i-1]['patientStatus'] == msg['patientStatus']:
-                continue
-            
+                if (i+1) != tot_msgs:
+                    continue
+
             if msg['patientStatus'] == 'REJOIN':
                 counter += 1
 
@@ -354,7 +363,6 @@ class MatchData(object):
                     assignments[counter]['patientAssignmentLogic'], 
                     'SELECTED'
                 )
-
                 try:
                     arm_hist[curr_arm] = assignments[counter]['patientAssignmentMessages'][0]['status']
                 except IndexError:
@@ -363,7 +371,7 @@ class MatchData(object):
                     arm_hist[curr_arm] = '.'
                 counter += 1
 
-            if msg['patientStatus'].startswith("PROG"):
+            elif msg['patientStatus'].startswith("PROG"):
                 progressed = True
                 arm_hist[curr_arm] = 'FORMERLY_ON_ARM_PROGRESSED'
 
@@ -376,7 +384,7 @@ class MatchData(object):
                 arm_hist[curr_arm] = 'COMPASSIONATE_CARE'
 
             # When we hit the last message, return what we've collected.
-            if i+1 == tot_msgs:
+            if (i+1) == tot_msgs:
                 last_status = msg['patientStatus']
                 last_msg = msg.get('message', '---')
                 if arm_hist:
@@ -386,7 +394,6 @@ class MatchData(object):
 
                     if arm_hist[curr_arm] == '.':
                         arm_hist[curr_arm] = last_status
-
                 return last_status, last_msg, arm_hist, progressed
 
     def __gen_patients_list(self, matchbox_data, patient):
@@ -430,15 +437,16 @@ class MatchData(object):
             # TODO: Right now just getting a dict of arm : status. Do we want to
             # set this up as a list of dicts that include assignment date too, 
             # so that we can order them, and make length on arm calcs?
-            pt_triggers = record.get('patientTriggers', None)
-            pt_assignments = record.get('patientAssignments', None)
-            pt_rejoin_trigs = record.get('patientRejoinTriggers', None)
+            pt_triggers = record.get('patientTriggers', [])
+            pt_assignments = record.get('patientAssignments', [])
+            pt_rejoin_trigs = record.get('patientRejoinTriggers', [])
 
-            last_status, last_msg, arm_hist, progressed = self.__get_pt_hist(
-                    pt_triggers, 
-                    pt_assignments, 
-                    pt_rejoin_trigs
-            )
+            try:
+                last_status, last_msg, arm_hist, progressed = self.__get_pt_hist(
+                    pt_triggers, pt_assignments, pt_rejoin_trigs)
+            except:
+                print('bad patient: %s' % psn)
+                raise
 
             patients[psn]['current_trial_status']    = last_status
             patients[psn]['last_msg']                = last_msg
@@ -451,8 +459,8 @@ class MatchData(object):
             else:
                 for biopsy in record['biopsies']:
                     bsn = biopsy['biopsySequenceNumber']
-                    # XXX: manual skip for now; will have to find a way to clean up
-                    #      database later.
+                    # TODO: manual skip for now; will have to find a way to 
+                    #       clean up database later.
                     if bsn == 'T-16-002080' and psn == '12850':
                         continue
                     patients[psn]['all_biopsies'].append(bsn)
@@ -591,7 +599,8 @@ class MatchData(object):
                 ]
         }
 
-        data = dict((key, vardata.get(key, '.')) for key in include_fields[meta_key[vartype]])
+        data = dict((key, vardata.get(key, '.')) 
+                for key in include_fields[meta_key[vartype]])
         data['type'] = meta_key[vartype]
         return data
 
@@ -1119,7 +1128,8 @@ class MatchData(object):
                     output_data[query_list[p]] = None
         
         elif msn:
-            msn_list = [self.__format_id('add', msn=x) for x in str(msn).split(',')]
+            msn_list = [self.__format_id('add', msn=x) 
+                    for x in str(msn).split(',')]
             for m in msn_list:
                 psn = self.get_psn(msn=m)
                 if psn is not None:
