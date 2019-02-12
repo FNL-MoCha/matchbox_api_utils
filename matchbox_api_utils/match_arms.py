@@ -108,7 +108,6 @@ class TreatmentArms(object):
                 sys.stderr.write('\n  ->  Starting from a raw TA JSON Obj\n')
             self.db_date, matchbox_data = utils.load_dumped_json(load_raw)
 
-            #XXX
             self.__get_latest_arms(matchbox_data)
             self.data = self.make_match_arms_db(matchbox_data)
 
@@ -145,7 +144,6 @@ class TreatmentArms(object):
                 quiet=self._quiet,
             ).api_data
 
-            # XXX
             self.__get_latest_arms(matchbox_data)
             self.data = self.make_match_arms_db(matchbox_data)
         
@@ -171,7 +169,6 @@ class TreatmentArms(object):
         the latest ones. With the generic Mongo call, we have to do this 
         manually.
         '''
-        # XXX
         arm_versions = defaultdict(list)
         
         for arm in data:
@@ -273,12 +270,6 @@ class TreatmentArms(object):
         return rules_table
 
     def __parse_amois(self, amoi_data):
-        # Getting a dict of amois with keys:
-            # copyNumberVariants
-            # geneFusions
-            # indels
-            # nonHotspotRules
-            # singleNucleotideVariants
         parsed_amois = defaultdict(dict)
         wanted = {
             'singleNucleotideVariants' : 'hotspot',
@@ -310,25 +301,11 @@ class TreatmentArms(object):
 
             # Rest of variant classes
             elif amoi_data[var]:
-                # Now we have the unreliable and random "NOVEL" variants from
-                # outside labs.  Skip all of these since you can't do a 
-                # uniform analysis with the data. As an idea of how unreliable
-                # this all is, the "metadata", "variantSource", etc. info isn't
-                # even in every variant entry.  This database is a mess!
                 for entry in amoi_data[var]:
-                    try:
-                        source = entry['metadata']['variantSource']
-                    except KeyError:
-                        # Not all entries have this information for some reason!
-                        # Let's just assume it's not Novel or whatever.
-                        source = None
+                    parsed_amois[wanted[var]].update(
+                        {entry['identifier'] : entry['inclusion']}
+                    )
 
-                    if source == 'NOVEL':
-                        continue
-                    else:
-                        parsed_amois[wanted[var]].update(
-                            {entry['identifier'] : entry['inclusion']}
-                        )
         # Pad out data
         for i in wanted.values():
             if i not in parsed_amois:
@@ -355,24 +332,31 @@ class TreatmentArms(object):
             arm_id = arm['treatmentArmId']
             if arm['version'] != self._latest_ver[arm_id]:
                 continue
-            # if arm_id != 'EAY131-H':
+            # if arm_id != 'EAY131-Z1H':
                 # continue
             arm_data[arm_id]['arm_id']    = arm_id
             arm_data[arm_id]['name']      = arm.get('name', '-')
             arm_data[arm_id]['target']    = arm.get('gene', 'UNK')
             arm_data[arm_id]['drug_name'] = arm['targetName']
             arm_data[arm_id]['drug_id']   = arm['treatmentArmDrugs'][0]['drugId']
-            arm_data[arm_id]['assigned']      = arm['numPatientsAssigned']
+            arm_data[arm_id]['status']    = arm['treatmentArmStatus']
+            arm_data[arm_id]['version']   = arm['version']
+            arm_data[arm_id]['assigned']  = arm['numPatientsAssigned']
+
             arm_data[arm_id]['excl_diseases'] = self.__retrieve_data_with_keys(
                 arm['exclusionDiseases'], 'ctepCategory', '_id')
             arm_data[arm_id]['ihc']           = self.__retrieve_data_with_keys(
                 arm['assayResults'], 'gene', 'assayResultStatus')
+
+            # Make aMOI mappings.
             arm_data[arm_id]['amois'] = self.__parse_amois(arm['variantReport'])
-            arm_data[arm_id]['status'] = arm['treatmentArmStatus']
 
             arm_data[arm_id]['outside_open'] = False
             if 'OUTSIDE_ASSAY' in arm['studyTypes']:
                 arm_data[arm_id]['outside_open'] = True
+
+            # XXX
+            # utils.make_json(outfile="test.json", data=arm_data)
         return arm_data
     
     @staticmethod
