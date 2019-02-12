@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import json
+import datetime
 from collections import defaultdict
 
 from matchbox_api_utils import utils
@@ -65,30 +66,27 @@ class TreatmentArms(object):
 
     """
 
-    def __init__(self, matchbox='adult', method='api', config_file=None, 
+    def __init__(self, matchbox='adult', method='mongo', config_file=None, 
         username=None, password=None, json_db='sys_default', load_raw=None, 
         make_raw=None, quiet=True):
-
-        # TODO:
-        #    For now we'll just keep the old API call method since this is 
-        #    working and easy to maintain. But, once we finish the other bits, 
-        #    let's transition this over to a MongoDB call too.
 
         self._matchbox = matchbox
         self._json_db = json_db
         self.db_date = utils.get_today('long')
         self._quiet = quiet
+        self._latest_ver = {}
 
         # Ensure we pass "ta" to Matchbox().
         if make_raw:
             make_raw = 'ta'
+            self._json_db = None
         
-        if quiet is False:
+        if self._quiet is False:
             sys.stderr.write('[ INFO ]  Loading Treatment Arm data from '
                 'MATCHBox: %s\n' % self._matchbox)
+
         self._config_data = matchbox_conf.Config(self._matchbox, method, 
             config_file)
-
 
         if username:
             if method == 'mongo':
@@ -109,16 +107,13 @@ class TreatmentArms(object):
             if self._quiet is False:
                 sys.stderr.write('\n  ->  Starting from a raw TA JSON Obj\n')
             self.db_date, matchbox_data = utils.load_dumped_json(load_raw)
+
+            #XXX
+            self.__get_latest_arms(matchbox_data)
             self.data = self.make_match_arms_db(matchbox_data)
 
         # Loading a MB parsed DB
         elif self._json_db:
-            if make_raw:
-                sys.stderr.write("ERROR: You can not load a processed JSON DB "
-                    "*and* ask to make a raw \nDB. You should set the 'json_db' "
-                    "argument to `False`.\n")
-                return None
-
             self.db_date, self.data = utils.load_dumped_json(self._json_db)
             if self._quiet is False:
                 sys.stderr.write('\n  ->  Starting from a processed TA JSON '
@@ -149,6 +144,9 @@ class TreatmentArms(object):
                 make_raw=make_raw,
                 quiet=self._quiet,
             ).api_data
+
+            # XXX
+            self.__get_latest_arms(matchbox_data)
             self.data = self.make_match_arms_db(matchbox_data)
         
         # Make a condensed aMOI lookup table too for running aMOIs rules.
@@ -165,6 +163,31 @@ class TreatmentArms(object):
 
     def __iter__(self):
         return self.data.itervalues()
+
+    def __get_latest_arms(self, data):
+        '''
+        We can have multiple versions of each arm in the database.  Previously
+        we had the ability in the API to filter out older versions and get only
+        the latest ones. With the generic Mongo call, we have to do this 
+        manually.
+        '''
+        # XXX
+        arm_versions = defaultdict(list)
+        
+        for arm in data:
+            # if arm['treatmentArmId'] != "EAY131-A":
+                # continue
+            # Inconsistencies in the DB require a little hacking!
+            try:
+                version = datetime.datetime.strptime(
+                    arm['version'].rstrip('-old'), '%Y-%m-%d')
+            except:
+                version = datetime.datetime.strptime(
+                    arm['version'].rstrip('-old'), '%m-%d-%Y')
+            arm_versions[arm['treatmentArmId']].append((version, arm['version']))
+        
+        for arm, ver in arm_versions.items():
+            self._latest_ver[arm] = sorted(ver)[-1][1]
 
     def ta_json_dump(self, amois_filename=None, ta_filename=None):
         """
@@ -194,7 +217,6 @@ class TreatmentArms(object):
         utils.make_json(outfile=ta_filename, data=self.data)
 
     @staticmethod
-    # XXX
     def __retrieve_data_with_keys(data, k1, k2):
         results = {}
         for elem in data:
@@ -329,12 +351,15 @@ class TreatmentArms(object):
         """
         arm_data = defaultdict(dict)
         for arm in api_data:
+            # Only want the most recent version of the arm.
             arm_id = arm['treatmentArmId']
+            if arm['version'] != self._latest_ver[arm_id]:
+                continue
             # if arm_id != 'EAY131-H':
                 # continue
-            arm_data[arm_id]['name']      = arm['name']
-            arm_data[arm_id]['target']    = arm.get('gene', 'UNK')
             arm_data[arm_id]['arm_id']    = arm_id
+            arm_data[arm_id]['name']      = arm.get('name', '-')
+            arm_data[arm_id]['target']    = arm.get('gene', 'UNK')
             arm_data[arm_id]['drug_name'] = arm['targetName']
             arm_data[arm_id]['drug_id']   = arm['treatmentArmDrugs'][0]['drugId']
             arm_data[arm_id]['assigned']      = arm['numPatientsAssigned']
@@ -344,7 +369,10 @@ class TreatmentArms(object):
                 arm['assayResults'], 'gene', 'assayResultStatus')
             arm_data[arm_id]['amois'] = self.__parse_amois(arm['variantReport'])
             arm_data[arm_id]['status'] = arm['treatmentArmStatus']
-            
+
+            arm_data[arm_id]['outside_open'] = False
+            if 'OUTSIDE_ASSAY' in arm['studyTypes']:
+                arm_data[arm_id]['outside_open'] = True
         return arm_data
     
     @staticmethod
@@ -368,7 +396,7 @@ class TreatmentArms(object):
             sys.stderr.write('\n')
             return None
 
-    def map_amoi(self, variant):
+    def map_amoi(self, variant, output_closed=True, output_outside=True):
         """
         Input a variant dict derived from some kind and return either an aMOI 
         id in the form of Arm(i|e). If variant is not an aMOI, returns 
