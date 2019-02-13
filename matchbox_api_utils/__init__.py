@@ -28,14 +28,9 @@ def get_latest_data(dfiles):
 
     for f in dfiles:
         filename = os.path.basename(f)
-        try:
-            datestring = re.search('(mb|ta)_obj_([0-9]{6})\.json', 
-                filename).group(1)
-        except AttributeError:
-            datestring = datetime.datetime.fromtimestamp(
-                    os.path.getctime(f)).strftime('%m%d%y')
+        datestring = datetime.datetime.strptime(
+            filename.rstrip('.json').split('_')[2], "%m%d%y")
         indexed_files[datestring] = f
-
     try:
         largest = sorted(indexed_files.keys())[-1]
     except IndexError:
