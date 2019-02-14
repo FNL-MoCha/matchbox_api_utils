@@ -354,9 +354,6 @@ class TreatmentArms(object):
             arm_data[arm_id]['outside_open'] = False
             if 'OUTSIDE_ASSAY' in arm['studyTypes']:
                 arm_data[arm_id]['outside_open'] = True
-
-            # XXX
-            # utils.make_json(outfile="test.json", data=arm_data)
         return arm_data
     
     @staticmethod
@@ -380,7 +377,7 @@ class TreatmentArms(object):
             sys.stderr.write('\n')
             return None
 
-    def map_amoi(self, variant, output_closed=True, output_outside=True):
+    def map_amoi(self, variant, status=None, outside=False):
         """
         Input a variant dict derived from some kind and return either an aMOI 
         id in the form of Arm(i|e). If variant is not an aMOI, returns 
@@ -401,12 +398,21 @@ class TreatmentArms(object):
                 fields, and so fields may be padded with a null char (e.g. 
                 '.', '-', 'NA', etc.).
 
+            status (str): Only output arms that contain this status. Valid 
+                statuses are 'OPEN', 'SUSPENDED', 'CLOSED'. If no value input,
+                all arms will be output.
+
+            outside (bool): If `True`, only output arms that are open for the 
+                Designated (AKA 'Outside') Labs program.  Otherwise will list
+                all. DEFAULT: `False`.
+
         Returns
             list:  
             Arm ID(s) with (i)nclusion or (e)xclusion information, or ``None``
             if the variant is not an aMOI.
 
         Examples:
+            >>> # Variant that maps to a study arm (i.e. aMOI).
             >>> variant = { 
                 'type' : 'snvs_indels', 
                 'gene' : 'BRAF', 
@@ -415,9 +421,10 @@ class TreatmentArms(object):
                 'function' : 'missense' , 
                 'oncominevariantclass' : 'Hotspot' 
             }
-            self.map_amoi(variant)
+            >>> self.map_amoi(variant)
             ['EAY131-Y(e)', 'EAY131-P(e)', 'EAY131-N(e)', 'EAY131-H(i)']
 
+            >>> # Variant that does not map to a study arm.
             >>> variant = { 
                 'type' : 'snvs_indels', 
                 'gene' : 'TP53', 
@@ -426,13 +433,36 @@ class TreatmentArms(object):
                 'function' : 'missense' , 
                 'oncominevariantclass' : '-' 
             }
-            self.map_amoi(variant)
+            >>> self.map_amoi(variant)
             None
+
+            >>> # Only output arms that are open to outside labs.
+            >>> variant = {
+                'type' : 'snvs_indels',
+                'gene' : 'PIK3CA',
+                'identifier' : 'COSM775', 
+                'exon' : '21',
+                'function' : 'missense', 
+                'oncominevariantclass' : 'Hotspot'
+            }
+            >>> self.map_amoi(variant, outside=True)
+            ['EAY131-Z1F(i)', 'EAY131-Z1G(e)', 'EAY131-Z1H(e)']
+
+            >>> # Only output arms that are *both* open to outside labs, and open.
+            >>> variant = {
+                'type' : 'snvs_indels',
+                'gene' : 'PIK3CA',
+                'identifier' : 'COSM775', 
+                'exon' : '21',
+                'function' : 'missense', 
+                'oncominevariantclass' : 'Hotspot'
+            }
+            >>> self.map_amoi(variant, status='OPEN', outside=True)
+            ['EAY131-Z1G(e)', 'EAY131-Z1H(e)']
 
         """
 
         self.__validate_variant_dict(variant)
-
         result = []
         if variant['type'] == 'snvs_indels':
             if (
@@ -472,8 +502,20 @@ class TreatmentArms(object):
                 result = self.amoi_lookup_table['fusion'][variant['identifier']]
 
         if result:
+            if outside:
+                # Filter out any arms that are not open to outside labs
+                filtered = [arm for arm in result if self.arm_summary(
+                    arm = arm.split('(')[0])['outside_open']]
+                result = filtered
+
+            if status:
+                # Filter out arms that don't match the status
+                filtered = [arm for arm in result if self.arm_summary(
+                    arm = arm.split('(')[0])['status'] == status]
+                result = filtered
             return sorted(result)
         else:
+            sys.stderr.write("No arms matched your criteria!\n")
             return None
 
     def map_drug_arm(self, armid=None, drugname=None, drugcode=None):
@@ -663,3 +705,54 @@ class TreatmentArms(object):
         if gene:
             pass
 
+
+    def arm_summary(self, arm):
+        """
+        Output summary information about a particular arm
+
+        Input a valid MATCH study arm identifier, in the format 'EAY131-<arm>',
+        and return a dict of summary metrics that can be used for other reports.
+
+        Args:
+             arm (str): Valid NCI-MATCH arm name, in the format EAY131-<arm>
+
+        Returns:
+             dict: Summary of arm details.
+
+        Examples:
+             >>> print(self.arm_summary('EAY131-A'))
+             {'arm_id': 'EAY131-A', 
+              'assigned': 2, 
+              'drug_name': 'Afatinib', 
+              'name': 'Afatinib in EGFR activating', 
+              'status': 'OPEN', 
+              'outside_open': True, 
+              'version': '2018-11-19', 
+              'cnv': 0, 
+              'fusion': 1, 
+              'hotspot': 66, 
+              'non_hs': 2}
+
+        """
+
+        try:
+            arm_data = self.data[arm]
+        except KeyError:
+            sys.stderr.write("ERROR: Arm %s does not exist in this trial!\n"
+                % arm)
+            return None
+
+        wanted_fields = ('arm_id', 'assigned', 'drug_name', 'name', 'status',
+            'outside_open', 'version')
+
+        results = dict((x, arm_data[x]) for x in wanted_fields)
+
+        for amoi_type in ('cnv', 'fusion', 'hotspot'):
+            vrts = self.data[arm]['amois'][amoi_type]
+            count = len(vrts) if vrts else 0
+            results.update({amoi_type : count})
+        non_hs_amois = (len(self.data[arm]['amois']['non_hs']['deleterious'].keys())
+            + len(self.data[arm]['amois']['non_hs']['positional'].keys()))
+        results.update({'non_hs' : non_hs_amois})
+
+        return results
