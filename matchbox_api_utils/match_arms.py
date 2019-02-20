@@ -296,6 +296,16 @@ class TreatmentArms(object):
                         var_id = '|'.join(
                             [elem['gene'], elem['exon'], elem['function']]
                         )
+
+                        ########################################################
+                        # Bug in TreatmentArms table in MATCHBox that is referring
+                        # to missense mutations in KIT as 'deleterious'. This is 
+                        # confusing the output, so change it here until there is
+                        # a source fix.
+                        if elem['gene'] == 'KIT':
+                            var_id = var_id.replace('deleterious', 'missense')
+                        ########################################################
+
                         nhr_vars['positional'].update({var_id : elem['inclusion']})
                 parsed_amois[wanted[var]] = nhr_vars
 
@@ -332,7 +342,7 @@ class TreatmentArms(object):
             arm_id = arm['treatmentArmId']
             if arm['version'] != self._latest_ver[arm_id]:
                 continue
-            # if arm_id != 'EAY131-Z1H':
+            # if arm_id != 'EAY131-V':
                 # continue
             arm_data[arm_id]['arm_id']    = arm_id
             arm_data[arm_id]['name']      = arm.get('name', '-')
@@ -354,6 +364,8 @@ class TreatmentArms(object):
             arm_data[arm_id]['outside_open'] = False
             if 'OUTSIDE_ASSAY' in arm['studyTypes']:
                 arm_data[arm_id]['outside_open'] = True
+        # utils.pp(arm_data)
+        # sys.exit()
         return arm_data
     
     @staticmethod
@@ -461,7 +473,6 @@ class TreatmentArms(object):
             ['EAY131-Z1G(e)', 'EAY131-Z1H(e)']
 
         """
-
         self.__validate_variant_dict(variant)
         result = []
         if variant['type'] == 'snvs_indels':
@@ -476,15 +487,13 @@ class TreatmentArms(object):
                 and variant['gene'] in self.amoi_lookup_table['deleterious']
             ):
                 result = self.amoi_lookup_table['deleterious'][variant['gene']]
-
             else:
                 for v in self.amoi_lookup_table['positional']:
                     if v.startswith(variant['gene']):
                         gene,exon,func = v.split('|')
-                        if (
-                            variant['exon'] == exon 
+                        if (variant['exon'].lstrip('Exon') == exon 
                             and variant['function'] == func
-                        ):
+                            ):
                             result = self.amoi_lookup_table['positional'][v]
 
         elif variant['type'] == 'cnvs':
@@ -515,7 +524,8 @@ class TreatmentArms(object):
                 result = filtered
             return sorted(result)
         else:
-            sys.stderr.write("No arms matched your criteria!\n")
+            if not self._quiet:
+                sys.stderr.write("No arms matched your criteria!\n")
             return None
 
     def map_drug_arm(self, armid=None, drugname=None, drugcode=None):
@@ -701,10 +711,20 @@ class TreatmentArms(object):
             now.  Intend to code and implement soon!
 
         """
+        sys.stderr.write('This method is not yet functional and is only a'
+            'placeholder for now.  Intend to code and implement soon!\n')
+        return None
         
         if gene:
             pass
-
+        elif hotspot:
+            arm_list = self.amoi_lookup_table['hotspot'].get(hotspot, None)
+            if not arm_list:
+                sys.stderr.write("No arms found for ID %s.\n" % hotspot)
+                return None
+        else:
+            sys.stderr.write("ERROR: No gene or hotspot ID entered!\n")
+            return None
 
     def arm_summary(self, arm):
         """
