@@ -1,12 +1,15 @@
+*********************************
 MATCHBox API Utils Helper Scripts
-=================================
+*********************************
 Included in the package are a few pre-made helper scripts for routine work. In
 general you'll get more mileage out of just loading the modules and rolling 
 your own.  However, there are some very frequent use cases where one of these 
 pre-made scripts might be helpful.
 
+
 MATCHBox JSON Dump (matchbox_json_dump.py)
-------------------------------------------
+==========================================
+
 Get a dataset from MATCHBox and dump as a JSON object that we can use
 later on to speed up development and periodic searching for data.
 
@@ -22,7 +25,8 @@ JSON file into the current directory, where it should probably be migrated into
     older data.
 
 MATCHBox JSON Dump Help Doc
-***************************
+---------------------------
+
 .. code-block:: python
 
     usage: matchbox_json_dump.py [-h] [-d <raw_mb_datafile.json>] [-r] [-p <psn>]
@@ -64,8 +68,8 @@ get an entire dump of the raw MATCHBox for things like development and testing,
 or troubleshooting.
 
 
-MAP MSN PSN (map_msn_psn.py)
-----------------------------
+Map MSN PSN (map_msn_psn.py)
+============================
 
 Input a MSN, BSN, or PSN, and return the other identifiers. Useful when trying
 to retrieve the correct dataset and you only know one piece of information.
@@ -76,8 +80,8 @@ can not return Outside Assay identifiers at this time.
     We are only working with internal BSN, MSN, and PSN numbers for now and
     can not return Outside Assay identifiers at this time.
 
-MAP MSN PSN Help Doc
-********************
+Map MSN PSN Help Doc
+--------------------
 
 .. code-block:: python
 
@@ -106,7 +110,7 @@ MAP MSN PSN Help Doc
       -v, --version         show program\'s version number and exit
 
 MATCH Variant Frequency (match_variant_frequency.py)
-----------------------------------------------------
+====================================================
 
 Input a list of genes by variant type and get back a table of NCI-MATCH hits
 that can be further analyzed in Excel. Can either input a patient (or comma
@@ -114,7 +118,7 @@ separated list of patients) to query, or query the entire dataset. Will limit
 the patient set to the non-outside assay results only.
 
 MATCH Variant Frequency Help Docs
-*********************************
+---------------------------------
 
 .. code-block:: python
 
@@ -159,7 +163,7 @@ MATCH Variant Frequency Help Docs
 
 
 MATCHBox Patient Summary (matchbox_patient_summary.py)
-------------------------------------------------------
+======================================================
 
 Get patient or disease summary statistics and data from the MATCH dataset.
 Choosing the ``patient`` option will allow one to get a listing of patients in
@@ -175,7 +179,7 @@ inputting MEDDRA codes or tumor hisologies.
     is recommended and preferred.
 
 MATCHBox Patient Summary Help Docs
-**********************************
+----------------------------------
 
 .. code-block:: python
 
@@ -209,3 +213,40 @@ MATCHBox Patient Summary Help Docs
                             Name of output file. Output will be in CSV format.
                             DEFAULT: STDOUT.
       -v, --version         show program\'s version number and exit
+
+
+MATCHBox Arm Enrollment Summary (matchbox_arm_enrollment_summary.py)
+====================================================================
+
+Script to output NCI-MATCH arm enrollment data similar to a Treatment Arms 
+page of MATCHBox, outlining which patients were eligible (based on the presence
+of an appropriate aMOI), and their status.
+
+
+MATCHBox Arm Enrollment Summary Help Docs
+-----------------------------------------
+
+.. code-block:: python
+
+   usage: match_arm_enrollment_summary.py [-h] [-a] [-O] [-o <outfile>] [-v]
+                                          <ARM ID>
+
+   Input a valid NCI-MATCH Arm ID and get a list of patients and trial status
+   information. Output intended to be similar to Treatment arms page of MATCHbox.
+
+   positional arguments:
+     <ARM ID>              Valid NCI-MATCH study arm, or comma separated list of
+                           study arms, in the format of EAY131-*.
+
+   optional arguments:
+     -h, --help            show this help message and exit
+     -a, --all             Output all patients and do not filter out those that
+                           received compassionate care or other outcomes. Only
+                           output patients that were enrolled.
+     -O, --Outside         Include Outside Assays results in output. This may
+                           cause some problems with mapping and whatnot as the
+                           data are a bit scattershot. You have been warned!
+     -o <outfile>, --outfile <outfile>
+                           Write results to a file instead of stdout.
+     -v, --version         show program\'s version number and exit
+

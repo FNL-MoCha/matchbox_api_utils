@@ -1,5 +1,6 @@
+******************
 MATCHBox API Utils
-++++++++++++++++++
+******************
 
 Introduction
 ============
@@ -57,7 +58,7 @@ Installation
 At this time, the most simple installation is to unzip the provided tarball, and 
 run: ::
 
-    python setup.py install
+    python3 setup.py install
 
 From here, the installer will add the library modules to your standard Python
 library location, put the helper scripts into the standard binary direcotry in
@@ -82,21 +83,13 @@ API documentation for details).
 Requirements
 ============
 
-These modules require Python >=3.5 to run, although backwards compatible Python
-v2.7 was used where possible. Your mileage may vary with the helper scripts 
-somewhat.  
-
-In addition to the above, the package requires the installation of:
+These modules require Python >=3.5 to run. In addition to the above, the package
+requires the installation of:
 
     - `requests <http://docs.python-requests.org/en/master/>`_
-    - `asyncio <https://docs.python.org/3/library/asyncio.html>`_
     - `termcolor <https://pypi.org/project/termcolor/>`_
 
 The setup script should take care of this dependency upon installation.  
-
-.. todo::
-    Verify in a clean environment that we added all required packages and 
-    environment defaults.
 
 Using MATCHBox API Utils
 ========================

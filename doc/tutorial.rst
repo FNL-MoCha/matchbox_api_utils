@@ -1,5 +1,6 @@
+***************************
 MATCHBox API Utils Tutorial
-===========================
+***************************
 
 Working with MATCHBox API Utils is very easy.  It is simply a matter of loading one
 (or all) of the available modules:
@@ -37,14 +38,14 @@ older snapshot of the database, that is all possible too.
     specify which system you are interested in calling.
 
 Module: Matchbox
-------------------
+================
 
 The ``Matchbox`` module is a basic data connector to the live instance of the
 MATCHBox system.  Apart from a URL to query and credentials, there are not a 
 whole lot of options.  
 
-In general this module is called by MatchData and TreatmentArms to make the 
-connection to the live system and pull data.  I've included some documentation 
+In general this module is called by ``MatchData`` and ``TreatmentArms`` to make
+the connection to the live system and pull data.  I've included some documentation 
 of this module, though, in the event that one needs to call on it at some point.  
 
 For example, on occassion one might want to get a complete raw MATCHBox dataset,
@@ -69,7 +70,7 @@ generate the same file, as shown below.
 
 
 Module: MatchData
--------------------
+=================
 
 This is by far the workhorse module of the package.  In its most basic form, 
 one needs only load the object into a variable, and then run the host of 
@@ -89,7 +90,7 @@ optimized to be smaller and more efficient than the raw MATCHBox dataset, and
 then having a set of methods to extract portions of the data for cohort type 
 analysis. 
 
-As mentioned above, one can either choose to use the `sys_default` JSON option
+As mentioned above, one can either choose to use the ``sys_default`` JSON option
 for ``MatchData``, in which case the latest version of the MATCHBox JSON dump 
 will be loaded, or one can load their own custom file (e.g. if one wanted to 
 load an old version of the data to see how things changed).  Alternatively 
@@ -103,7 +104,7 @@ reading the ``sys_default`` JSON file, or, and arguably better, getting live
 and up to date data for only that patient from MATCHBox.
 
 Toy Example #1
-**************
+--------------
 You would like to know the disease state of the progression biopsies indicated 
 above.  You don't have any identifiers or other information to go on.
 
@@ -287,14 +288,13 @@ section for more information about the included modules and their usage.
 
 
 Module: TreatmentArms
-----------------------
+=====================
 
 The ``TreatmentArms`` module will handle all NCI-MATCH treatment arm related 
 data, including the handling of a "rules engine" to categorize mutations of 
-interest (MOIs) as being actionable (aMOIs) or not.  At the time of this 
-writing, there are not a lot of public methods available for the module, and 
-it's main use will be directly (really behind the scenes) from ``MatchData``.  
-However, there are a few methods that one will (hopefully) find handy.
+interest (MOIs) as being actionable (aMOIs) or not.  This class has a set of 
+useful functions to generate arm related data, including mapping patients to
+arms and variants to arms.
 
 As with the other modules, one can either make a live query to MATCHBox to 
 generate a dataset: ::
@@ -313,7 +313,7 @@ available, including ``map_amoi()``, ``map_drug_arm()``, or
 ``get_exclusion_disease()``.
 
 Toy Example #2
-**************
+--------------
 
 Let's say you have a *`BRAF p.V600E`* mutation that you discovered in a patient 
 diagnosed with *`Melanoma`* , but you are not sure whether or not any arms 
