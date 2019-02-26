@@ -102,7 +102,7 @@ def make_config_file(root_dir):
 
     for mb in matchboxes:
         sys.stdout.write('\nConfiguring %s:\n' % mb)
-        resp = input('\tConfigure this MATCHBox? ')
+        resp = input('\tConfigure this MATCHBox [y|n]? ')
         if resp and resp.lower() in ('no', 'n'):
             sys.stdout.write('\tSkipping.\n')
             continue
@@ -121,7 +121,7 @@ def make_config_file(root_dir):
     write_json(config_stump)
 
 def connector_conf(connector, mb):
-    resp = input('\n\tConfigure the %s connector for MATCHBox "%s"? ' % (
+    resp = input('\n\tConfigure the %s connector for MATCHBox "%s" [y|n]? ' % (
         connector, mb))
     if resp and resp.lower() in ('no', 'n'):
         return None, None
