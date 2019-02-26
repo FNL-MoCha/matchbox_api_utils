@@ -192,6 +192,8 @@ if __name__=='__main__':
             'the existing one [y|N]? ')
         if resp.lower() in ('y', 'yes'):
             make_config_file(root_dir)
+    else:
+        make_config_file(root_dir)
 
     # Make the MATCHBox JSON objects for easy loading.
     pre_build_mb_obj(root_dir)
