@@ -240,10 +240,10 @@ MATCHBox Arm Enrollment Summary Help Docs
 
    optional arguments:
      -h, --help            show this help message and exit
-     -a, --all             Output all patients and do not filter out those that
+     -a, --all             Output "all" patients and do not filter out those that
                            received compassionate care or other outcomes. Only
                            output patients that were enrolled.
-     -O, --Outside         Include Outside Assays results in output. This may
+     -O, --Outside         Include "Outside Assays" results in output. This may
                            cause some problems with mapping and whatnot as the
                            data are a bit scattershot. You have been warned!
      -o <outfile>, --outfile <outfile>

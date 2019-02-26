@@ -473,15 +473,16 @@ class TreatmentArms(object):
             ['EAY131-Z1G(e)', 'EAY131-Z1H(e)']
 
         """
-        self.__validate_variant_dict(variant)
-        result = []
-        if variant['type'] == 'snvs_indels':
-            if (
-                variant['oncominevariantclass'] == 'Hotspot' 
-                or variant['identifier'] in self.amoi_lookup_table['hotspot']
-            ):
-                result=self.amoi_lookup_table['hotspot'][variant['identifier']]
+        if not self._quiet:
+            sys.stderr.write('status: {}; outside: {}\n'.format(status, outside))
 
+        # Make sure the input data is correctly formatted and complete
+        self.__validate_variant_dict(variant)
+
+        result = ''
+        if variant['type'] == 'snvs_indels':
+            if variant['identifier'] in self.amoi_lookup_table['hotspot']:
+                result = (self.amoi_lookup_table['hotspot'][variant['identifier']])
             elif (
                 variant['oncominevariantclass'] == 'Deleterious' 
                 and variant['gene'] in self.amoi_lookup_table['deleterious']
@@ -490,10 +491,10 @@ class TreatmentArms(object):
             else:
                 for v in self.amoi_lookup_table['positional']:
                     if v.startswith(variant['gene']):
-                        gene,exon,func = v.split('|')
+                        gene, exon, func = v.split('|')
                         if (variant['exon'].lstrip('Exon') == exon 
                             and variant['function'] == func
-                            ):
+                        ):
                             result = self.amoi_lookup_table['positional'][v]
 
         elif variant['type'] == 'cnvs':
