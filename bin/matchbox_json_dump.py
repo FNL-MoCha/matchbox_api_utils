@@ -5,17 +5,14 @@ Get parsed dataset from MATCHBox and dump as a JSON object that we can use
 later on to speed up development and periodic searching for data.  
 """
 import sys
-import os
-import json
 import argparse
-from pprint import pprint as pp
+from pprint import pprint as pp # noqa
 
-import matchbox_api_utils
+#import matchbox_api_utils  # noqa
 from matchbox_api_utils import MatchData
 from matchbox_api_utils import TreatmentArms
-from matchbox_api_utils import utils
 
-version = '4.0.101218'
+version = '4.1.051719'
 
 def get_args():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -79,6 +76,9 @@ if __name__=='__main__':
 
     data = MatchData(matchbox=args.matchbox, method=args.method, json_db=None, 
         load_raw=args.data, patient=args.patient)
+
+    if getattr(data, '_matchbox') is None:
+        sys.exit(1)
     arms = TreatmentArms(matchbox=args.matchbox, method=args.method, 
         json_db=None)
     sys.stdout.write('Done!\n')
