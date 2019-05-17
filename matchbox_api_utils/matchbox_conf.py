@@ -1,8 +1,5 @@
 # -*- coding:utf-8 -*-
 import sys
-import os
-import json
-
 import matchbox_api_utils
 
 from matchbox_api_utils import utils
@@ -28,7 +25,6 @@ class Config(object):
                     `mongo` will be preferred.
 
         """
-
         self._matchbox_name = matchbox_name
         self._connection = connection
         if config_file is not None:

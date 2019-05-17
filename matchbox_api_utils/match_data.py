@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import json
-import itertools
+#import itertools
 from collections import defaultdict
 
 from matchbox_api_utils import utils
@@ -11,7 +11,7 @@ from matchbox_api_utils.matchbox import Matchbox
 from matchbox_api_utils.match_arms import TreatmentArms
 import matchbox_api_utils._version
 
-from pprint import pformat
+from pprint import pformat # noqa
 
 
 class MatchData(object):
@@ -106,6 +106,7 @@ class MatchData(object):
                 'are:\n' % matchbox)
             sys.stderr.write('\n'.join(valid_matchboxes))
             sys.stderr.write('\n')
+            self._matchbox = None
             return None
 
         self._json_db = json_db
