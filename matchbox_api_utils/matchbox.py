@@ -167,17 +167,21 @@ class Matchbox(object):
                 stdout=subprocess.PIPE)
             out, err = p.communicate()
             tries += 1
+            if tries == 4:
+                sys.stderr.write("Can not get a MongoDB data dump! Can not "
+                     "continue.\n")
+                sys.stderr.flush()
+                return  None
             if p.returncode != 0:
                 sys.stderr.write('Error getting data from mongoDB. Trying '
                     'again ({}/{} tries).\n'.format(tries, '4'))
                 # TODO: have this output to debug log once we fix the verbosity
                 #       arg.
-                # sys.stderr.write(err.decode('utf-8'))
+                sys.stderr.write(err.decode('utf-8'))
                 sys.stderr.flush()
             else:
                 if self._quiet is False:
-                    sys.stderr.write('Completed the Mongo export call '
-                        'successfully.\n')
+                    sys.stderr.write('Completed Mongo DB export successfully.\n')
                     sys.stderr.flush()
                 break
         return utils.read_json(outfile)

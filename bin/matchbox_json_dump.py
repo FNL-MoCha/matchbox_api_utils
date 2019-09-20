@@ -76,6 +76,8 @@ if __name__=='__main__':
 
     data = MatchData(matchbox=args.matchbox, method=args.method, json_db=None, 
         load_raw=args.data, patient=args.patient)
+    if data is None:
+        sys.exit(1)
 
     if getattr(data, '_matchbox') is None:
         sys.exit(1)
